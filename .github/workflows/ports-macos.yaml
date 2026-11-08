@@ -78,6 +78,17 @@ jobs:
           name: subscription-ports-macos-${{ matrix.arch }}
           path: dist/*
           if-no-files-found: error
+      - name: Build safe mode smoke app
+        if: github.ref_type != 'tag' && matrix.arch == 'arm64'
+        run: |
+          flutter build macos --debug --dart-define=SAFE_MODE=true --dart-define=APP_ENV=dev
+          ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Debug/FlClash.app build/FlClash-safe-mode-arm64.zip
+      - uses: actions/upload-artifact@v4
+        if: github.ref_type != 'tag' && matrix.arch == 'arm64'
+        with:
+          name: subscription-ports-macos-safe-mode
+          path: build/FlClash-safe-mode-arm64.zip
+          if-no-files-found: error
 
   release:
     if: github.repository == 'Minggle/FlClash' && github.ref_type == 'tag'
