@@ -22,6 +22,17 @@ import '../helpers/test_profiles.dart';
 
 class _Core extends Mock implements CoreHandlerInterface {}
 
+class _ProbeAction extends PortRoutingAction {
+  int? processId = 1234;
+  Future<Map<int, int>> Function() owners = () async => {};
+
+  @override
+  int? get coreProcessId => processId;
+
+  @override
+  Future<Map<int, int>> readPortOwners() => owners();
+}
+
 class _Setup extends SetupAction {
   int applies = 0;
   bool? running;
@@ -55,7 +66,7 @@ void main() {
   late HttpServer server;
   late _Core core;
   late ProviderContainer container;
-  late PortRoutingAction action;
+  late _ProbeAction action;
   late File original;
   late Profile source;
   late _Setup setup;
@@ -135,11 +146,13 @@ void main() {
       url: 'http://127.0.0.1:${server.port}/subscription',
     ).copyWith(id: 11);
     final workspace = Profile.custom(label: 'Ports').copyWith(id: 9);
+    action = _ProbeAction();
     container = ProviderContainer(
       overrides: [
         profilesProvider.overrideWith(() => TestProfiles([source, workspace])),
         coreHandlerProvider.overrideWithValue(CoreController.scoped(core)),
         setupActionProvider.overrideWith(() => setup),
+        portRoutingActionProvider.overrideWith(() => action),
         ...buildConfigOverrides(
           const Config(
             themeProps: defaultThemeProps,
@@ -162,7 +175,7 @@ void main() {
       ],
     );
     globalState.container = container;
-    action = container.read(portRoutingActionProvider.notifier);
+    container.read(portRoutingActionProvider.notifier);
     original = File(await appPath.getProfilePath('11'));
     await original.parent.create(recursive: true);
     await original.writeAsString(_old);
@@ -181,6 +194,147 @@ void main() {
   Future<File> goodCache() async => File(
     '${(await action.prepare(container.read(portRoutingSettingProvider))).providers[portProviderName(11)]['path']}.good',
   );
+
+  void startChecks() {
+    container.read(coreStatusProvider.notifier).value = CoreStatus.connected;
+    container.read(runTimeProvider.notifier).value =
+        DateTime.now().millisecondsSinceEpoch;
+  }
+
+  test('ownership query failure replaces an earlier listening state', () async {
+    startChecks();
+    container
+        .read(portRoutingActivityProvider.notifier)
+        .check(1, const PortBindingCheck(PortBindingPhase.listening));
+    action.owners = () async => throw const ProcessException('lsof', []);
+    await action.checkAll();
+    final check = container.read(portRoutingActivityProvider).ports[1]!;
+    expect(check.phase, PortBindingPhase.failed);
+    expect(check.issue, PortRoutingIssue.coreUnavailable);
+  });
+
+  test(
+    'missing listener differs from a port held by another process',
+    () async {
+      startChecks();
+      action.owners = () async => {18081: 5678};
+      await action.checkAll();
+      expect(
+        container.read(portRoutingActivityProvider).ports[1]!.issue,
+        PortRoutingIssue.portOccupied,
+      );
+      action.owners = () async => {};
+      await action.checkAll();
+      expect(
+        container.read(portRoutingActivityProvider).ports[1]!.issue,
+        PortRoutingIssue.coreUnavailable,
+      );
+    },
+  );
+
+  test('stopping while ownership is pending discards the check', () async {
+    startChecks();
+    final gate = Completer<Map<int, int>>();
+    action.owners = () => gate.future;
+    final pending = action.checkAll();
+    expect(
+      container.read(portRoutingActivityProvider).ports[1]!.phase,
+      PortBindingPhase.checking,
+    );
+    container.read(runTimeProvider.notifier).value = null;
+    gate.complete({18081: 5678});
+    await pending;
+    expect(container.read(portRoutingActivityProvider).ports, isEmpty);
+  });
+
+  test('an older check cannot overwrite a newer result', () async {
+    startChecks();
+    final gate = Completer<Map<int, int>>();
+    action.owners = () => gate.future;
+    final pending = action.checkAll();
+    action.owners = () async => {};
+    await action.checkAll();
+    gate.complete({18081: 5678});
+    await pending;
+    expect(
+      container.read(portRoutingActivityProvider).ports[1]!.issue,
+      PortRoutingIssue.coreUnavailable,
+    );
+  });
+
+  test('visible scheduler checks listeners even with refresh paused', () async {
+    startChecks();
+    action.setRefresh(
+      const PortSubscriptionRefresh(profileId: 11, enabled: false),
+    );
+    var checks = 0;
+    action.owners = () async {
+      checks++;
+      return {};
+    };
+    container.read(appVisibleProvider.notifier).value = false;
+    await action.tick();
+    expect(checks, 0);
+    container.read(appVisibleProvider.notifier).value = true;
+    await pumpEventQueue();
+    expect(checks, 1);
+    expect(requests, 0);
+    expect(
+      container.read(portRoutingActivityProvider).ports[1]!.issue,
+      PortRoutingIssue.coreUnavailable,
+    );
+  });
+
+  test('dedicated mode releases macOS DNS without changing saved TUN', () {
+    container
+        .read(networkSettingProvider.notifier)
+        .update((value) => value.copyWith(autoSetSystemDns: true));
+    container
+        .read(patchClashConfigProvider.notifier)
+        .update(
+          (value) => value.copyWith(tun: value.tun.copyWith(enable: true)),
+        );
+    container.read(authorizedTunEnableProvider.notifier).value =
+        TunAuthorizationState.authorized;
+    startChecks();
+    expect(container.read(shouldPatchSystemDnsProvider), isFalse);
+    expect(container.read(patchClashConfigProvider).tun.enable, isTrue);
+    expect(container.read(networkSettingProvider).autoSetSystemDns, isTrue);
+    container.read(currentProfileIdProvider.notifier).value = 11;
+    expect(container.read(shouldPatchSystemDnsProvider), isTrue);
+  });
+
+  test('owned SOCKS listener shows its selected node', () async {
+    final listener = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(listener.close);
+    final subscription = listener.listen((socket) {
+      socket.listen((_) {
+        socket.add([5, 0]);
+        unawaited(socket.flush().then((_) => socket.destroy()));
+      });
+    });
+    addTearDown(subscription.cancel);
+    final config = container.read(portRoutingSettingProvider);
+    container.read(portRoutingSettingProvider.notifier).value = config.copyWith(
+      bindings: [config.bindings.single.copyWith(port: listener.port)],
+    );
+    startChecks();
+    action.owners = () async => {listener.port: action.processId!};
+    when(() => core.getProxies()).thenAnswer(
+      (_) async => ProxiesData(
+        all: [],
+        proxies: {
+          config.bindings.single.groupName: {
+            'now': '${portNodePrefix(11)}US One',
+          },
+        },
+      ),
+    );
+    await action.checkAll();
+    final check = container.read(portRoutingActivityProvider).ports[1]!;
+    expect(check.phase, PortBindingPhase.listening);
+    expect(check.node, 'US One');
+  });
 
   test(
     'refresh updates only the source provider and deduplicates requests',

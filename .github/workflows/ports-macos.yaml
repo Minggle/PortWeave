@@ -1,0 +1,99 @@
+name: Subscription ports - macOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/multi-subscription-ports
+      - 'codex/macos-*'
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    if: github.repository == 'Minggle/FlClash'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+          - os: macos-15-intel
+            arch: amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: core/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: plugins/rust_api/rust
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app || sudo xcode-select -s /Applications/Xcode_26.2.app
+          xcodebuild -version
+      - name: Dependencies and analysis
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos
+      - name: Feature and desktop regression tests
+        run: |
+          flutter test test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/providers/config_test.dart test/providers/backup_action_test.dart test/common/http_test.dart test/common/system_dns_test.dart test/manager/proxy_manager_test.dart test/manager/tray_manager_test.dart test/manager/window_manager_test.dart test/core/desktop test/core/service_test.dart test/l10n
+          CGO_ENABLED=0 go test -C core . -run '^TestPortRoutingWire$' -count=1
+          CGO_ENABLED=0 go vet -C core . ./cmd/...
+      - name: Disable Impeller on Intel
+        if: matrix.arch == 'amd64'
+        run: plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist
+      - name: Build and package
+        env:
+          PACKAGE_ARCH: ${{ matrix.arch }}
+        run: |
+          version=$(sed -n 's/^version: *\([^+[:space:]]*\).*/\1/p' pubspec.yaml)
+          app_env=pre
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version=${GITHUB_REF_NAME#v}
+            if [[ "$version" != *-* ]]; then app_env=stable; fi
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo 'Expected a release version' >&2
+            exit 1
+          fi
+          flutter build macos --release --build-name="${version%%-*}" --dart-define=APP_ENV="$app_env"
+          bash tool/package_macos.sh "$version" "$PACKAGE_ARCH"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: subscription-ports-macos-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    if: github.repository == 'Minggle/FlClash' && github.ref_type == 'tag'
+    needs: macos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: subscription-ports-macos-*
+          merge-multiple: true
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

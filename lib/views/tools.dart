@@ -20,7 +20,10 @@ import 'theme.dart';
 import 'port_routing.dart';
 
 class ToolsView extends ConsumerStatefulWidget {
-  const ToolsView({super.key});
+  final bool? isWindows;
+  final bool? isMacOS;
+
+  const ToolsView({super.key, this.isWindows, this.isMacOS});
 
   @override
   ConsumerState<ToolsView> createState() => _ToolViewState();
@@ -51,7 +54,8 @@ class _ToolViewState extends ConsumerState<ToolsView> {
     return generateSection(
       title: context.appLocalizations.settings,
       items: [
-        if (system.isWindows)
+        if ((widget.isWindows ?? system.isWindows) ||
+            (widget.isMacOS ?? system.isMacOS))
           ListItem.open(
             leading: const GlyphIcon(AppGlyphs.proxies),
             title: Text(context.appLocalizations.portRoutingTitle),

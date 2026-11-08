@@ -1,6 +1,6 @@
 # 多订阅独立端口
 
-Windows：打开 **工具 → 多订阅端口**。先在原有配置页面导入订阅，再添加端口绑定：选择订阅、端口以及固定节点或区域关键词，最后开启专用多端口模式。区域关键词以 `|` 分隔，忽略大小写，按节点名称匹配；自动选择衡量延迟，不是带宽或出口国家认证。
+Windows / macOS：打开 **工具 → 多订阅端口**。先在原有配置页面导入订阅，再添加端口绑定：选择订阅、端口以及固定节点或区域关键词，最后开启专用多端口模式。区域关键词以 `|` 分隔，忽略大小写，按节点名称匹配；自动选择衡量延迟，不是带宽或出口国家认证。
 
 每个端口同时支持 HTTP、HTTPS CONNECT 和 SOCKS5 TCP，只监听 `127.0.0.1`。例如两个应用分别设置 `http://127.0.0.1:18081` 和 `socks5h://127.0.0.1:18082`。右键绑定可复制地址、更新订阅和设置更新间隔。一个订阅可建立多条绑定。此版本不支持 UDP、局域网共享或按进程接管。
 
@@ -13,6 +13,7 @@ Windows：打开 **工具 → 多订阅端口**。先在原有配置页面导入
 - 每个订阅默认每 5 分钟拉取，调度器每 30 秒检查到期任务。更新设置对同一订阅的所有端口生效，可暂停或改为 1～1440 分钟。程序退出期间不更新。
 - 更新使用临时文件校验及 provider 局部加载；失败保留最后成功的磁盘缓存与节点。自动组的选择缓存通过现有 Core 选组接口复位。普通更新不关闭其他订阅的已有连接；修改端口或选择策略会重新应用配置，可能短暂重连。
 - “已监听”表示端口归当前 Core 所有且 SOCKS 握手成功，不表示节点的互联网出口已验证。
+- macOS 通过系统自带的 `lsof` 查询 IPv4 TCP 监听归属，不额外请求管理员权限。查询失败或无法确认归属时显示不可用；确认属于其他进程时才显示端口冲突。窗口可见时每 30 秒检查状态，重新显示窗口时也会检查；隐藏窗口仍按订阅周期更新，但不定时探测监听。
 
 ## 维护与验证
 
@@ -33,7 +34,28 @@ flutter build windows --release
 
 Go 测试在独立子进程与临时目录运行，只使用回环端口和本地模拟出口，覆盖 HTTP/SOCKS5 分离、区域选择、局部更新保留另一个订阅的持续连接，以及空源/节点消失的拒绝行为。不会启动 GUI、TUN 或修改系统代理。外部真实订阅与公网出口仍需实际环境验收。
 
-本机 GUI 调试必须使用 `flutter run --dart-define=SAFE_MODE=true`。安全模式不会开放这些端口，真实流量测试应使用上述隔离测试或单独的 Windows 测试环境。
+本机 GUI 调试必须使用 `flutter run --dart-define=SAFE_MODE=true`。安全模式不会开放这些端口，真实流量测试应使用上述隔离测试或单独的测试环境。
+
+## macOS 开发与构建
+
+支持目标为 macOS 12 及以上，Apple Silicon（`arm64`）和 Intel（`amd64`）分别构建。开发顺序、进度和实际验证结果见 [Mac 开发计划](MACOS_DEVELOPMENT.md)。
+
+需要完整 Xcode（仅 Command Line Tools 不够）、Flutter 3.47.6、Go 1.27 和 Rust。以下命令在对应架构的 Mac 上执行，`ARCHS` 由现有 Release 配置选取本机架构：
+
+```bash
+flutter pub get
+flutter analyze --no-fatal-infos
+flutter test test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/common/system_dns_test.dart test/core/desktop
+CGO_ENABLED=0 go test -C core . -run '^TestPortRoutingWire$' -count=1
+flutter build macos --release --dart-define=APP_ENV=pre
+bash tool/package_macos.sh 0.9.3-ports.2 arm64
+```
+
+Intel 构建先执行 `plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist`，打包参数改为 `amd64`；此配置与上游 Intel 发布矩阵一致。脚本检查 App/Core 的架构及 bundle 签名，生成 `dist/FlClash-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
+
+`Subscription ports - macOS` workflow 在功能分支及 `codex/macos-*` 分支更新时构建，也可手动构建并上传两种架构的 artifact；推送版本标签时，两种架构均通过测试和打包后才附加到 fork 的对应 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。分支和手动构建不会创建 Release。
+
+DMG 内含应用和 Applications 快捷方式。退出已安装的 FlClash 后，将应用拖入 Applications，再由用户启动。当前流程沿用临时签名，尚未接入 Developer ID 签名或 Apple 公证；正式分发前需要补齐凭据和 Gatekeeper 安装验收。Mac 更新通过发布页手动下载，不提供应用内自动替换。预发行版本不会由 `releases/latest` 返回。
 
 ## Fork 发布
 

@@ -208,6 +208,58 @@ void main() {
     expect(owners, {18081: 1234, 18082: 5678});
   });
 
+  test('macOS listener fields preserve PID across file records', () {
+    expect(
+      parseMacOSPortOwners('''
+p1234
+f10
+n127.0.0.1:18081
+f11
+n*:18082
+p5678
+f12
+n0.0.0.0:18083
+n192.168.1.2:18084
+n[::1]:18085
+n127.0.0.1:18081->127.0.0.1:43000
+pinvalid
+n127.0.0.1:18086
+'''),
+      {18081: 1234, 18082: 1234, 18083: 5678},
+    );
+  });
+
+  test('macOS ambiguous ownership never reports a trusted listener', () {
+    expect(
+      parseMacOSPortOwners('''
+p1234
+n127.0.0.1:18081
+n127.0.0.1:18082
+n127.0.0.1:18082
+n127.0.0.1:65536
+p5678
+n*:18081
+'''),
+      {18082: 1234},
+    );
+    expect(parseMacOSPortOwners(''), isEmpty);
+  });
+
+  test(
+    'macOS reads actual loopback listener ownership without elevation',
+    () async {
+      final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(server.close);
+      expect((await desktopPortOwners())[server.port], pid);
+      await checkPortAvailable(server.port, existingOwner: pid);
+      await expectLater(
+        checkPortAvailable(server.port, existingOwner: pid + 1),
+        throwsA(isA<PortRoutingException>()),
+      );
+    },
+    skip: !Platform.isMacOS,
+  );
+
   test('occupied ports are rejected and SOCKS response may be split', () async {
     final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(server.close);

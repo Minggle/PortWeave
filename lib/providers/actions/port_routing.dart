@@ -10,6 +10,13 @@ class PortRoutingAction extends _$PortRoutingAction {
   final _failures = <int, int>{};
   bool _polling = false;
   int _revision = 0;
+  int _checkRevision = 0;
+
+  @visibleForTesting
+  int? get coreProcessId => coreService?.processId;
+
+  @visibleForTesting
+  Future<Map<int, int>> readPortOwners() => desktopPortOwners();
 
   CoreController get _core => ref.read(coreHandlerProvider);
   PortRoutingConfig get _config => ref.read(portRoutingSettingProvider);
@@ -31,13 +38,10 @@ class PortRoutingAction extends _$PortRoutingAction {
         }
       }
     });
+    ref.listen(coreStatusProvider, (_, _) => _invalidate());
     ref.listen(
-      coreStatusProvider,
-      (_, _) => ref.read(portRoutingActivityProvider.notifier).clearChecks(),
-    );
-    ref.listen(
-      isStartProvider,
-      (_, _) => ref.read(portRoutingActivityProvider.notifier).clearChecks(),
+      runTimeProvider.select((state) => state != null),
+      (_, _) => _invalidate(),
     );
     ref.listen(appVisibleProvider, (_, visible) {
       if (visible) unawaited(tick());
@@ -321,7 +325,9 @@ class PortRoutingAction extends _$PortRoutingAction {
       }
       _failures.remove(profileId);
       _retryAt.remove(profileId);
-      await checkAll();
+      if (!_polling && ref.mounted && ref.read(appVisibleProvider)) {
+        await checkAll();
+      }
     } catch (error) {
       issue = error is PortRoutingException
           ? error.issue
@@ -503,37 +509,78 @@ class PortRoutingAction extends _$PortRoutingAction {
           continue;
         }
       }
+      if (ref.mounted && ref.read(appVisibleProvider)) await checkAll();
     } finally {
       _polling = false;
     }
   }
 
   Future<void> checkAll() async {
-    if (!_active || ref.read(safeModeProvider) || !ref.read(isStartProvider)) {
+    final checkRevision = ++_checkRevision;
+    if (!_active ||
+        ref.read(safeModeProvider) ||
+        !ref.read(isStartProvider) ||
+        ref.read(coreStatusProvider) != CoreStatus.connected) {
       ref.read(portRoutingActivityProvider.notifier).clearChecks();
       return;
     }
     final revision = _revision;
     final activity = ref.read(portRoutingActivityProvider.notifier);
-    final config = _config;
-    final owner = coreService?.processId;
-    final owners = await windowsPortOwners();
-    final proxies = await _core.getProxies();
-    for (final binding in config.bindings.where((binding) => binding.enabled)) {
-      if (!ref.mounted || revision != _revision) return;
+    final bindings = _config.bindings
+        .where((binding) => binding.enabled)
+        .toList();
+    if (bindings.isEmpty) return;
+    final owner = coreProcessId;
+    bool isCurrent() =>
+        ref.mounted &&
+        _active &&
+        ref.read(isStartProvider) &&
+        ref.read(coreStatusProvider) == CoreStatus.connected &&
+        revision == _revision &&
+        checkRevision == _checkRevision &&
+        owner == coreProcessId;
+    for (final binding in bindings) {
       activity.check(
         binding.id,
         const PortBindingCheck(PortBindingPhase.checking),
       );
+    }
+    final Map<int, int> owners;
+    final ProxiesData proxies;
+    try {
+      if (owner == null) {
+        throw const PortRoutingException(PortRoutingIssue.coreUnavailable);
+      }
+      owners = await readPortOwners();
+      if (!isCurrent()) return;
+      proxies = await _core.getProxies();
+    } catch (_) {
+      if (!isCurrent()) return;
+      for (final binding in bindings) {
+        activity.check(
+          binding.id,
+          const PortBindingCheck(
+            PortBindingPhase.failed,
+            issue: PortRoutingIssue.coreUnavailable,
+          ),
+        );
+      }
+      return;
+    }
+    for (final binding in bindings) {
+      if (!isCurrent()) return;
       try {
-        if (owner == null || owners[binding.port] != owner) {
+        if (!owners.containsKey(binding.port)) {
+          throw const PortRoutingException(PortRoutingIssue.coreUnavailable);
+        }
+        if (owners[binding.port] != owner) {
           throw const PortRoutingException(PortRoutingIssue.portOccupied);
         }
         await checkSocksHandshake(binding.port);
         final group = proxies.proxies[binding.groupName];
         final node = group is Map ? group['now'] as String? : null;
         final blocked = node == null || node == 'REJECT';
-        if (revision != _revision || !ref.mounted) return;
+        if (!isCurrent()) return;
         activity.check(
           binding.id,
           PortBindingCheck(
@@ -542,7 +589,7 @@ class PortRoutingAction extends _$PortRoutingAction {
           ),
         );
       } catch (error) {
-        if (revision != _revision || !ref.mounted) return;
+        if (!isCurrent()) return;
         activity.check(
           binding.id,
           PortBindingCheck(

@@ -3,12 +3,14 @@ import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/state.dart';
 import 'package:fl_clash/views/port_routing.dart';
+import 'package:fl_clash/views/tools.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prism_ui/prism_ui.dart';
 
 import '../helpers/test_app.dart';
+import '../helpers/test_database_providers.dart';
 import '../helpers/test_profiles.dart';
 
 class _Unavailable extends PortRoutingAction {
@@ -42,6 +44,51 @@ class _EditorAction extends PortRoutingAction {
 }
 
 void main() {
+  for (final platform in ['macOS', 'Windows', 'Linux']) {
+    testWidgets('tools exposes subscription ports on $platform as supported', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWith(TestProfiles.new),
+          scriptsProvider.overrideWith(TestScripts.new),
+          globalRulesProvider.overrideWith(TestGlobalRules.new),
+          iconSetsProvider.overrideWith(TestIconSets.new),
+          clashProvidersProvider.overrideWith(TestClashProviders.new),
+        ],
+      );
+      addTearDown(container.dispose);
+      globalState.container = container;
+      container.read(viewSizeProvider.notifier).value = const Size(1400, 1000);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: TestApp(
+            locale: const Locale('en'),
+            child: ToolsView(
+              isWindows: platform == 'Windows',
+              isMacOS: platform == 'macOS',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final entry = find.text('Subscription ports');
+      if (platform == 'Linux') {
+        expect(entry, findsNothing);
+      } else {
+        expect(entry, findsOneWidget);
+        await tester.tap(entry);
+        await tester.pumpAndSettle();
+        expect(find.byType(PortRoutingView), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('editing validates port conflicts and saves the same binding', (
     tester,
   ) async {
