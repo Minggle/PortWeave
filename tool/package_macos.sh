@@ -13,17 +13,21 @@ case "$arch" in
   amd64) slice=x86_64 ;;
   *) echo 'Expected arm64 or amd64' >&2; exit 1 ;;
 esac
+if [[ ! -x "$app/Contents/MacOS/FlClash" || ! -x "$app/Contents/MacOS/FlClashCore" ]]; then
+  echo 'The app and Core must both be executable' >&2
+  exit 1
+fi
 for binary in \
   "$app/Contents/MacOS/FlClash" \
   "$app/Contents/MacOS/FlClashCore" \
   "$app/Contents/Frameworks/FlutterMacOS.framework/FlutterMacOS" \
   "$app/Contents/Frameworks/App.framework/App" \
   "$app/Contents/Frameworks/rust_api.framework/rust_api"; do
-  if [[ ! -x "$binary" ]]; then
-    echo "Missing executable: $binary" >&2
+  if [[ ! -f "$binary" ]]; then
+    echo "Missing binary: $binary" >&2
     exit 1
   fi
-  lipo -verify_arch "$slice" "$binary"
+  lipo "$binary" -verify_arch "$slice"
 done
 codesign --verify --deep --strict "$app"
 stage=$(mktemp -d "${TMPDIR:-/tmp}/flclash-dmg.XXXXXX")
