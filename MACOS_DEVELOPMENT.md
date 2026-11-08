@@ -1,6 +1,6 @@
 # Mac 版本开发计划与进度
 
-更新日期：2026-11-08。基线：`feature/multi-subscription-ports`，`f2b03c0`，应用版本 `0.9.3+2026110401`。
+更新日期：2026-11-09。基线：`feature/multi-subscription-ports`，`f2b03c0`，应用版本 `0.9.3+2026110401`。
 
 ## 当前进度
 
@@ -23,8 +23,8 @@
 | M0 | 核对源码、历史与工具链，记录开发计划 | 区分已有功能、移植缺口与验证阻塞 | 已完成 |
 | M1 | Mac 多端口入口与监听归属检查 | Mac 可进入管理页；解析实际监听 PID；拒绝其他进程占用；保留 Windows 行为 | 已实现，专项测试通过 |
 | M2 | 状态恢复与 Mac 回归 | 检查失败显示可靠状态；停机/重启不显示过期结果；系统代理、TUN、DNS 保存值保持可恢复 | 已实现，自动化回归通过；系统实机验收待完成 |
-| M3 | fork 的 Mac 构建交付 | ARM64、Intel 分别测试与 Release 构建，输出 DMG 和各自校验文件；保留 Intel Impeller 配置 | 流程已实现，等待 CI 构建 |
-| M4 | 使用文档与完整验收记录 | 操作入口、安装/更新、验证命令和未验收范围清晰；记录实际执行结果 | 已更新，随构建结果补充 |
+| M3 | fork 的 Mac 构建交付 | ARM64、Intel 分别测试与 Release 构建，输出 DMG 和各自校验文件；保留 Intel Impeller 配置 | 两架构测试、Release 编译、DMG 打包和上传均通过 |
+| M4 | 使用文档与完整验收记录 | 操作入口、安装/更新、验证命令和未验收范围清晰；记录实际执行结果 | 已完成本轮开发记录；人工验收范围见清单 |
 
 先完成 M1，再连续推进 M2—M4。以以上验收条件收敛本轮工作；后续新功能另列待办，不以无限增加功能代替完成。
 
@@ -46,9 +46,21 @@
 - [x] `CGO_ENABLED=0 go test -C core . -run '^TestPortRoutingWire$' -count=1`
 - [x] `CGO_ENABLED=0 go vet -C core . ./cmd/...`
 - [x] 新 workflow 的 `actionlint` 和打包脚本的 `bash -n`。
-- [ ] Mac ARM64 Release 编译、产物内容和 DMG 检查
-- [ ] Mac Intel Release 编译和运行验收
-- [ ] 安全模式 GUI：菜单入口、表单、复制地址、窗口恢复
+- [x] Mac ARM64 Release 编译、产物内容和 DMG 检查：云端构建成功；下载后 SHA256、DMG 完整性、GUI/Core/Rust/SQLite 的 ARM64 架构及 bundle 签名均通过。
+- [x] Mac Intel Release 编译、签名/架构检查和 DMG 打包：云端构建通过；下载后 SHA256、DMG 完整性及 GUI/Core/Rust/SQLite 的 x86_64 架构检查通过，确认 `FLTEnableImpeller=false`；Intel 硬件的运行体验待人工验收。
+- [x] ARM64 安全模式启动：`com.follow.clash.debug` 应用及 Core IPC 成功启动；启动前后系统代理和 DNS 快照一致，Core 无 TCP 监听；记录 PID 后结束测试，GUI/Core 均退出。
+- [ ] 安全模式 GUI 点击验收：当前 Mac 锁屏，界面工具无法操作；菜单入口和表单已有自动化 widget 测试通过。
 - [ ] 测试环境：真实订阅、两个应用的出口隔离、睡眠唤醒、网络切换、退出后的系统状态恢复
 
 完整 Xcode 是本机 Flutter macOS 原生编译的外部前提。未通过的检查保持未勾选，并记录具体原因。
+
+## 交付与后续优化
+
+- 开发分支：`codex/macos-subscription-ports`；[草稿 PR #1](https://github.com/Minggle/FlClash/pull/1)。
+- [完整跨平台 CI](https://github.com/Minggle/FlClash/actions/runs/42499770847) 在 `276c706` 上通过，包含 Dart 全套、插件、Go、Rust、Android 单元测试和三桌面平台 Debug 编译。
+- [Mac 双架构构建](https://github.com/Minggle/FlClash/actions/runs/42499770844) 产出独立 DMG、`SHA256SUMS-macos-*` 和单独的 ARM64 安全模式调试包。
+- 本机产物保存在 `dist/macos-validation/arm64/`、`dist/macos-validation/amd64/` 和 `dist/macos-validation/safe-mode/`；这些构建输出不提交 Git。
+- 当前构建是开发测试包，应用数字版本仍为 `0.9.3`。正式发版应选取新版本标签；本轮未创建或发布版本标签。
+- Developer ID 签名、公证、Gatekeeper 首次安装、Intel 实机运行、真实订阅公网出口以及睡眠/网络切换验收尚未完成。
+- 后续优先级：先完成上述实机验收及签名分发，再基于大量绑定/订阅下的实际测量优化状态列表和后台能耗；不预先更换 Core 生命周期或重写现有 UI。
+- fork 当前没有可供 `releases/latest` 返回的稳定版本，安全模式启动日志出现更新查询 404；启动和 Core 连接正常，预发行更新继续走手动下载。该既有行为作为发布准备待办记录。
