@@ -10,6 +10,11 @@ _PortBinding _$PortBindingFromJson(Map<String, dynamic> json) => _PortBinding(
   id: (json['id'] as num).toInt(),
   name: json['name'] as String,
   profileId: (json['profileId'] as num).toInt(),
+  additionalProfileIds:
+      (json['additionalProfileIds'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList() ??
+      const [],
   port: (json['port'] as num).toInt(),
   enabled: json['enabled'] as bool? ?? true,
   selection:
@@ -24,6 +29,7 @@ Map<String, dynamic> _$PortBindingToJson(_PortBinding instance) =>
       'id': instance.id,
       'name': instance.name,
       'profileId': instance.profileId,
+      'additionalProfileIds': instance.additionalProfileIds,
       'port': instance.port,
       'enabled': instance.enabled,
       'selection': _$PortSelectionEnumMap[instance.selection]!,
@@ -32,6 +38,7 @@ Map<String, dynamic> _$PortBindingToJson(_PortBinding instance) =>
     };
 
 const _$PortSelectionEnumMap = {
+  PortSelection.original: 'original',
   PortSelection.fixed: 'fixed',
   PortSelection.region: 'region',
 };

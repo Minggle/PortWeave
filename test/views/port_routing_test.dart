@@ -27,23 +27,122 @@ class _Unavailable extends PortRoutingAction {
 }
 
 class _EditorAction extends PortRoutingAction {
+  bool fail = false;
+  int saves = 0;
   @override
   void build() {}
   @override
   Future<List<String>> nodeNames(int profileId) async => ['US One', 'JP One'];
   @override
   Future<void> saveBinding(PortBinding binding) async {
+    saves++;
+    if (fail) throw const PortRoutingException(PortRoutingIssue.portOccupied);
     final config = ref.read(portRoutingSettingProvider);
     ref.read(portRoutingSettingProvider.notifier).value = config.copyWith(
       bindings: [
         for (final existing in config.bindings)
           existing.id == binding.id ? binding : existing,
+        if (!config.bindings.any((existing) => existing.id == binding.id))
+          binding,
       ],
     );
   }
 }
 
 void main() {
+  Future<ProviderContainer> openNew(
+    WidgetTester tester,
+    _EditorAction action,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final container = ProviderContainer(
+      overrides: [
+        profilesProvider.overrideWith(
+          () => TestProfiles([
+            Profile.normal(label: 'Subscription A').copyWith(id: 11),
+            Profile.normal(label: 'Subscription B').copyWith(id: 22),
+          ]),
+        ),
+        portRoutingActionProvider.overrideWith(() => action),
+      ],
+    );
+    addTearDown(container.dispose);
+    globalState.container = container;
+    container.read(viewSizeProvider.notifier).value = const Size(1200, 1000);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const TestApp(locale: Locale('en'), child: PortRoutingView()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add'));
+    await tester.pumpAndSettle();
+    return container;
+  }
+
+  testWidgets(
+    'original policy saves without choosing a node and failed saves keep input',
+    (tester) async {
+      final action = _EditorAction()..fail = true;
+      final container = await openNew(tester, action);
+      expect(find.text('Use original policy'), findsOneWidget);
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'Original browser',
+      );
+      await tester.tap(find.text('Save').last);
+      await tester.pumpAndSettle();
+      expect(container.read(portRoutingSettingProvider).bindings, isEmpty);
+      expect(find.byType(TextFormField), findsNWidgets(2));
+      expect(
+        tester
+            .widget<TextFormField>(find.byType(TextFormField).first)
+            .controller!
+            .text,
+        'Original browser',
+      );
+      expect(find.text('Please enter a different port'), findsOneWidget);
+      action.fail = false;
+      await tester.tap(find.text('Save').last);
+      await tester.pumpAndSettle();
+      expect(
+        container.read(portRoutingSettingProvider).bindings.single.selection,
+        PortSelection.original,
+      );
+      expect(action.saves, 2);
+      expect(find.byType(TextFormField), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('a keyword binding selects multiple subscription sources', (
+    tester,
+  ) async {
+    final action = _EditorAction();
+    final container = await openNew(tester, action);
+    await tester.enterText(find.byType(TextFormField).first, 'Combined US');
+    await tester.tap(find.text('Use original policy'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Automatic by region').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Subscription A'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Subscription B'));
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(2), 'US');
+    await tester.tap(find.text('Save').last);
+    await tester.pumpAndSettle();
+    final binding = container.read(portRoutingSettingProvider).bindings.single;
+    expect(binding.sourceIds, {11, 22});
+    expect(binding.filter, 'US');
+    expect(binding.selection, PortSelection.region);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final platform in ['macOS', 'Windows', 'Linux']) {
     testWidgets('tools exposes subscription ports on $platform as supported', (
       tester,

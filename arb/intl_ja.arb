@@ -1079,7 +1079,7 @@
   "fallbackFilterDomainDesc": "これらのドメインは、直接 Fallback で解決します。",
   "portRoutingTitle": "サブスクリプションポート",
   "portRoutingMode": "専用ポートモード",
-  "portRoutingDescription": "各ローカルポートは独立したサブスクリプションを使用します。このモードではシステムプロキシと TUN は無効です。",
+  "portRoutingDescription": "各ローカルポートは選択したサブスクリプションを使用します。このモードではシステムプロキシと TUN はオフのままです。",
   "portRoutingSafeMode": "セーフモードでは設定を編集できますが、プロキシポートは開きません。",
   "portRoutingEmpty": "サブスクリプションを読み込み、ポートを追加してください。",
   "portRoutingCopyHint": "右クリックで HTTP/SOCKS5 アドレスのコピー、更新、更新間隔の設定ができます。",
@@ -1108,5 +1108,10 @@
   "portRoutingSourceInUse": "削除前に関連ポートを解除してください。専用設定はこの画面で管理します。",
   "portRoutingUpdateFailed": "更新に失敗しました。最後に動作したノードを保持しています。",
   "downloadBuilds": "ビルドをダウンロード",
-  "privateBuildUpdateTip": "ブラウザーで GitHub にログインして、この非公開リポジトリからビルドをダウンロードしてください。更新は手動でインストールします。"
+  "privateBuildUpdateTip": "ブラウザーで GitHub にログインして、この非公開リポジトリからビルドをダウンロードしてください。更新は手動でインストールします。",
+  "portRoutingOriginal": "元のポリシーを使用",
+  "portRoutingOriginalHint": "1つのサブスクリプションのルールとグループを、直接接続ルールを含めて使用します。更新時はワークスペース設定を再適用します。",
+  "portRoutingAggregateHint": "選択したすべてのサブスクリプションのノード名を検索します。キーワードは US|米国 のように | で区切ります。自動選択は帯域幅ではなく遅延に基づきます。",
+  "portRoutingFixedHint": "1つのサブスクリプションからノードを選択します。ノードが消えた場合は接続を拒否します。",
+  "portRoutingInvalidNodes": "検証できないノード：{nodes}。設定を確認して再試行してください。"
 }

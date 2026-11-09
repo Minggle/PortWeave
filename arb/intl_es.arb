@@ -1079,7 +1079,7 @@
   "fallbackFilterDomainDesc": "Estos dominios se resuelven directamente con Fallback.",
   "portRoutingTitle": "Puertos de suscripciones",
   "portRoutingMode": "Modo de puertos dedicados",
-  "portRoutingDescription": "Cada puerto local utiliza su propia suscripción. El proxy del sistema y TUN permanecen desactivados en este modo.",
+  "portRoutingDescription": "Cada puerto local usa las suscripciones seleccionadas. El proxy del sistema y TUN permanecen desactivados en este modo.",
   "portRoutingSafeMode": "Modo seguro: puedes editar la configuración, pero no se abren puertos proxy.",
   "portRoutingEmpty": "Importa una suscripción y añade un puerto.",
   "portRoutingCopyHint": "Haz clic derecho para copiar la dirección HTTP/SOCKS5, actualizar la suscripción o cambiar el intervalo.",
@@ -1108,5 +1108,10 @@
   "portRoutingSourceInUse": "Elimina los puertos asociados antes de borrar la suscripción. La configuración dedicada se gestiona aquí.",
   "portRoutingUpdateFailed": "Error al actualizar. Se conservan los últimos nodos válidos.",
   "downloadBuilds": "Descargar versiones",
-  "privateBuildUpdateTip": "Inicia sesión en GitHub desde tu navegador para descargar versiones de este repositorio privado. Las actualizaciones se instalan manualmente."
+  "privateBuildUpdateTip": "Inicia sesión en GitHub desde tu navegador para descargar versiones de este repositorio privado. Las actualizaciones se instalan manualmente.",
+  "portRoutingOriginal": "Usar la política original",
+  "portRoutingOriginalHint": "Usa las reglas y grupos de una suscripción, incluidas sus rutas directas. Al actualizarla se vuelve a aplicar la configuración del espacio de trabajo.",
+  "portRoutingAggregateHint": "Busca nombres de nodos en todas las suscripciones seleccionadas. Separa las palabras clave con |, como US|Estados Unidos. La selección usa la latencia, no el ancho de banda.",
+  "portRoutingFixedHint": "Elige un nodo de una suscripción. El puerto rechaza conexiones si ese nodo desaparece.",
+  "portRoutingInvalidNodes": "No se pudieron validar estos nodos: {nodes}. Revisa la configuración de origen e inténtalo de nuevo."
 }

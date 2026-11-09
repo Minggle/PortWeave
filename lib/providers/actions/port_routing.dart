@@ -75,7 +75,7 @@ class PortRoutingAction extends _$PortRoutingAction {
   bool owns(int profileId) => _active && _config.sourceIds.contains(profileId);
 
   bool references(int profileId) =>
-      _config.bindings.any((binding) => binding.profileId == profileId);
+      _config.bindings.any((binding) => binding.sourceIds.contains(profileId));
 
   Profile _source(int id) {
     final source = ref.read(profilesProvider).getProfile(id);
@@ -105,7 +105,7 @@ class PortRoutingAction extends _$PortRoutingAction {
         final workspaceId = config.workspaceProfileId;
         if (workspaceId == null) return;
         for (final id
-            in config.bindings.map((binding) => binding.profileId).toSet()) {
+            in config.bindings.expand((binding) => binding.sourceIds).toSet()) {
           final cache = await _cache(workspaceId, id);
           await File('${cache.path}.good').safeDelete();
           await cache.safeDelete();
@@ -119,14 +119,22 @@ class PortRoutingAction extends _$PortRoutingAction {
     return [for (final node in nodes) node['name'] as String];
   }
 
-  Future<List<Map<String, dynamic>>> _validatedNodes(String path) async {
-    final nodes = await _readNodes(path);
-    if ((await _core.validateProxies(nodes)).isNotEmpty) {
-      throw const PortRoutingException(
-        PortRoutingIssue.unsupportedSubscription,
+  Future<Map<String, dynamic>> _validatedDocument(String path) async {
+    final document = await compute(
+      portSubscriptionDocument,
+      await File(path).readAsString(),
+    );
+    final nodes = (document['proxies'] as List).cast<Map<String, dynamic>>();
+    final issues = await _core.validateProxies(nodes);
+    if (issues.isNotEmpty) {
+      throw PortRoutingException(
+        PortRoutingIssue.invalidNodes,
+        nodes: [
+          for (final index in issues.keys) nodes[index]['name'] as String,
+        ],
       );
     }
-    return nodes;
+    return document;
   }
 
   Future<PortRoutingFragment> prepare(PortRoutingConfig config) =>
@@ -137,6 +145,7 @@ class PortRoutingAction extends _$PortRoutingAction {
           throw const PortRoutingException(PortRoutingIssue.invalidBinding);
         }
         final paths = <int, String>{};
+        final documents = <int, Map<String, dynamic>>{};
         for (final id in config.sourceIds) {
           final source = _source(id);
           final cache = await _cache(workspaceId, id);
@@ -144,9 +153,7 @@ class PortRoutingAction extends _$PortRoutingAction {
           String payload;
           try {
             final path = await appPath.getProfilePath(source.id.toString());
-            payload = await encodeYamlTask({
-              'proxies': await _validatedNodes(path),
-            });
+            payload = await encodeYamlTask(await _validatedDocument(path));
           } on Exception {
             if (!await good.exists()) rethrow;
             payload = await good.readAsString();
@@ -158,11 +165,23 @@ class PortRoutingAction extends _$PortRoutingAction {
             await cache.writeAsStringAtomically(payload);
           }
           paths[id] = cache.path;
+          documents[id] = await compute(portSubscriptionDocument, payload);
         }
-        return compilePortRouting(
-          bindings: config.bindings,
-          sourcePaths: paths,
-          testUrl: ref.read(patchClashConfigProvider).testUrl,
+        return compute(
+          (args) => compilePortRouting(
+            bindings: args.$1,
+            sourcePaths: args.$2,
+            sourceDocuments: args.$3,
+            selectedMaps: args.$4,
+            testUrl: args.$5,
+          ),
+          (
+            config.bindings,
+            paths,
+            documents,
+            {for (final id in config.sourceIds) id: _source(id).selectedMap},
+            ref.read(patchClashConfigProvider).testUrl,
+          ),
         );
       });
 
@@ -239,6 +258,7 @@ class PortRoutingAction extends _$PortRoutingAction {
   });
 
   Future<void> saveBinding(PortBinding binding) => _operations.run(() async {
+    final revision = _revision;
     final before = _config;
     final bindings = [
       for (final existing in before.bindings)
@@ -246,7 +266,9 @@ class PortRoutingAction extends _$PortRoutingAction {
       binding,
     ];
     validatePortBindings(bindings);
-    _source(binding.profileId);
+    for (final id in binding.sourceIds) {
+      _source(id);
+    }
     final old = before.bindings
         .where((item) => item.id == binding.id)
         .firstOrNull;
@@ -254,11 +276,26 @@ class PortRoutingAction extends _$PortRoutingAction {
         (!(_active && old?.enabled == true && old?.port == binding.port))) {
       await checkPortAvailable(binding.port);
     }
-    if (binding.enabled &&
-        (old == null || old.profileId != binding.profileId)) {
-      await _validatedNodes(
-        await appPath.getProfilePath(binding.profileId.toString()),
-      );
+    if (binding.enabled) {
+      for (final id in binding.sourceIds) {
+        final document = await _validatedDocument(
+          await appPath.getProfilePath(id.toString()),
+        );
+        if (binding.selection == PortSelection.original) {
+          await compute(
+            (args) => compilePortRouting(
+              bindings: [args.$1],
+              sourcePaths: {args.$1.profileId: ''},
+              sourceDocuments: {args.$1.profileId: args.$2},
+              testUrl: '',
+            ),
+            (binding, document),
+          );
+        }
+      }
+    }
+    if (!ref.mounted || revision != _revision) {
+      throw const PortRoutingException(PortRoutingIssue.staleUpdate);
     }
     await _saveBindings(before, bindings);
   });
@@ -274,16 +311,26 @@ class PortRoutingAction extends _$PortRoutingAction {
     PortRoutingConfig before,
     List<PortBinding> bindings,
   ) async {
+    final revision = _revision;
     final next = before.copyWith(bindings: bindings);
     if (_active) await prepare(next);
+    if (!ref.mounted || revision != _revision) {
+      throw const PortRoutingException(PortRoutingIssue.staleUpdate);
+    }
     ref.read(portRoutingSettingProvider.notifier).value = next;
     if (!_active) return;
-    if (!await ref
-        .read(setupActionProvider.notifier)
-        .applyProfile(force: true)) {
-      ref.read(portRoutingSettingProvider.notifier).value = before;
-      await ref.read(setupActionProvider.notifier).applyProfile(force: true);
-      throw const PortRoutingException(PortRoutingIssue.coreUnavailable);
+    try {
+      if (!await ref
+          .read(setupActionProvider.notifier)
+          .applyProfile(force: true)) {
+        throw const PortRoutingException(PortRoutingIssue.coreUnavailable);
+      }
+    } catch (_) {
+      if (ref.mounted && _config == next) {
+        ref.read(portRoutingSettingProvider.notifier).value = before;
+        await ref.read(setupActionProvider.notifier).applyProfile(force: true);
+      }
+      rethrow;
     }
     await checkAll();
   }
@@ -361,9 +408,9 @@ class PortRoutingAction extends _$PortRoutingAction {
           PortRoutingIssue.unsupportedSubscription,
         );
       }
-      final payload = await encodeYamlTask({
-        'proxies': await _validatedNodes(staging.path),
-      });
+      final payload = await encodeYamlTask(
+        await _validatedDocument(staging.path),
+      );
       await _commitSource(
         profile,
         revision,
@@ -385,9 +432,7 @@ class PortRoutingAction extends _$PortRoutingAction {
     final workspaceId = _config.workspaceProfileId!;
     final source = _source(profileId);
     final path = await appPath.getProfilePath(profileId.toString());
-    final payload = await encodeYamlTask({
-      'proxies': await _validatedNodes(path),
-    });
+    final payload = await encodeYamlTask(await _validatedDocument(path));
     await _commitSource(source, revision, workspaceId, payload);
   }
 
@@ -405,69 +450,152 @@ class PortRoutingAction extends _$PortRoutingAction {
     String payload, {
     String? sourceText,
     SubscriptionInfo? subscriptionInfo,
-  }) => _operations.run(
-    () => _storage.run(() async {
+  }) {
+    if (_config.bindings.any(
+      (binding) =>
+          binding.enabled &&
+          binding.profileId == source.id &&
+          binding.selection == PortSelection.original,
+    )) {
+      return _commitPolicySource(
+        source,
+        revision,
+        workspaceId,
+        payload,
+        sourceText,
+        subscriptionInfo,
+      );
+    }
+    return _operations.run(
+      () => _storage.run(() async {
+        if (!_sourceIsCurrent(source, revision)) {
+          throw const PortRoutingException(PortRoutingIssue.staleUpdate);
+        }
+        final cache = await _cache(workspaceId, source.id);
+        final good = File('${cache.path}.good');
+        final previous = await good.readAsString();
+        final original = File(
+          await appPath.getProfilePath(source.id.toString()),
+        );
+        final oldSource = sourceText == null
+            ? null
+            : await original.readAsString();
+        try {
+          await _core.sideLoadExternalProvider(
+            providerName: portProviderName(source.id),
+            data: payload,
+          );
+          await _resetAutoGroups(source.id);
+          if (!_sourceIsCurrent(source, revision)) {
+            throw const PortRoutingException(PortRoutingIssue.staleUpdate);
+          }
+          if (sourceText != null) {
+            await original.writeAsStringAtomically(sourceText);
+          }
+          await good.writeAsStringAtomically(payload);
+          if (!_sourceIsCurrent(source, revision)) {
+            throw const PortRoutingException(PortRoutingIssue.staleUpdate);
+          }
+        } catch (_) {
+          if (oldSource != null) {
+            await original.writeAsStringAtomically(oldSource);
+          }
+          await good.writeAsStringAtomically(previous);
+          await cache.writeAsStringAtomically(previous);
+          if (_sourceIsCurrent(source, revision)) {
+            await _core.sideLoadExternalProvider(
+              providerName: portProviderName(source.id),
+              data: previous,
+            );
+            await _resetAutoGroups(source.id);
+          }
+          rethrow;
+        }
+        if (!_sourceIsCurrent(source, revision)) return;
+        final latest = _source(source.id);
+        ref
+            .read(profilesProvider.notifier)
+            .put(
+              latest.copyWith(
+                subscriptionInfo: subscriptionInfo ?? latest.subscriptionInfo,
+                lastUpdateDate: DateTime.now(),
+              ),
+            );
+        await ref.read(proxiesActionProvider.notifier).updateGroups();
+        await ref.read(providersProvider.notifier).syncProviders();
+      }),
+    );
+  }
+
+  Future<void> _commitPolicySource(
+    Profile source,
+    int revision,
+    int workspaceId,
+    String payload,
+    String? sourceText,
+    SubscriptionInfo? subscriptionInfo,
+  ) => _operations.run(() async {
+    if (!_sourceIsCurrent(source, revision)) {
+      throw const PortRoutingException(PortRoutingIssue.staleUpdate);
+    }
+    final original = File(await appPath.getProfilePath(source.id.toString()));
+    final cache = await _cache(workspaceId, source.id);
+    final good = File('${cache.path}.good');
+    final previous = await good.readAsString();
+    final originalText = await original.readAsString();
+    final oldSource = sourceText == null ? previous : originalText;
+    final candidateSource = sourceText ?? originalText;
+    if (!_sourceIsCurrent(source, revision)) {
+      throw const PortRoutingException(PortRoutingIssue.staleUpdate);
+    }
+    try {
+      if (sourceText != null) {
+        await original.writeAsStringAtomically(sourceText);
+      }
+      if (!await ref
+          .read(setupActionProvider.notifier)
+          .applyProfile(force: true)) {
+        throw const PortRoutingException(PortRoutingIssue.updateFailed);
+      }
       if (!_sourceIsCurrent(source, revision)) {
         throw const PortRoutingException(PortRoutingIssue.staleUpdate);
       }
-      final cache = await _cache(workspaceId, source.id);
-      final good = File('${cache.path}.good');
-      final previous = await good.readAsString();
-      final original = File(await appPath.getProfilePath(source.id.toString()));
-      final oldSource = sourceText == null
-          ? null
-          : await original.readAsString();
-      try {
-        await _core.sideLoadExternalProvider(
-          providerName: portProviderName(source.id),
-          data: payload,
-        );
-        await _resetAutoGroups(source.id);
-        if (!_sourceIsCurrent(source, revision)) {
-          throw const PortRoutingException(PortRoutingIssue.staleUpdate);
-        }
-        if (sourceText != null) {
-          await original.writeAsStringAtomically(sourceText);
-        }
-        await good.writeAsStringAtomically(payload);
-        if (!_sourceIsCurrent(source, revision)) {
-          throw const PortRoutingException(PortRoutingIssue.staleUpdate);
-        }
-      } catch (_) {
-        if (oldSource != null) {
-          await original.writeAsStringAtomically(oldSource);
-        }
-        await good.writeAsStringAtomically(previous);
-        await cache.writeAsStringAtomically(previous);
-        if (_sourceIsCurrent(source, revision)) {
-          await _core.sideLoadExternalProvider(
-            providerName: portProviderName(source.id),
-            data: previous,
-          );
-          await _resetAutoGroups(source.id);
-        }
-        rethrow;
+      await good.writeAsStringAtomically(payload);
+      await cache.writeAsStringAtomically(payload);
+    } catch (_) {
+      if (await original.readAsString() == candidateSource) {
+        await original.writeAsStringAtomically(oldSource);
       }
-      if (!_sourceIsCurrent(source, revision)) return;
-      final latest = _source(source.id);
-      ref
-          .read(profilesProvider.notifier)
-          .put(
-            latest.copyWith(
-              subscriptionInfo: subscriptionInfo ?? latest.subscriptionInfo,
-              lastUpdateDate: DateTime.now(),
-            ),
-          );
-      await ref.read(proxiesActionProvider.notifier).updateGroups();
-      await ref.read(providersProvider.notifier).syncProviders();
-    }),
-  );
+      if (await good.readAsString() == payload) {
+        await good.writeAsStringAtomically(previous);
+      }
+      if (await cache.readAsString() == payload) {
+        await cache.writeAsStringAtomically(previous);
+      }
+      if (_sourceIsCurrent(source, revision)) {
+        await ref.read(setupActionProvider.notifier).applyProfile(force: true);
+      }
+      rethrow;
+    }
+    if (!_sourceIsCurrent(source, revision)) return;
+    ref
+        .read(profilesProvider.notifier)
+        .put(
+          _source(source.id).copyWith(
+            subscriptionInfo:
+                subscriptionInfo ?? _source(source.id).subscriptionInfo,
+            lastUpdateDate: DateTime.now(),
+          ),
+        );
+    await ref.read(proxiesActionProvider.notifier).updateGroups();
+    await ref.read(providersProvider.notifier).syncProviders();
+  });
 
   Future<void> _resetAutoGroups(int profileId) async {
     if (!ref.mounted || !owns(profileId)) return;
     for (final binding in _config.bindings) {
       if (binding.enabled &&
-          binding.profileId == profileId &&
+          binding.sourceIds.contains(profileId) &&
           binding.selection == PortSelection.region) {
         final result = await _core.changeProxy(
           ChangeProxyParams(groupName: binding.groupName, proxyName: ''),
@@ -579,13 +707,15 @@ class PortRoutingAction extends _$PortRoutingAction {
         await checkSocksHandshake(binding.port);
         final group = proxies.proxies[binding.groupName];
         final node = group is Map ? group['now'] as String? : null;
-        final blocked = node == null || node == 'REJECT';
+        final blocked =
+            binding.selection != PortSelection.original &&
+            (node == null || node == 'REJECT');
         if (!isCurrent()) return;
         activity.check(
           binding.id,
           PortBindingCheck(
             blocked ? PortBindingPhase.blocked : PortBindingPhase.listening,
-            node: node?.replaceFirst(portNodePrefix(binding.profileId), ''),
+            node: node?.replaceFirst(RegExp(r'^\[ports:[0-9]+\] '), ''),
           ),
         );
       } catch (error) {

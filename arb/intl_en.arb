@@ -1079,7 +1079,7 @@
   "fallbackFilterDomainDesc": "These domains are resolved by Fallback directly.",
   "portRoutingTitle": "Subscription ports",
   "portRoutingMode": "Dedicated port mode",
-  "portRoutingDescription": "Each local port uses its own subscription. System proxy and TUN stay off in this mode.",
+  "portRoutingDescription": "Each local port uses its selected subscriptions. System proxy and TUN stay off in this mode.",
   "portRoutingSafeMode": "Safe mode: configuration can be edited, but no proxy ports are opened.",
   "portRoutingEmpty": "Import a subscription, then add a port binding.",
   "portRoutingCopyHint": "Right-click a binding to copy its HTTP/SOCKS5 address, update its subscription or change the refresh interval.",
@@ -1108,5 +1108,10 @@
   "portRoutingSourceInUse": "Remove the port bindings before deleting this subscription. The dedicated configuration is managed by Subscription ports.",
   "portRoutingUpdateFailed": "Update failed. The last working nodes are retained.",
   "downloadBuilds": "Download builds",
-  "privateBuildUpdateTip": "Sign in to GitHub in your browser to download builds from this private repository. Updates are installed manually."
+  "privateBuildUpdateTip": "Sign in to GitHub in your browser to download builds from this private repository. Updates are installed manually.",
+  "portRoutingOriginal": "Use original policy",
+  "portRoutingOriginalHint": "Uses one subscription’s original rules and proxy groups, including its direct routes. Updating this subscription reapplies the workspace configuration.",
+  "portRoutingAggregateHint": "Match node names across all selected subscriptions with keywords separated by |, for example US|United States. Automatic selection uses latency, not bandwidth.",
+  "portRoutingFixedHint": "Choose a node from one subscription. The port rejects traffic if that node disappears.",
+  "portRoutingInvalidNodes": "These nodes could not be validated: {nodes}. Check the source configuration and try again."
 }

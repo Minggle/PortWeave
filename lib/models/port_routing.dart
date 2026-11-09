@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'generated/port_routing.freezed.dart';
 part 'generated/port_routing.g.dart';
 
-enum PortSelection { fixed, region }
+enum PortSelection { original, fixed, region }
 
 @freezed
 abstract class PortBinding with _$PortBinding {
@@ -13,6 +13,7 @@ abstract class PortBinding with _$PortBinding {
     required int id,
     required String name,
     required int profileId,
+    @Default([]) List<int> additionalProfileIds,
     required int port,
     @Default(true) bool enabled,
     @Default(PortSelection.fixed) PortSelection selection,
@@ -24,6 +25,8 @@ abstract class PortBinding with _$PortBinding {
       _$PortBindingFromJson(json);
 
   String get groupName => 'flclash_ports_group_$id';
+  Set<int> get sourceIds => {profileId, ...additionalProfileIds};
+  String get ruleName => 'flclash_ports_rules_$profileId';
   String get listenerName => 'flclash_ports_in_$id';
   String get httpAddress => 'http://127.0.0.1:$port';
   String get socksAddress => 'socks5h://127.0.0.1:$port';
@@ -60,7 +63,7 @@ abstract class PortRoutingConfig with _$PortRoutingConfig {
 
   Set<int> get sourceIds => {
     for (final binding in bindings)
-      if (binding.enabled) binding.profileId,
+      if (binding.enabled) ...binding.sourceIds,
   };
 
   PortSubscriptionRefresh refreshFor(int profileId) =>
@@ -72,8 +75,13 @@ abstract class PortRoutingConfig with _$PortRoutingConfig {
     previousProfileId: ids[previousProfileId],
     bindings: [
       for (final binding in bindings)
-        if (ids[binding.profileId] case final id?)
-          binding.copyWith(profileId: id),
+        if (binding.sourceIds.every(ids.containsKey))
+          binding.copyWith(
+            profileId: ids[binding.profileId]!,
+            additionalProfileIds: [
+              for (final id in binding.additionalProfileIds) ids[id]!,
+            ],
+          ),
     ],
     subscriptions: [
       for (final subscription in subscriptions)

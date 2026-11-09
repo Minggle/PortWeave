@@ -26,6 +26,131 @@ const regional = PortBinding(
 );
 
 void main() {
+  test(
+    'REALITY short ids preserve YAML scalar text before Core JSON validation',
+    () {
+      for (final id in ['0123', '00', '1e5', '1e999', '0189', '0a1b']) {
+        final nodes = portSubscriptionNodes(
+          'proxies: [{name: US, type: vless, reality-opts: {short-id: $id}}]',
+        );
+        final encoded = jsonDecode(jsonEncode(nodes)) as List;
+        expect(encoded.single['reality-opts']['short-id'], id);
+      }
+    },
+  );
+
+  test(
+    'keyword bindings aggregate sources while keeping duplicate names separate',
+    () {
+      final binding = regional.copyWith(
+        profileId: 11,
+        additionalProfileIds: [22],
+        filter: 'US',
+      );
+      final result = compilePortRouting(
+        bindings: [binding],
+        sourcePaths: {11: '/a', 22: '/b'},
+        testUrl: 'https://example.test',
+      );
+      final group = (result.config['proxy-groups'] as List).single;
+      expect(group['use'], [portProviderName(11), portProviderName(22)]);
+      final pattern = RegExp(
+        (group['filter'] as String).replaceFirst('(?i)', ''),
+        caseSensitive: false,
+      );
+      expect(pattern.hasMatch('${portNodePrefix(11)}US Same'), isTrue);
+      expect(pattern.hasMatch('${portNodePrefix(22)}US Same'), isTrue);
+      expect(pattern.hasMatch('${portNodePrefix(33)}US Same'), isFalse);
+      expect(pattern.hasMatch('${portNodePrefix(22)}Japan'), isFalse);
+      expect(group['empty-fallback'], 'REJECT');
+      final config = PortRoutingConfig(bindings: [binding]);
+      expect(config.sourceIds, {11, 22});
+      final restored = PortRoutingConfig.fromJson(
+        jsonDecode(jsonEncode(config)),
+      );
+      expect(restored, config);
+      expect(
+        config.remapProfiles({11: 111, 22: 222}).bindings.single.sourceIds,
+        {111, 222},
+      );
+      expect(config.remapProfiles({11: 111}).bindings, isEmpty);
+    },
+  );
+
+  test(
+    'original policies preserve per-subscription rules and group selections',
+    () {
+      final binding = fixed.copyWith(
+        selection: PortSelection.original,
+        node: '',
+      );
+      final source = portSubscriptionDocument('''
+proxies: [{name: US, type: socks5, server: localhost, port: 1234}]
+proxy-groups:
+  - {name: Select, type: select, proxies: [US, DIRECT]}
+  - {name: Auto, type: url-test, proxies: [US], url: 'https://test.example', interval: 60}
+rule-providers:
+  ads: {type: inline, behavior: domain, payload: [ads.example]}
+sub-rules:
+  nested: ["RULE-SET,ads,REJECT", "MATCH,Select"]
+rules:
+  - DOMAIN,local.example,DIRECT
+  - SUB-RULE,(NETWORK,TCP),nested
+  - MATCH,Auto
+''');
+      final other = binding.copyWith(id: 2, profileId: 22, port: 18082);
+      final result = compilePortRouting(
+        bindings: [binding, other],
+        sourcePaths: {11: '/a', 22: '/b'},
+        sourceDocuments: {11: source, 22: source},
+        selectedMaps: {
+          11: {'Select': 'US'},
+        },
+        testUrl: '',
+      );
+      final listeners = result.config['listeners'] as List;
+      expect(listeners[0]['rule'], binding.ruleName);
+      expect(listeners[0].containsKey('proxy'), isFalse);
+      final groups = result.config['proxy-groups'] as List;
+      expect(groups.first['default-selected'], '[policy:11] US');
+      expect(groups.first['proxies'], ['[policy:11] US', 'DIRECT']);
+      expect(groups[1]['type'], 'url-test');
+      expect(groups[1]['interval'], 60);
+      expect(result.config['sub-rules'][binding.ruleName], [
+        'DOMAIN,local.example,DIRECT',
+        'SUB-RULE,(NETWORK,TCP),[policy:11] nested',
+        'MATCH,[policy:11] Auto',
+        'MATCH,DIRECT',
+      ]);
+      expect(result.config['sub-rules']['[policy:22] nested'], [
+        'RULE-SET,[policy:22] ads,REJECT',
+        'MATCH,[policy:22] Select',
+      ]);
+      expect((result.config['rule-providers'] as Map).keys, [
+        '[policy:11] ads',
+        '[policy:22] ads',
+      ]);
+    },
+  );
+
+  test('include-all stays within its source and matches unprefixed names', () {
+    final binding = fixed.copyWith(selection: PortSelection.original, node: '');
+    final source = portSubscriptionDocument('''
+proxies: [{name: US, type: socks5}, {name: JP, type: socks5}]
+proxy-groups: [{name: Auto, type: url-test, include-all: true, filter: '^US', url: 'https://test.example'}]
+rules: ['MATCH,Auto']
+''');
+    final result = compilePortRouting(
+      bindings: [binding],
+      sourcePaths: {11: '/a'},
+      sourceDocuments: {11: source},
+      testUrl: '',
+    );
+    final group = (result.config['proxy-groups'] as List).first;
+    expect(group['proxies'], ['[policy:11] US']);
+    expect(group['include-all'], isFalse);
+  });
+
   test('dedicated runtime settings leave the saved host settings intact', () {
     const saved = PatchClashConfig(
       mixedPort: 7897,

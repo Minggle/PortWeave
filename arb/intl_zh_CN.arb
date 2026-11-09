@@ -1079,7 +1079,7 @@
   "fallbackFilterDomainDesc": "这些域名直接使用 Fallback 解析。",
   "portRoutingTitle": "多订阅端口",
   "portRoutingMode": "专用多端口模式",
-  "portRoutingDescription": "每个本地端口使用独立订阅；此模式下系统代理和 TUN 保持关闭。",
+  "portRoutingDescription": "每个本地端口使用所选订阅；此模式下系统代理和 TUN 保持关闭。",
   "portRoutingSafeMode": "安全模式：可以编辑配置，但不会开放代理端口。",
   "portRoutingEmpty": "先导入订阅，再添加端口绑定。",
   "portRoutingCopyHint": "右键点击绑定可复制 HTTP/SOCKS5 地址、更新订阅或设置更新周期。",
@@ -1108,5 +1108,10 @@
   "portRoutingSourceInUse": "请先移除相关端口绑定再删除订阅；专用配置由“多订阅端口”管理。",
   "portRoutingUpdateFailed": "更新失败，已保留上次可用节点。",
   "downloadBuilds": "下载测试版本",
-  "privateBuildUpdateTip": "请在浏览器中登录 GitHub，下载此私有仓库中的构建版本。更新需要手动安装。"
+  "privateBuildUpdateTip": "请在浏览器中登录 GitHub，下载此私有仓库中的构建版本。更新需要手动安装。",
+  "portRoutingOriginal": "沿用原有策略",
+  "portRoutingOriginalHint": "沿用一个订阅的规则和策略组，包括其中的直连规则。更新此订阅时会重新应用多端口配置。",
+  "portRoutingAggregateHint": "从所选的多个订阅中一起匹配节点名。多个关键词用 | 分隔，例如 US|美国。自动选择依据延迟，不代表实际带宽。",
+  "portRoutingFixedHint": "从一个订阅中选择固定节点。节点消失后此端口拒绝连接。",
+  "portRoutingInvalidNodes": "以下节点校验失败：{nodes}。请检查来源配置后重试。"
 }

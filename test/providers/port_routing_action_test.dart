@@ -36,6 +36,7 @@ class _ProbeAction extends PortRoutingAction {
 class _Setup extends SetupAction {
   int applies = 0;
   bool? running;
+  Future<bool> Function()? onApply;
   @override
   void build() {}
   @override
@@ -45,7 +46,7 @@ class _Setup extends SetupAction {
     Future<void> Function()? preloadInvoke,
   }) async {
     applies++;
-    return true;
+    return onApply == null ? true : await onApply!();
   }
 
   @override
@@ -200,6 +201,166 @@ void main() {
     container.read(runTimeProvider.notifier).value =
         DateTime.now().millisecondsSinceEpoch;
   }
+
+  test(
+    'aggregate source ownership and refresh cover every selected subscription',
+    () async {
+      final second = source.copyWith(id: 22, label: 'Second');
+      container.read(profilesProvider.notifier).put(second);
+      final secondFile = File(await appPath.getProfilePath('22'));
+      await secondFile.writeAsString(_old);
+      final before = container.read(portRoutingSettingProvider);
+      container.read(portRoutingSettingProvider.notifier).value = before
+          .copyWith(
+            bindings: [
+              before.bindings.single.copyWith(
+                additionalProfileIds: [22],
+                selection: PortSelection.region,
+                filter: 'US',
+              ),
+            ],
+          );
+      final fragment = await action.prepare(
+        container.read(portRoutingSettingProvider),
+      );
+      expect(
+        fragment.providers.keys,
+        containsAll([portProviderName(11), portProviderName(22)]),
+      );
+      expect(action.owns(22), isTrue);
+      expect(action.references(22), isTrue);
+      await action.refresh(22);
+      verify(
+        () => core.sideLoadExternalProvider(
+          providerName: portProviderName(22),
+          data: any(named: 'data'),
+        ),
+      ).called(1);
+      verify(
+        () => core.changeProxy(
+          const ChangeProxyParams(
+            groupName: 'flclash_ports_group_1',
+            proxyName: '',
+          ),
+        ),
+      ).called(1);
+      expect(setup.applies, 0);
+    },
+  );
+
+  test(
+    'original policy refresh reapplies rules without a storage deadlock',
+    () async {
+      final before = container.read(portRoutingSettingProvider);
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = before.copyWith(
+        bindings: [
+          before.bindings.single.copyWith(selection: PortSelection.original),
+        ],
+      );
+      content =
+          '$_new\nproxy-groups: [{name: Original, type: select, proxies: [US Two]}]\nrules: ["MATCH,Original"]';
+      setup.onApply = () async {
+        final fragment = await action.prepare(
+          container.read(portRoutingSettingProvider),
+        );
+        expect(
+          fragment.config['sub-rules']['flclash_ports_rules_11'],
+          contains('MATCH,[policy:11] Original'),
+        );
+        return true;
+      };
+      await action.refresh(11).timeout(const Duration(seconds: 5));
+      expect(setup.applies, 1);
+      expect(await original.readAsString(), content);
+      verifyNever(
+        () => core.sideLoadExternalProvider(
+          providerName: any(named: 'providerName'),
+          data: any(named: 'data'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'a failed original policy reload restores the previous source and cache',
+    () async {
+      final before = container.read(portRoutingSettingProvider);
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = before.copyWith(
+        bindings: [
+          before.bindings.single.copyWith(selection: PortSelection.original),
+        ],
+      );
+      final cache = await goodCache();
+      final previous = await cache.readAsString();
+      setup.onApply = () async {
+        await action.prepare(container.read(portRoutingSettingProvider));
+        return setup.applies > 1;
+      };
+      await expectLater(
+        action.refresh(11),
+        throwsA(isA<PortRoutingException>()),
+      );
+      expect(await original.readAsString(), _old);
+      expect(await cache.readAsString(), previous);
+      expect(setup.applies, 2);
+    },
+  );
+
+  test(
+    'a thrown reload while editing restores the binding configuration',
+    () async {
+      final before = container.read(portRoutingSettingProvider);
+      setup.onApply = () async {
+        if (setup.applies == 1) throw StateError('load failed');
+        return true;
+      };
+      await expectLater(
+        action.saveBinding(before.bindings.single.copyWith(name: 'Changed')),
+        throwsA(isA<StateError>()),
+      );
+      expect(container.read(portRoutingSettingProvider), before);
+      expect(setup.applies, 2);
+    },
+  );
+
+  test(
+    'a late original-policy update cannot overwrite a replaced source',
+    () async {
+      final before = container.read(portRoutingSettingProvider);
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = before.copyWith(
+        bindings: [
+          before.bindings.single.copyWith(selection: PortSelection.original),
+        ],
+      );
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      setup.onApply = () async {
+        entered.complete();
+        await release.future;
+        return true;
+      };
+      final updating = action.refresh(11);
+      final checked = expectLater(
+        updating,
+        throwsA(isA<PortRoutingException>()),
+      );
+      await entered.future;
+      await original.writeAsString('$_old\nrules: ["MATCH,DIRECT"]');
+      container
+          .read(profilesProvider.notifier)
+          .put(source.copyWith(url: '${source.url}?replacement'));
+      release.complete();
+      await checked;
+      expect(await original.readAsString(), '$_old\nrules: ["MATCH,DIRECT"]');
+      expect(setup.applies, 1);
+    },
+  );
 
   test('ownership query failure replaces an earlier listening state', () async {
     startChecks();

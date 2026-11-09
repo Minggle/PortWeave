@@ -99,7 +99,7 @@ func TestPortRoutingWire(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	ports := make([]int, 3)
+	ports := make([]int, 6)
 	for i := range ports {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
@@ -126,12 +126,19 @@ proxy-groups:
   - {name: flclash_ports_group_1, type: select, use: [flclash_ports_source_11], filter: '^\[ports:11\] US Same$', empty-fallback: REJECT}
   - {name: flclash_ports_group_2, type: select, use: [flclash_ports_source_22], filter: '^\[ports:22\] US Same$', empty-fallback: REJECT}
   - {name: flclash_ports_group_3, type: url-test, use: [flclash_ports_source_11], filter: '(?i)^\[ports:11\] .*(?:us).*$', empty-fallback: REJECT, url: 'http://127.0.0.1:1/health', interval: 300, lazy: true}
+  - {name: aggregate, type: url-test, use: [flclash_ports_source_11, flclash_ports_source_22], filter: '(?i)^\[ports:(11|22)\] .*(?:us).*$', empty-fallback: REJECT, url: 'http://127.0.0.1:1/health', interval: 300, lazy: true}
+sub-rules:
+  policy_11: ['DOMAIN,policy-b.test,flclash_ports_group_2', 'MATCH,flclash_ports_group_1']
+  policy_22: ['MATCH,flclash_ports_group_2']
 listeners:
   - {name: flclash_ports_in_1, type: mixed, listen: 127.0.0.1, port: %d, proxy: flclash_ports_group_1, udp: false, users: []}
   - {name: flclash_ports_in_2, type: mixed, listen: 127.0.0.1, port: %d, proxy: flclash_ports_group_2, udp: false, users: []}
   - {name: flclash_ports_in_3, type: mixed, listen: 127.0.0.1, port: %d, proxy: flclash_ports_group_3, udp: false, users: []}
+  - {name: original_11, type: mixed, listen: 127.0.0.1, port: %d, rule: policy_11, udp: false, users: []}
+  - {name: original_22, type: mixed, listen: 127.0.0.1, port: %d, rule: policy_22, udp: false, users: []}
+  - {name: combined, type: mixed, listen: 127.0.0.1, port: %d, proxy: aggregate, udp: false, users: []}
 rules: ['MATCH,REJECT']
-`, paths[0], paths[1], ports[0], ports[1], ports[2])
+`, paths[0], paths[1], ports[0], ports[1], ports[2], ports[3], ports[4], ports[5])
 	if err := os.WriteFile(runningConfigPath(), []byte(config), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -196,6 +203,22 @@ rules: ['MATCH,REJECT']
 	assertExit(ports[0], "A")
 	assertExit(ports[1], "B")
 	assertExit(ports[2], "A")
+	assertExit(ports[3], "A")
+	assertExit(ports[4], "B")
+	for _, socks := range []bool{false, true} {
+		response, err := client(ports[3], socks).Get("http://policy-b.test/policy")
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		if err != nil || string(body) != "B" {
+			t.Fatalf("original rules were not followed: %q %v", body, err)
+		}
+	}
+	if body, err := request(client(ports[5], false)); err != nil || (body != "A" && body != "B") {
+		t.Fatalf("aggregate returned %q: %v", body, err)
+	}
 	stream, err := client(ports[1], false).Get("http://127.0.0.1:1/stream")
 	if err != nil {
 		t.Fatal(err)
@@ -230,8 +253,21 @@ rules: ['MATCH,REJECT']
 			t.Fatalf("missing fixed/region node at port %d still returned %q; groups: %+v", port, body, handleGetProxies())
 		}
 	}
+	if result := handleChangeProxy(&ChangeProxyParams{GroupName: "aggregate"}); result.Message != "" {
+		t.Fatal(result.Message)
+	}
+	assertExit(ports[5], "B")
 	if err := handleSideLoadExternalProvider(&SideLoadParams{Name: "flclash_ports_source_22", Data: "proxies: []"}); err == nil {
 		t.Fatal("empty provider accepted")
 	}
 	assertExit(ports[1], "B")
+	if err := handleSideLoadExternalProvider(&SideLoadParams{Name: "flclash_ports_source_22", Data: payload(b, "JP Only")}); err != nil {
+		t.Fatal(err)
+	}
+	if result := handleChangeProxy(&ChangeProxyParams{GroupName: "aggregate"}); result.Message != "" {
+		t.Fatal(result.Message)
+	}
+	if body, err := request(client(ports[5], false)); err == nil {
+		t.Fatalf("aggregate without matching nodes did not reject: %q", body)
+	}
 }

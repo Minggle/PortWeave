@@ -1079,7 +1079,7 @@
   "fallbackFilterDomainDesc": "Ces domaines sont résolus directement par Fallback.",
   "portRoutingTitle": "Ports des abonnements",
   "portRoutingMode": "Mode ports dédiés",
-  "portRoutingDescription": "Chaque port local utilise son abonnement. Le proxy système et TUN restent désactivés dans ce mode.",
+  "portRoutingDescription": "Chaque port local utilise les abonnements sélectionnés. Le proxy système et TUN restent désactivés dans ce mode.",
   "portRoutingSafeMode": "Mode sans échec : les réglages restent modifiables, mais aucun port proxy ne s’ouvre.",
   "portRoutingEmpty": "Importez un abonnement, puis ajoutez un port.",
   "portRoutingCopyHint": "Un clic droit permet de copier l’adresse HTTP/SOCKS5, d’actualiser l’abonnement ou de modifier son intervalle.",
@@ -1108,5 +1108,10 @@
   "portRoutingSourceInUse": "Retirez les ports associés avant de supprimer cet abonnement. La configuration dédiée est gérée ici.",
   "portRoutingUpdateFailed": "Échec de l’actualisation. Les derniers nœuds valides sont conservés.",
   "downloadBuilds": "Télécharger les versions",
-  "privateBuildUpdateTip": "Connectez-vous à GitHub dans votre navigateur pour télécharger les versions de ce dépôt privé. Les mises à jour s’installent manuellement."
+  "privateBuildUpdateTip": "Connectez-vous à GitHub dans votre navigateur pour télécharger les versions de ce dépôt privé. Les mises à jour s’installent manuellement.",
+  "portRoutingOriginal": "Utiliser la politique d’origine",
+  "portRoutingOriginalHint": "Utilise les règles et groupes d’un abonnement, y compris ses routes directes. Sa mise à jour réapplique la configuration de l’espace de travail.",
+  "portRoutingAggregateHint": "Recherche les noms de nœuds dans tous les abonnements sélectionnés. Séparez les mots-clés par |, par exemple US|États-Unis. La sélection utilise la latence, pas le débit.",
+  "portRoutingFixedHint": "Choisissez un nœud dans un abonnement. Le port refuse les connexions si ce nœud disparaît.",
+  "portRoutingInvalidNodes": "Échec de validation des nœuds : {nodes}. Vérifiez la configuration source puis réessayez."
 }

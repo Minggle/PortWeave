@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/common/port_routing.dart';
+import 'package:fl_clash/core/core.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/features/form/form.dart';
 import 'package:fl_clash/l10n/l10n.dart';
@@ -15,8 +16,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 String _portRoutingError(AppLocalizations l, Object error) {
+  if (error is CoreMethodException) return l.portRoutingCoreUnavailable;
   if (error is! PortRoutingException) return l.portRoutingUpdateFailed;
   return switch (error.issue) {
+    PortRoutingIssue.invalidNodes => l.portRoutingInvalidNodes(
+      error.nodes.take(8).join(', '),
+    ),
     PortRoutingIssue.invalidPort => l.portRoutingInvalidPort,
     PortRoutingIssue.duplicatePort ||
     PortRoutingIssue.portOccupied => l.portConflictTip,
@@ -74,13 +79,9 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
       );
       return;
     }
-    final result = await showFormSheet<PortBinding>(
+    await showFormSheet<void>(
       context: context,
       builder: (_) => _BindingForm(binding: binding, profiles: profiles),
-    );
-    if (result == null || !mounted) return;
-    await _run(
-      () => ref.read(portRoutingActionProvider.notifier).saveBinding(result),
     );
   }
 
@@ -104,11 +105,11 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
             (state) => state.ports[binding.id],
           ),
         );
-        final profile = ref.watch(
-          profilesProvider.select(
-            (profiles) => profiles.getProfile(binding.profileId),
-          ),
-        );
+        final profiles = ref
+            .watch(profilesProvider)
+            .where((profile) => binding.sourceIds.contains(profile.id))
+            .toList();
+        final profile = profiles.firstOrNull;
         final phase = !active || !binding.enabled
             ? PortBindingPhase.stopped
             : check?.phase;
@@ -138,19 +139,21 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                   Clipboard.setData(ClipboardData(text: binding.socksAddress)),
             ),
             PopupMenuItem(label: l.edit, onPressed: () => _edit(binding)),
-            PopupMenuItem(
-              label: l.portRoutingRefreshSettings,
-              onPressed: () => _refreshOptions(binding.profileId),
-            ),
-            if (profile?.type == ProfileType.url)
+            for (final source in profiles) ...[
               PopupMenuItem(
-                label: l.update,
-                onPressed: () => _run(
-                  () => ref
-                      .read(portRoutingActionProvider.notifier)
-                      .refresh(binding.profileId),
-                ),
+                label: '${l.portRoutingRefreshSettings} · ${source.realLabel}',
+                onPressed: () => _refreshOptions(source.id),
               ),
+              if (source.type == ProfileType.url)
+                PopupMenuItem(
+                  label: '${l.update} · ${source.realLabel}',
+                  onPressed: () => _run(
+                    () => ref
+                        .read(portRoutingActionProvider.notifier)
+                        .refresh(source.id),
+                  ),
+                ),
+            ],
             PopupMenuItem(
               label: l.delete,
               onPressed: () => _run(
@@ -164,10 +167,14 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
             title: Text('${binding.name} · 127.0.0.1:${binding.port}'),
             subtitle: Text(
               [
-                profile?.realLabel ?? l.portRoutingMissingSource,
-                binding.selection == PortSelection.fixed
-                    ? binding.node
-                    : binding.filter,
+                profiles.isEmpty
+                    ? l.portRoutingMissingSource
+                    : profiles.map((p) => p.realLabel).join(' · '),
+                switch (binding.selection) {
+                  PortSelection.original => l.portRoutingOriginal,
+                  PortSelection.fixed => binding.node,
+                  PortSelection.region => binding.filter,
+                },
                 status,
                 if (check?.node != null && active) check!.node!,
                 if (profile?.lastUpdateDate != null)
@@ -303,7 +310,9 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
   late final TextEditingController _name;
   late final TextEditingController _port;
   late final TextEditingController _filter;
-  late int _profileId;
+  late List<int> _profileIds;
+  Map<int, List<String>> _sourceNodes = {};
+  bool _saving = false;
   late PortSelection _selection;
   String _node = '';
   List<String>? _nodes;
@@ -323,8 +332,8 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
       text: (binding?.port ?? _nextPort()).toString(),
     );
     _filter = TextEditingController(text: binding?.filter ?? 'HK|Hong Kong');
-    _profileId = binding?.profileId ?? widget.profiles.first.id;
-    _selection = binding?.selection ?? PortSelection.fixed;
+    _profileIds = binding?.sourceIds.toList() ?? [widget.profiles.first.id];
+    _selection = binding?.selection ?? PortSelection.original;
     _node = binding?.node ?? '';
     unawaited(_loadNodes());
   }
@@ -346,15 +355,23 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
     final load = ++_load;
     setState(() {
       _nodes = null;
+      _sourceNodes = {};
+      _previewTimer?.cancel();
+      _previewRevision++;
+      _preview = (count: 0, sample: []);
       _error = null;
     });
     try {
-      final nodes = await ref
-          .read(portRoutingActionProvider.notifier)
-          .nodeNames(_profileId);
+      final sources = <int, List<String>>{};
+      for (final id in List<int>.of(_profileIds)) {
+        sources[id] = await ref
+            .read(portRoutingActionProvider.notifier)
+            .nodeNames(id);
+      }
       if (!mounted || load != _load) return;
       setState(() {
-        _nodes = nodes;
+        _sourceNodes = sources;
+        _nodes = sources.values.expand((nodes) => nodes).toList();
       });
       _schedulePreview();
     } catch (error) {
@@ -369,7 +386,8 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
   PortBinding _value() => PortBinding(
     id: _id,
     name: _name.text.trim(),
-    profileId: _profileId,
+    profileId: _profileIds.first,
+    additionalProfileIds: _profileIds.skip(1).toList(),
     port: int.tryParse(_port.text) ?? 0,
     enabled: widget.binding?.enabled ?? true,
     selection: _selection,
@@ -377,7 +395,12 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
     filter: _filter.text.trim(),
   );
 
-  void _save() {
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final value = _value();
       validatePortBindings([
@@ -387,13 +410,76 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
             .where((item) => item.id != value.id),
         value,
       ]);
-      if (_nodes == null) return;
-      Navigator.of(context).pop(value);
+      if (_nodes == null) {
+        throw const PortRoutingException(PortRoutingIssue.missingSubscription);
+      }
+      await ref.read(portRoutingActionProvider.notifier).saveBinding(value);
+      if (mounted) Navigator.of(context).pop();
     } catch (error) {
-      setState(
-        () => _error = _portRoutingError(context.appLocalizations, error),
+      commonPrint.log(
+        'port binding save failed: id=$_id strategy=${_selection.name} sources=${_profileIds.length} error=${error is PortRoutingException ? error.issue.name : error.runtimeType}',
+        logLevel: LogLevel.warning,
       );
+      if (mounted) {
+        setState(
+          () => _error = _portRoutingError(context.appLocalizations, error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _chooseSources() async {
+    final selected = _profileIds.toSet();
+    final result = await showFormSheet<List<int>>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, update) => FormPage(
+          title: context.appLocalizations.profiles,
+          onSave: () {
+            if (selected.isNotEmpty) {
+              Navigator.of(sheetContext).pop(selected.toList());
+            }
+          },
+          children: [
+            generateSection(
+              items: [
+                for (final profile in widget.profiles)
+                  ListItem(
+                    title: Text(profile.realLabel),
+                    trailing: Checkbox(
+                      value: selected.contains(profile.id),
+                      onChanged: (value) => update(() {
+                        if (value == true) {
+                          if (_selection != PortSelection.region) {
+                            selected.clear();
+                          }
+                          selected.add(profile.id);
+                        } else if (selected.length > 1) {
+                          selected.remove(profile.id);
+                        }
+                      }),
+                    ),
+                    onTap: () => update(() {
+                      if (_selection != PortSelection.region) selected.clear();
+                      if (!selected.add(profile.id) && selected.length > 1) {
+                        selected.remove(profile.id);
+                      }
+                    }),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _profileIds = result;
+      _node = '';
+    });
+    unawaited(_loadNodes());
   }
 
   Future<void> _chooseNode() async {
@@ -417,11 +503,20 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
     _previewTimer?.cancel();
     final revision = ++_previewRevision;
     _previewTimer = Timer(const Duration(milliseconds: 200), () async {
-      final preview = await compute(_matchingPreview, (_value(), _nodes ?? []));
+      final preview = await compute(_matchingPreview, (_value(), _sourceNodes));
       if (mounted && revision == _previewRevision) {
         setState(() => _preview = preview);
       }
     });
+  }
+
+  String _previewLabel(String sample) {
+    for (final profile in widget.profiles) {
+      if (sample.startsWith(portNodePrefix(profile.id))) {
+        return '${profile.realLabel} · ${sample.substring(portNodePrefix(profile.id).length)}';
+      }
+    }
+    return sample;
   }
 
   @override
@@ -436,87 +531,104 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
   @override
   Widget build(BuildContext context) {
     final l = context.appLocalizations;
-    return FormPage(
-      title: widget.binding == null ? l.add : l.edit,
-      onSave: _save,
-      error: _error,
-      children: [
-        generateSection(
-          items: [
-            FormRow(
-              title: l.label,
-              trailing: FormRowTextField(
-                controller: _name,
-                hintText: l.required,
-              ),
-            ),
-            ListItem<int>.options(
-              title: Text(l.profiles),
-              value: _profileId,
-              options: widget.profiles.map((profile) => profile.id).toList(),
-              textBuilder: (id) => widget.profiles
-                  .firstWhere((profile) => profile.id == id)
-                  .realLabel,
-              onChanged: (id) {
-                setState(() {
-                  _profileId = id;
-                  _node = '';
-                });
-                unawaited(_loadNodes());
-              },
-            ),
-            FormRow(
-              title: l.port,
-              trailing: FormRowTextField(
-                controller: _port,
-                keyboardType: TextInputType.number,
-                inputFormatters: TextInputLimits.digitsOnly(
-                  TextInputLimits.port,
+    return PopScope(
+      canPop: !_saving,
+      child: AbsorbPointer(
+        absorbing: _saving,
+        child: FormPage(
+          title: widget.binding == null ? l.add : l.edit,
+          onSave: _save,
+          error: _error,
+          saving: _saving,
+          children: [
+            generateSection(
+              items: [
+                FormRow(
+                  title: l.label,
+                  trailing: FormRowTextField(
+                    controller: _name,
+                    hintText: l.required,
+                  ),
                 ),
-              ),
-            ),
-            ListItem<PortSelection>.options(
-              title: Text(l.portRoutingStrategy),
-              value: _selection,
-              options: PortSelection.values,
-              textBuilder: (value) => value == PortSelection.fixed
-                  ? l.portRoutingFixed
-                  : l.portRoutingRegion,
-              onChanged: (value) {
-                setState(() => _selection = value);
-                _schedulePreview();
-              },
-            ),
-            if (_selection == PortSelection.fixed)
-              FormRow(
-                title: l.portRoutingFixed,
-                trailing: Text(_node.isEmpty ? l.required : _node),
-                onPressed: _nodes == null ? null : _chooseNode,
-              )
-            else
-              FormRow(
-                title: l.portRoutingRegion,
-                trailing: FormRowTextField(
-                  controller: _filter,
-                  autocorrect: false,
-                  onChanged: (_) => _schedulePreview(),
+                FormRow(
+                  title: l.profiles,
+                  trailing: Text(
+                    widget.profiles
+                        .where((p) => _profileIds.contains(p.id))
+                        .map((p) => p.realLabel)
+                        .join(' · '),
+                    textAlign: TextAlign.end,
+                  ),
+                  onPressed: _saving ? null : _chooseSources,
                 ),
+                FormRow(
+                  title: l.port,
+                  trailing: FormRowTextField(
+                    controller: _port,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: TextInputLimits.digitsOnly(
+                      TextInputLimits.port,
+                    ),
+                  ),
+                ),
+                ListItem<PortSelection>.options(
+                  title: Text(l.portRoutingStrategy),
+                  value: _selection,
+                  options: PortSelection.values,
+                  textBuilder: (value) => switch (value) {
+                    PortSelection.original => l.portRoutingOriginal,
+                    PortSelection.fixed => l.portRoutingFixed,
+                    PortSelection.region => l.portRoutingRegion,
+                  },
+                  onChanged: (value) {
+                    if (_saving) return;
+                    setState(() {
+                      _selection = value;
+                      if (value != PortSelection.region) {
+                        _profileIds = [_profileIds.first];
+                      }
+                    });
+                    unawaited(_loadNodes());
+                  },
+                ),
+                if (_selection == PortSelection.fixed)
+                  FormRow(
+                    title: l.portRoutingFixed,
+                    trailing: Text(_node.isEmpty ? l.required : _node),
+                    onPressed: _nodes == null ? null : _chooseNode,
+                  )
+                else if (_selection == PortSelection.region)
+                  FormRow(
+                    title: l.portRoutingRegion,
+                    trailing: FormRowTextField(
+                      controller: _filter,
+                      autocorrect: false,
+                      onChanged: (_) => _schedulePreview(),
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                _selection == PortSelection.original
+                    ? l.portRoutingOriginalHint
+                    : _selection == PortSelection.region
+                    ? l.portRoutingAggregateHint
+                    : l.portRoutingFixedHint,
               ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                _nodes == null
+                    ? l.portRoutingChecking
+                    : '${l.portRoutingMatches}: ${_preview.count}\n${_preview.sample.map(_previewLabel).join('\n')}',
+              ),
+            ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(l.portRoutingRegionHint),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            _nodes == null
-                ? l.portRoutingChecking
-                : '${l.portRoutingMatches}: ${_preview.count}\n${_preview.sample.join('\n')}',
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -591,8 +703,12 @@ class _RefreshFormState extends State<_RefreshForm> {
 }
 
 ({int count, List<String> sample}) _matchingPreview(
-  (PortBinding, List<String>) input,
+  (PortBinding, Map<int, List<String>>) input,
 ) {
-  final matches = matchingPortNodes(input.$1, input.$2);
+  final matches = [
+    for (final entry in input.$2.entries)
+      for (final name in matchingPortNodes(input.$1, entry.value))
+        '${portNodePrefix(entry.key)}$name',
+  ];
   return (count: matches.length, sample: matches.take(12).toList());
 }

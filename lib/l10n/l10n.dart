@@ -9093,10 +9093,10 @@ class AppLocalizations {
     );
   }
 
-  /// `Each local port uses its own subscription. System proxy and TUN stay off in this mode.`
+  /// `Each local port uses its selected subscriptions. System proxy and TUN stay off in this mode.`
   String get portRoutingDescription {
     return Intl.message(
-      'Each local port uses its own subscription. System proxy and TUN stay off in this mode.',
+      'Each local port uses its selected subscriptions. System proxy and TUN stay off in this mode.',
       name: 'portRoutingDescription',
       desc: '',
       args: [],
@@ -9390,6 +9390,56 @@ class AppLocalizations {
       name: 'privateBuildUpdateTip',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Use original policy`
+  String get portRoutingOriginal {
+    return Intl.message(
+      'Use original policy',
+      name: 'portRoutingOriginal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Uses one subscription’s original rules and proxy groups, including its direct routes. Updating this subscription reapplies the workspace configuration.`
+  String get portRoutingOriginalHint {
+    return Intl.message(
+      'Uses one subscription’s original rules and proxy groups, including its direct routes. Updating this subscription reapplies the workspace configuration.',
+      name: 'portRoutingOriginalHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Match node names across all selected subscriptions with keywords separated by |, for example US|United States. Automatic selection uses latency, not bandwidth.`
+  String get portRoutingAggregateHint {
+    return Intl.message(
+      'Match node names across all selected subscriptions with keywords separated by |, for example US|United States. Automatic selection uses latency, not bandwidth.',
+      name: 'portRoutingAggregateHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose a node from one subscription. The port rejects traffic if that node disappears.`
+  String get portRoutingFixedHint {
+    return Intl.message(
+      'Choose a node from one subscription. The port rejects traffic if that node disappears.',
+      name: 'portRoutingFixedHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `These nodes could not be validated: {nodes}. Check the source configuration and try again.`
+  String portRoutingInvalidNodes(Object nodes) {
+    return Intl.message(
+      'These nodes could not be validated: $nodes. Check the source configuration and try again.',
+      name: 'portRoutingInvalidNodes',
+      desc: '',
+      args: [nodes],
     );
   }
 }

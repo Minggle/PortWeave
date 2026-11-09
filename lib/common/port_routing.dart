@@ -3,6 +3,8 @@ import 'package:fl_clash/models/clash_config.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:yaml/yaml.dart';
 
+part 'port_policy.dart';
+
 enum PortRoutingIssue {
   invalidPort,
   duplicatePort,
@@ -17,12 +19,14 @@ enum PortRoutingIssue {
   staleUpdate,
   sourceInUse,
   updateFailed,
+  invalidNodes,
 }
 
 class PortRoutingException implements Exception {
   final PortRoutingIssue issue;
+  final List<String> nodes;
 
-  const PortRoutingException(this.issue);
+  const PortRoutingException(this.issue, {this.nodes = const []});
 
   @override
   String toString() => 'PortRoutingException(${issue.name})';
@@ -45,6 +49,11 @@ PatchClashConfig portRoutingPatch(PatchClashConfig saved) => saved.copyWith(
 );
 
 List<Map<String, dynamic>> portSubscriptionNodes(String source) {
+  return (portSubscriptionDocument(source)['proxies'] as List)
+      .cast<Map<String, dynamic>>();
+}
+
+Map<String, dynamic> portSubscriptionDocument(String source) {
   final Object? document;
   try {
     document = loadYaml(source);
@@ -61,8 +70,44 @@ List<Map<String, dynamic>> portSubscriptionNodes(String source) {
     throw const PortRoutingException(PortRoutingIssue.emptySubscription);
   }
   final names = <String>{};
-  return [for (final node in nodes) _portNode(node, names)];
+  return {
+    'proxies': [for (final node in nodes) _portNode(node, names)],
+    for (final key in [
+      'proxy-groups',
+      'rules',
+      'sub-rules',
+      'rule-providers',
+      'mode',
+    ])
+      if (document[key] != null) key: _plainPortValue(document[key]),
+  };
 }
+
+Object? _plainPortValue(Object? value, {bool shortId = false}) =>
+    switch (value) {
+      YamlMap() => {
+        for (final entry in value.nodes.entries)
+          (entry.key as YamlNode).value.toString(): _plainPortValue(
+            entry.value,
+            shortId: (entry.key as YamlNode).value == 'short-id',
+          ),
+      },
+      YamlList() => [
+        for (final node in value.nodes) _plainPortValue(node, shortId: shortId),
+      ],
+      YamlScalar()
+          when shortId &&
+              value.value is num &&
+              RegExp(r'^[0-9a-fA-F]+$').hasMatch(value.span.text) =>
+        value.span.text,
+      YamlScalar() => value.value,
+      Map() => value.map(
+        (key, value) => MapEntry(key.toString(), _plainPortValue(value)),
+      ),
+      List() =>
+        value.map((item) => _plainPortValue(item, shortId: shortId)).toList(),
+      _ => value,
+    };
 
 Map<String, dynamic> _portNode(Object? value, Set<String> names) {
   if (value is! Map ||
@@ -83,7 +128,7 @@ Map<String, dynamic> _portNode(Object? value, Set<String> names) {
   if (!names.add(value['name'] as String)) {
     throw const PortRoutingException(PortRoutingIssue.duplicateNode);
   }
-  return Map<String, dynamic>.from(value);
+  return (_plainPortValue(value) as Map).cast<String, dynamic>();
 }
 
 void validatePortBindings(List<PortBinding> bindings) {
@@ -99,7 +144,10 @@ void validatePortBindings(List<PortBinding> bindings) {
     if (!ids.add(binding.id) ||
         binding.name.trim().isEmpty ||
         binding.id <= 0 ||
-        binding.profileId <= 0 ||
+        binding.sourceIds.any((id) => id <= 0) ||
+        binding.additionalProfileIds.length + 1 != binding.sourceIds.length ||
+        binding.selection != PortSelection.region &&
+            binding.sourceIds.length != 1 ||
         binding.selection == PortSelection.fixed && binding.node.isEmpty) {
       throw const PortRoutingException(PortRoutingIssue.invalidBinding);
     }
@@ -112,6 +160,7 @@ void validatePortBindings(List<PortBinding> bindings) {
 }
 
 List<String> matchingPortNodes(PortBinding binding, Iterable<String> names) {
+  if (binding.selection == PortSelection.original) return names.toList();
   if (binding.selection == PortSelection.fixed) {
     return names.where((name) => name == binding.node).toList();
   }
@@ -137,17 +186,24 @@ PortRoutingFragment compilePortRouting({
   required List<PortBinding> bindings,
   required Map<int, String> sourcePaths,
   required String testUrl,
+  Map<int, Map<String, dynamic>> sourceDocuments = const {},
+  Map<int, Map<String, String>> selectedMaps = const {},
 }) {
   validatePortBindings(bindings);
   final active = bindings.where((binding) => binding.enabled).toList();
   for (final binding in active) {
-    if (!sourcePaths.containsKey(binding.profileId)) {
+    if (!binding.sourceIds.every(sourcePaths.containsKey)) {
       throw const PortRoutingException(PortRoutingIssue.missingSubscription);
     }
   }
+  final original = _compilePortPolicies(
+    bindings: active,
+    sources: sourceDocuments,
+    selectedMaps: selectedMaps,
+  );
   return (
     providers: {
-      for (final id in active.map((binding) => binding.profileId).toSet())
+      for (final id in active.expand((binding) => binding.sourceIds).toSet())
         portProviderName(id): {
           'type': 'file',
           'path': sourcePaths[id],
@@ -162,26 +218,29 @@ PortRoutingFragment compilePortRouting({
     },
     config: {
       'rules': ['MATCH,REJECT'],
+      ...original,
       'proxy-groups': [
+        ...?original['proxy-groups'] as List?,
         for (final binding in active)
-          {
-            'name': binding.groupName,
-            'type': binding.selection == PortSelection.fixed
-                ? 'select'
-                : 'url-test',
-            'use': [portProviderName(binding.profileId)],
-            'filter': binding.selection == PortSelection.fixed
-                ? '^${_portPattern('${portNodePrefix(binding.profileId)}${binding.node}')}\$'
-                : '(?i)^${_portPattern(portNodePrefix(binding.profileId))}.*(?:${_regionWords(binding.filter).map(_portPattern).join('|')}).*\$',
-            'empty-fallback': 'REJECT',
-            'hidden': true,
-            if (binding.selection == PortSelection.region) ...{
-              'url': testUrl,
-              'interval': 300,
-              'tolerance': 50,
-              'lazy': true,
+          if (binding.selection != PortSelection.original)
+            {
+              'name': binding.groupName,
+              'type': binding.selection == PortSelection.fixed
+                  ? 'select'
+                  : 'url-test',
+              'use': [for (final id in binding.sourceIds) portProviderName(id)],
+              'filter': binding.selection == PortSelection.fixed
+                  ? '^${_portPattern('${portNodePrefix(binding.profileId)}${binding.node}')}\$'
+                  : '(?i)^(?:${binding.sourceIds.map((id) => _portPattern(portNodePrefix(id))).join('|')}).*(?:${_regionWords(binding.filter).map(_portPattern).join('|')}).*\$',
+              'empty-fallback': 'REJECT',
+              'hidden': true,
+              if (binding.selection == PortSelection.region) ...{
+                'url': testUrl,
+                'interval': 300,
+                'tolerance': 50,
+                'lazy': true,
+              },
             },
-          },
       ],
       'listeners': [
         for (final binding in active)
@@ -192,7 +251,10 @@ PortRoutingFragment compilePortRouting({
             'port': binding.port,
             'udp': false,
             'users': <Map<String, String>>[],
-            'proxy': binding.groupName,
+            if (binding.selection == PortSelection.original)
+              'rule': binding.ruleName
+            else
+              'proxy': binding.groupName,
           },
       ],
     },
