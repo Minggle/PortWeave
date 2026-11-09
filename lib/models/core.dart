@@ -69,7 +69,10 @@ abstract class UpdateParams with _$UpdateParams {
     @JsonKey(name: 'log-level') required LogLevel logLevel,
     bool? ipv6,
     @JsonKey(name: 'tcp-concurrent') bool? tcpConcurrent,
-    @JsonKey(name: 'external-controller')
+    @JsonKey(
+      name: 'external-controller',
+      fromJson: ExternalControllerStatus.fromJson,
+    )
     required ExternalControllerStatus externalController,
     @Default('') String secret,
     @JsonKey(name: 'unified-delay') bool? unifiedDelay,

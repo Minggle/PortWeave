@@ -919,12 +919,11 @@ _PatchClashConfig _$PatchClashConfigFromJson(Map<String, dynamic> json) =>
           $enumDecodeNullable(_$GeodataLoaderEnumMap, json['geodata-loader']) ??
           GeodataLoader.memconservative,
       globalUa: json['global-ua'] as String?,
-      externalController:
-          $enumDecodeNullable(
-            _$ExternalControllerStatusEnumMap,
-            json['external-controller'],
-          ) ??
-          ExternalControllerStatus.close,
+      externalController: json['external-controller'] == null
+          ? ExternalControllerStatus.close
+          : ExternalControllerStatus.fromJson(
+              json['external-controller'] as String,
+            ),
       secret: json['secret'] as String? ?? '',
       hosts:
           (json['hosts'] as Map<String, dynamic>?)?.map(
@@ -1020,7 +1019,7 @@ const _$GeodataLoaderEnumMap = {
 
 const _$ExternalControllerStatusEnumMap = {
   ExternalControllerStatus.close: '',
-  ExternalControllerStatus.open: '127.0.0.1:9090',
+  ExternalControllerStatus.open: '127.0.0.1:9091',
 };
 
 const _$GeneralOverrideKeyEnumMap = {

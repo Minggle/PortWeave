@@ -335,7 +335,7 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
         .bindings
         .map((item) => item.port)
         .toSet();
-    var port = 18081;
+    var port = 18082;
     while (ports.contains(port)) {
       port++;
     }

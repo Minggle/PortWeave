@@ -582,6 +582,14 @@ void main() {
       const config = PatchClashConfig();
 
       expect(config.mixedPort, defaultMixedPort);
+      expect(config.mixedPort, 7891);
+      expect([
+        config.port,
+        config.socksPort,
+        config.redirPort,
+        config.tproxyPort,
+      ], everyElement(0));
+      expect(config.dns.listen, isEmpty);
       expect(config.allowLan, false);
       expect(config.mode, Mode.rule);
       expect(config.externalController, ExternalControllerStatus.close);
@@ -615,6 +623,16 @@ void main() {
       expect(restored.geodataLoader, GeodataLoader.memconservative);
       expect(restored.interfaceNameMode, InterfaceNameMode.custom);
       expect(restored.interfaceName, 'eth0');
+    });
+
+    test('an upstream controller setting imports onto the new local port', () {
+      final restored = PatchClashConfig.fromJson({
+        'external-controller': '127.0.0.1:9090',
+      });
+
+      expect(restored.externalController, ExternalControllerStatus.open);
+      expect(restored.externalController.value, '127.0.0.1:9091');
+      expect(restored.toJson()['external-controller'], '127.0.0.1:9091');
     });
 
     test('the controller secret survives round-trip and defaults to none', () {

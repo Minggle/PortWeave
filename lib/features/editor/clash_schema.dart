@@ -127,7 +127,7 @@ const ruleTypes = {
   'SRC-IP-SUFFIX': '192.168.1.1/24',
   'DST-PORT': '443',
   'SRC-PORT': '7777',
-  'IN-PORT': '7890',
+  'IN-PORT': '7891',
   'IN-TYPE': 'SOCKS/HTTP',
   'IN-USER': 'user',
   'IN-NAME': 'listener',
@@ -1385,7 +1385,7 @@ const _rules = YamlSchema.list(YamlSchema.of(YamlScalar.rule));
 
 const _dns = YamlSchema.map({
   'enable': _bool,
-  'listen': YamlSchema.scalar(['0.0.0.0:1053']),
+  'listen': YamlSchema.scalar(['0.0.0.0:1054']),
   'listen-routing-mark': _str,
   'ipv6': _bool,
   'ipv6-timeout': _str,
@@ -1927,7 +1927,7 @@ const clashConfigSchema = YamlSchema.map({
   'interface-name': _str,
   'routing-mark': _str,
   'etag-support': _bool,
-  'external-controller': YamlSchema.scalar(['127.0.0.1:9090']),
+  'external-controller': YamlSchema.scalar(['127.0.0.1:9091']),
   'external-controller-routing-mark': _str,
   'external-controller-cors': YamlSchema.map({
     'allow-origins': _strList,

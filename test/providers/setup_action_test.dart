@@ -1287,7 +1287,7 @@ void main() {
 
         expect(succeeded, isTrue);
         expect(pushedConfig, contains('external-controller: ""'));
-        expect(pushedConfig, isNot(contains('9090')));
+        expect(pushedConfig, isNot(contains('9091')));
       },
     );
 

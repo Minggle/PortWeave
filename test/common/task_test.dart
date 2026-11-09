@@ -522,7 +522,7 @@ void main() {
           secret: 'from-the-app',
         ),
       );
-      expect(open['external-controller'], '127.0.0.1:9090');
+      expect(open['external-controller'], '127.0.0.1:9091');
       expect(open['secret'], 'from-the-app');
 
       final closed = await build(const PatchClashConfig());
@@ -607,7 +607,7 @@ void main() {
           expect(config['dns']['listen'], '0.0.0.0:53');
           expect(config['ntp']['write-to-system'], true);
         }
-        expect(config['external-controller'], safeMode ? '' : '127.0.0.1:9090');
+        expect(config['external-controller'], safeMode ? '' : '127.0.0.1:9091');
       }
     },
   );

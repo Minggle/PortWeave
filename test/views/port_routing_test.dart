@@ -144,6 +144,15 @@ void main() {
     expect(updated.id, first.id);
     expect(updated.name, 'Browser US');
     expect(updated.port, 18083);
+    await tester.tap(find.byTooltip('Add'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextFormField>(find.byType(TextFormField).at(1))
+          .controller!
+          .text,
+      '18084',
+    );
     expect(tester.takeException(), isNull);
   });
   testWidgets('empty view offers import guidance and safe-mode status', (

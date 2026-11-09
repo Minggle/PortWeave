@@ -81,9 +81,8 @@ _UpdateParams _$UpdateParamsFromJson(Map<String, dynamic> json) =>
       logLevel: $enumDecode(_$LogLevelEnumMap, json['log-level']),
       ipv6: json['ipv6'] as bool?,
       tcpConcurrent: json['tcp-concurrent'] as bool?,
-      externalController: $enumDecode(
-        _$ExternalControllerStatusEnumMap,
-        json['external-controller'],
+      externalController: ExternalControllerStatus.fromJson(
+        json['external-controller'] as String,
       ),
       secret: json['secret'] as String? ?? '',
       unifiedDelay: json['unified-delay'] as bool?,
@@ -144,7 +143,7 @@ const _$LogLevelEnumMap = {
 
 const _$ExternalControllerStatusEnumMap = {
   ExternalControllerStatus.close: '',
-  ExternalControllerStatus.open: '127.0.0.1:9090',
+  ExternalControllerStatus.open: '127.0.0.1:9091',
 };
 
 _MitmCertificate _$MitmCertificateFromJson(Map<String, dynamic> json) =>

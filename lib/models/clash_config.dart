@@ -41,7 +41,7 @@ const defaultGeoXUrl = {
       'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat',
 };
 
-const defaultMixedPort = 7890;
+const defaultMixedPort = 7891;
 const defaultKeepAliveInterval = 30;
 const defaultTunMtu = 9000;
 const minTunMtu = 1280;
@@ -2180,7 +2180,10 @@ abstract class PatchClashConfig with _$PatchClashConfig {
     GeodataLoader geodataLoader,
     @JsonKey(name: 'global-ua') String? globalUa,
     @Default(ExternalControllerStatus.close)
-    @JsonKey(name: 'external-controller')
+    @JsonKey(
+      name: 'external-controller',
+      fromJson: ExternalControllerStatus.fromJson,
+    )
     ExternalControllerStatus externalController,
     @Default('') String secret,
     @Default({}) Map<String, String> hosts,

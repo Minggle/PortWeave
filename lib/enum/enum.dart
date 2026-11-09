@@ -375,12 +375,17 @@ enum GeneralOverrideKey with OverrideKey {
 enum ExternalControllerStatus {
   @JsonValue('')
   close(''),
-  @JsonValue('127.0.0.1:9090')
-  open('127.0.0.1:9090');
+  @JsonValue('127.0.0.1:9091')
+  open('127.0.0.1:9091');
 
   final String value;
 
   const ExternalControllerStatus(this.value);
+
+  static ExternalControllerStatus fromJson(String value) {
+    if (value == '127.0.0.1:9090') return open;
+    return values.firstWhere((status) => status.value == value);
+  }
 }
 
 enum KeyboardModifier {

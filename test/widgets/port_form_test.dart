@@ -157,4 +157,28 @@ void main() {
     expect(config.redirPort, 0);
     expect(config.tproxyPort, 0);
   });
+
+  testWidgets('reset uses 7891 and keeps optional listeners disabled', (
+    tester,
+  ) async {
+    final container = await _openPortForm(tester);
+    container
+        .read(patchClashConfigProvider.notifier)
+        .update((state) => state.copyWith(mixedPort: 8899, port: 8898));
+
+    await tester.tap(find.text('Reset'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset').last);
+    await tester.pumpAndSettle();
+
+    final config = container.read(patchClashConfigProvider);
+    expect(config.mixedPort, 7891);
+    expect([
+      config.port,
+      config.socksPort,
+      config.redirPort,
+      config.tproxyPort,
+    ], everyElement(0));
+    expect(_fields, findsNothing);
+  });
 }
