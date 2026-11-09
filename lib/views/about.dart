@@ -171,7 +171,7 @@ class _AboutHero extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(_logoInset),
                 child: Image.asset(
-                  'assets/images/icon.png',
+                  appIconAsset,
                   width: _logoSize - _logoInset * 2,
                   height: _logoSize - _logoInset * 2,
                 ),

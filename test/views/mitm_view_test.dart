@@ -200,7 +200,10 @@ void main() {
     await pumpView(tester);
 
     await toggleEnable(tester);
-    expect(find.text(currentAppLocalizations.mitmEnableTip), findsOneWidget);
+    expect(
+      find.text(currentAppLocalizations.mitmEnableTip(appName)),
+      findsOneWidget,
+    );
     await tester.tap(button(currentAppLocalizations.cancel));
     await tester.pumpAndSettle();
     expect(saved().enable, isFalse);
@@ -253,7 +256,10 @@ void main() {
     await toggleEnable(tester);
 
     expect(saved().enable, isFalse);
-    expect(find.text(currentAppLocalizations.mitmEnableTip), findsNothing);
+    expect(
+      find.text(currentAppLocalizations.mitmEnableTip(appName)),
+      findsNothing,
+    );
   });
 
   Finder captureSwitch() => find.descendant(

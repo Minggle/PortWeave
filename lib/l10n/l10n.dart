@@ -725,23 +725,23 @@ class AppLocalizations {
     );
   }
 
-  /// `Receiving a link from your phone needs the Nearby devices permission, which lets FlClash reach the local network. Turn it on in the app's settings.`
-  String get sendFromPhonePermissionDenied {
+  /// `Receiving a link from your phone needs the Nearby devices permission, which lets {appName} reach the local network. Turn it on in the app's settings.`
+  String sendFromPhonePermissionDenied(Object appName) {
     return Intl.message(
-      'Receiving a link from your phone needs the Nearby devices permission, which lets FlClash reach the local network. Turn it on in the app\'s settings.',
+      'Receiving a link from your phone needs the Nearby devices permission, which lets $appName reach the local network. Turn it on in the app\'s settings.',
       name: 'sendFromPhonePermissionDenied',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
-  /// `Send a link to FlClash`
-  String get sendFromPhonePageTitle {
+  /// `Send a link to {appName}`
+  String sendFromPhonePageTitle(Object appName) {
     return Intl.message(
-      'Send a link to FlClash',
+      'Send a link to $appName',
       name: 'sendFromPhonePageTitle',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
@@ -780,13 +780,13 @@ class AppLocalizations {
     );
   }
 
-  /// `Scan with FlClash on another device to import this profile.`
-  String get shareQrcodeTip {
+  /// `Scan with {appName} on another device to import this profile.`
+  String shareQrcodeTip(Object appName) {
     return Intl.message(
-      'Scan with FlClash on another device to import this profile.',
+      'Scan with $appName on another device to import this profile.',
       name: 'shareQrcodeTip',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
@@ -2331,13 +2331,13 @@ class AppLocalizations {
     return Intl.message('Disclaimer', name: 'disclaimer', desc: '', args: []);
   }
 
-  /// `Before using FlClash ("the Software"), please read this statement carefully and make sure you understand it. Tapping "Agree" means you have read and understood what follows. If you do not want to continue, tap "Exit".`
-  String get disclaimerDesc {
+  /// `Before using {appName} ("the Software"), please read this statement carefully and make sure you understand it. Tapping "Agree" means you have read and understood what follows. If you do not want to continue, tap "Exit".`
+  String disclaimerDesc(Object appName) {
     return Intl.message(
-      'Before using FlClash ("the Software"), please read this statement carefully and make sure you understand it. Tapping "Agree" means you have read and understood what follows. If you do not want to continue, tap "Exit".',
+      'Before using $appName ("the Software"), please read this statement carefully and make sure you understand it. Tapping "Agree" means you have read and understood what follows. If you do not want to continue, tap "Exit".',
       name: 'disclaimerDesc',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
@@ -4646,13 +4646,13 @@ class AppLocalizations {
     );
   }
 
-  /// `Helper service unavailable; TUN mode cannot be enabled. Reinstall FlClash to restore it.`
-  String get helperCorruptTip {
+  /// `Helper service unavailable; TUN mode cannot be enabled. Reinstall {appName} to restore it.`
+  String helperCorruptTip(Object appName) {
     return Intl.message(
-      'Helper service unavailable; TUN mode cannot be enabled. Reinstall FlClash to restore it.',
+      'Helper service unavailable; TUN mode cannot be enabled. Reinstall $appName to restore it.',
       name: 'helperCorruptTip',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
@@ -6694,13 +6694,13 @@ class AppLocalizations {
     );
   }
 
-  /// `FlClash ran into an error while starting and can't continue. Copy the details to report the problem. If it keeps happening, clearing the data usually lets the app start again.`
-  String get initFailedTip {
+  /// `{appName} ran into an error while starting and can't continue. Copy the details to report the problem. If it keeps happening, clearing the data usually lets the app start again.`
+  String initFailedTip(Object appName) {
     return Intl.message(
-      'FlClash ran into an error while starting and can\'t continue. Copy the details to report the problem. If it keeps happening, clearing the data usually lets the app start again.',
+      '$appName ran into an error while starting and can\'t continue. Copy the details to report the problem. If it keeps happening, clearing the data usually lets the app start again.',
       name: 'initFailedTip',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
@@ -8133,13 +8133,13 @@ class AppLocalizations {
     );
   }
 
-  /// `FlClash will be able to read everything sent to the decrypted hosts, cookies and passwords included. Turn this on only for hosts you mean to rewrite.`
-  String get mitmEnableTip {
+  /// `{appName} will be able to read everything sent to the decrypted hosts, cookies and passwords included. Turn this on only for hosts you mean to rewrite.`
+  String mitmEnableTip(Object appName) {
     return Intl.message(
-      'FlClash will be able to read everything sent to the decrypted hosts, cookies and passwords included. Turn this on only for hosts you mean to rewrite.',
+      '$appName will be able to read everything sent to the decrypted hosts, cookies and passwords included. Turn this on only for hosts you mean to rewrite.',
       name: 'mitmEnableTip',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
@@ -8168,13 +8168,13 @@ class AppLocalizations {
     );
   }
 
-  /// `The new certificate replaces the current one, which FlClash takes out of this device's trusted roots where it can. Every other device that trusts the current one has to install the new one.`
-  String get regenerateCertificateTip {
+  /// `The new certificate replaces the current one, which {appName} takes out of this device's trusted roots where it can. Every other device that trusts the current one has to install the new one.`
+  String regenerateCertificateTip(Object appName) {
     return Intl.message(
-      'The new certificate replaces the current one, which FlClash takes out of this device\'s trusted roots where it can. Every other device that trusts the current one has to install the new one.',
+      'The new certificate replaces the current one, which $appName takes out of this device\'s trusted roots where it can. Every other device that trusts the current one has to install the new one.',
       name: 'regenerateCertificateTip',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 
@@ -8423,13 +8423,13 @@ class AppLocalizations {
     );
   }
 
-  /// `Add {host} to the hostname list? FlClash can then read what is sent to it, cookies and passwords included.`
-  String mitmDecryptHostTip(Object host) {
+  /// `Add {host} to the hostname list? {appName} can then read what is sent to it, cookies and passwords included.`
+  String mitmDecryptHostTip(Object host, Object appName) {
     return Intl.message(
-      'Add $host to the hostname list? FlClash can then read what is sent to it, cookies and passwords included.',
+      'Add $host to the hostname list? $appName can then read what is sent to it, cookies and passwords included.',
       name: 'mitmDecryptHostTip',
       desc: '',
-      args: [host],
+      args: [host, appName],
     );
   }
 
@@ -8943,13 +8943,13 @@ class AppLocalizations {
     );
   }
 
-  /// `FlClash closes to install the update and opens again when it is done.`
-  String get updateRestartTip {
+  /// `{appName} closes to install the update and opens again when it is done.`
+  String updateRestartTip(Object appName) {
     return Intl.message(
-      'FlClash closes to install the update and opens again when it is done.',
+      '$appName closes to install the update and opens again when it is done.',
       name: 'updateRestartTip',
       desc: '',
-      args: [],
+      args: [appName],
     );
   }
 

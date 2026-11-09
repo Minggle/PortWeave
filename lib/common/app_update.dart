@@ -56,7 +56,8 @@ String? selfUpdateAssetSuffix(Abi abi, {required bool windowsInstalled}) {
 
 String releaseAssetName(String tag, String suffix) {
   final version = tag.startsWith('v') ? tag.substring(1) : tag;
-  return '$appName-$version-$suffix';
+  final name = suffix.startsWith('macos-') ? 'PortWeave' : 'FlClash';
+  return '$name-$version-$suffix';
 }
 
 Uri releaseAssetUri(String tag, String name) {

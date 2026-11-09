@@ -17,7 +17,7 @@ A multi-platform proxy client based on ClashMeta. Simple to use, open source and
 
 </div>
 
-> **Minggle fork — subscription ports:** assign different subscriptions to different local proxy ports. The first release targets Windows x64; macOS ARM64 and Intel development builds and validation are tracked in the [Mac development plan](MACOS_DEVELOPMENT.md). See the [first-release guide](RELEASE_PORTS.md), [development notes](PORT_ROUTING.md), and [downloads](https://github.com/Minggle/FlClash/releases). The upstream project information follows below.
+> **Minggle fork — subscription ports:** assign different subscriptions to different local proxy ports. The Mac edition is **PortWeave**, with its own icon, bundle identifier and data directory so it can be installed alongside FlClash. macOS ARM64 and Intel builds and validation are tracked in the [Mac development plan](MACOS_DEVELOPMENT.md). See the [first-release guide](RELEASE_PORTS.md), [development notes](PORT_ROUTING.md), and [downloads](https://github.com/Minggle/FlClash/releases). The upstream project information follows below.
 
 <p align="center">
   <picture>

@@ -216,7 +216,7 @@ class _InitErrorScreenState extends State<InitErrorScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                appLocalizations.initFailedTip,
+                                appLocalizations.initFailedTip(appName),
                                 style: AppTextStyle.subheadline
                                     .of(context)
                                     .copyWith(

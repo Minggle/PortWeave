@@ -49,9 +49,12 @@ class AppTray implements TrayPort {
     if (isWindows) {
       return 'assets/images/tray/windows';
     }
-    return _isTemplate(monochrome)
-        ? 'assets/images/tray/macos'
-        : 'assets/images/tray/unix';
+    if (isMacOS) {
+      return monochrome
+          ? 'assets/images/portweave/tray/monochrome'
+          : 'assets/images/portweave/tray/color';
+    }
+    return 'assets/images/tray/unix';
   }
 
   String getTrayIcon({

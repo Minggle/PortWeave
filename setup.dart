@@ -204,6 +204,10 @@ Future<int> _package(
       platform,
       '--targets',
       targets,
+      if (platform == 'macos') ...[
+        '--artifact-name',
+        'PortWeave-{{build_name}}-macos-$arch.{{ext}}',
+      ],
       if (androidArch != null)
         '--build-target-platform=${_androidFlutterTarget[androidArch]!}',
       if (flutterBuildArgs.isNotEmpty)

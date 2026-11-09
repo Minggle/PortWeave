@@ -25,6 +25,7 @@
 | M2 | 状态恢复与 Mac 回归 | 检查失败显示可靠状态；停机/重启不显示过期结果；系统代理、TUN、DNS 保存值保持可恢复 | 已实现，自动化回归通过；系统实机验收待完成 |
 | M3 | fork 的 Mac 构建交付 | ARM64、Intel 分别测试与 Release 构建，输出 DMG 和各自校验文件；保留 Intel Impeller 配置 | 两架构测试、Release 编译、DMG 打包和上传均通过 |
 | M4 | 使用文档与完整验收记录 | 操作入口、安装/更新、验证命令和未验收范围清晰；记录实际执行结果 | 已完成本轮开发记录；人工验收范围见清单 |
+| M5 | PortWeave 独立 Mac 品牌 | 应用、包名、Bundle ID、网址协议、图标及数据独立；完成两架构重新构建 | 已实现，正在验证与重新打包 |
 
 先完成 M1，再连续推进 M2—M4。以以上验收条件收敛本轮工作；后续新功能另列待办，不以无限增加功能代替完成。
 
@@ -55,6 +56,21 @@
 完整 Xcode 是本机 Flutter macOS 原生编译的外部前提。未通过的检查保持未勾选，并记录具体原因。
 
 ## 交付与后续优化
+
+Mac 产品名称为 **PortWeave（端流）**，应用为 `PortWeave.app`，安装包为
+`PortWeave-<版本>-macos-<架构>.dmg`。Release/Profile 标识为
+`io.github.minggle.portweave`，Debug 为 `io.github.minggle.portweave.debug`。
+系统只注册 `portweave://`，手动导入仍识别兼容的 Clash 订阅链接。
+应用数据、偏好、缓存和登录项按新标识隔离，首次启动是空配置，不自动迁移已有 FlClash 数据；可手动导入备份或订阅。
+PortWeave 可与 FlClash 同时安装，但系统代理、TUN 和监听端口仍是主机共享资源；并行使用时应启用专用多端口模式并选择未占用端口。
+应用及菜单栏图标源文件在 `assets_source/images/portweave/`，安装 librsvg 后运行
+`bash tool/generate_portweave_icons.sh` 可重建所有尺寸。上游许可证和作者信息保留。
+
+以下 CI 与包验证记录属于改名前的基线；M5 的 PortWeave 产物验证完成后补充记录。
+
+M5 本地验证：136 项专项测试及 2,692 项公共模块、界面、窗口、语言和规范回归全部通过；
+代码生成、全仓格式检查、actionlint 和打包负向检查通过。依赖锁文件未变化。
+本机静态分析因工具缓存权限和自动审批超时未完成，交由本次 CI 的 `flutter analyze --no-fatal-infos` 验证。
 
 - 开发分支：`codex/macos-subscription-ports`；[草稿 PR #1](https://github.com/Minggle/FlClash/pull/1)。
 - [完整跨平台 CI](https://github.com/Minggle/FlClash/actions/runs/42499770847) 在 `276c706` 上通过，包含 Dart 全套、插件、Go、Rust、Android 单元测试和三桌面平台 Debug 编译。

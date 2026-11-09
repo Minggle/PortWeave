@@ -59,4 +59,31 @@ void main() {
     expect(macros, contains('%global debug_package %{nil}'));
     expect(macros, contains('%global __os_install_post %{nil}'));
   });
+
+  test('macOS packaging uses the independent PortWeave identity', () {
+    final appInfo = File(
+      'macos/Runner/Configs/AppInfo.xcconfig',
+    ).readAsStringSync();
+    final dmg =
+        loadYaml(
+              File('macos/packaging/dmg/make_config.yaml').readAsStringSync(),
+            )
+            as YamlMap;
+    final packageScript = File('tool/package_macos.sh').readAsStringSync();
+    final plist = File('macos/Runner/Info.plist').readAsStringSync();
+
+    expect(appInfo, contains('PRODUCT_NAME = PortWeave'));
+    expect(
+      appInfo,
+      contains('PRODUCT_BUNDLE_IDENTIFIER = io.github.minggle.portweave'),
+    );
+    expect(dmg['title'], 'PortWeave');
+    expect(dmg['contents'].toString(), contains('PortWeave.app'));
+    expect(packageScript, contains('PortWeave.app'));
+    expect(packageScript, contains('io.github.minggle.portweave'));
+    expect(plist, contains('<string>portweave</string>'));
+    expect(plist, isNot(contains('<string>flclash</string>')));
+    expect(plist, isNot(contains('<string>clash</string>')));
+    expect(plist, isNot(contains('<string>clashmeta</string>')));
+  });
 }

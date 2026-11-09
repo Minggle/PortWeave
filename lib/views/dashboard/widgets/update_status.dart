@@ -23,7 +23,7 @@ String _progressText(UpdateDownloading download) {
 }
 
 String _readyTip(AppLocalizations appLocalizations) => system.isWindows
-    ? '${appLocalizations.updateReadyTip}\n${appLocalizations.updateRestartTip}'
+    ? '${appLocalizations.updateReadyTip}\n${appLocalizations.updateRestartTip(appName)}'
     : appLocalizations.updateReadyTip;
 
 /// The phone dashboard's top card while an update downloads or waits. It keeps

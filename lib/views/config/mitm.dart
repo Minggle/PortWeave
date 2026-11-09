@@ -238,7 +238,9 @@ class _MitmViewState extends ConsumerState<MitmView> {
         ref.read(mitmTrustStateProvider).value?.systemStore == true;
     final res = await dialogs.showMessage(
       title: appLocalizations.regenerateCertificate,
-      message: TextSpan(text: appLocalizations.regenerateCertificateTip),
+      message: TextSpan(
+        text: appLocalizations.regenerateCertificateTip(appName),
+      ),
       destructive: true,
     );
     if (res != true || !context.mounted) {
@@ -482,7 +484,7 @@ class _MitmEnableItem extends ConsumerWidget {
       final hasCertificate = ref.read(mitmCaProvider).value != null;
       final res = await dialogs.showMessage(
         title: appLocalizations.httpsDecryption,
-        message: TextSpan(text: appLocalizations.mitmEnableTip),
+        message: TextSpan(text: appLocalizations.mitmEnableTip(appName)),
       );
       if (res != true) {
         return;

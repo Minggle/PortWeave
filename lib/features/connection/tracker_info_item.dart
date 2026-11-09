@@ -308,7 +308,7 @@ class _MitmHostSection extends ConsumerWidget {
             title: title,
             tip: excludes
                 ? appLocalizations.mitmExcludeHostTip(host)
-                : appLocalizations.mitmDecryptHostTip(host),
+                : appLocalizations.mitmDecryptHostTip(host, appName),
             update: (mitm) =>
                 excludes ? mitm.excludingHost(host) : mitm.decryptingHost(host),
           ),

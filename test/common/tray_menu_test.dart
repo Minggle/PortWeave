@@ -209,7 +209,9 @@ void main() {
       expect(
         base['bytes'],
         base64Encode(
-          File('assets/images/tray/macos/status_4.png').readAsBytesSync(),
+          File(
+            'assets/images/portweave/tray/monochrome/status_4.png',
+          ).readAsBytesSync(),
         ),
       );
     });
@@ -252,7 +254,9 @@ void main() {
     expect(
       base['bytes'],
       base64Encode(
-        File('assets/images/tray/unix/status_3.png').readAsBytesSync(),
+        File(
+          'assets/images/portweave/tray/color/status_3.png',
+        ).readAsBytesSync(),
       ),
     );
     expect(

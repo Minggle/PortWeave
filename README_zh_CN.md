@@ -17,7 +17,7 @@
 
 </div>
 
-> **Minggle 二开版：多订阅独立端口**。为不同应用分配不同订阅和本地代理端口。已有 Windows x64 首版，macOS 适配进度与验收状态见 [Mac 开发计划](MACOS_DEVELOPMENT.md)。查看 [首版发布说明](RELEASE_PORTS.md)、[开发维护说明](PORT_ROUTING.md) 和 [下载页面](https://github.com/Minggle/FlClash/releases)。下方保留上游项目介绍。
+> **Minggle 二开版：多订阅独立端口**。为不同应用分配不同订阅和本地代理端口。Mac 版本命名为 **PortWeave（端流）**，使用独立图标、应用标识和数据目录，可与 FlClash 同时安装。macOS 适配进度与验收状态见 [Mac 开发计划](MACOS_DEVELOPMENT.md)。查看 [首版发布说明](RELEASE_PORTS.md)、[开发维护说明](PORT_ROUTING.md) 和 [下载页面](https://github.com/Minggle/FlClash/releases)。下方保留上游项目介绍。
 
 <p align="center">
   <picture>

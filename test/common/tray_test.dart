@@ -49,7 +49,7 @@ void main() {
             tunEnable: tunEnable,
             safeMode: false,
           ),
-          'assets/images/tray/macos/status_1.png',
+          'assets/images/portweave/tray/monochrome/status_1.png',
         );
       }
     });
@@ -68,7 +68,7 @@ void main() {
             safeMode: safeMode,
             monochrome: false,
           ),
-          'assets/images/tray/unix/status_$status.png',
+          'assets/images/portweave/tray/color/status_$status.png',
         );
       }
     });
@@ -101,7 +101,7 @@ void main() {
             tunEnable: tunEnable,
             safeMode: true,
           ),
-          'assets/images/tray/macos/status_4.png',
+          'assets/images/portweave/tray/monochrome/status_4.png',
         );
       }
     });

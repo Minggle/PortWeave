@@ -40,6 +40,8 @@ Go 测试在独立子进程与临时目录运行，只使用回环端口和本�
 
 支持目标为 macOS 12 及以上，Apple Silicon（`arm64`）和 Intel（`amd64`）分别构建。开发顺序、进度和实际验证结果见 [Mac 开发计划](MACOS_DEVELOPMENT.md)。
 
+Mac 应用现名 **PortWeave（端流）**，使用独立图标、Bundle ID `io.github.minggle.portweave` 和 `portweave://` 协议，可与 FlClash 同时安装。配置、缓存与登录项独立，初次使用需导入订阅或备份。两者同时运行时，仍需避免抢占系统代理/TUN 和相同监听端口；建议 PortWeave 使用专用多端口模式。
+
 需要完整 Xcode（仅 Command Line Tools 不够）、Flutter 3.47.6、Go 1.27 和 Rust。以下命令在对应架构的 Mac 上执行，`ARCHS` 由现有 Release 配置选取本机架构：
 
 ```bash
@@ -51,7 +53,7 @@ flutter build macos --release --dart-define=APP_ENV=pre
 bash tool/package_macos.sh 0.9.3-ports.2 arm64
 ```
 
-Intel 构建先执行 `plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist`，打包参数改为 `amd64`；此配置与上游 Intel 发布矩阵一致。脚本检查 App/Core 的架构及 bundle 签名，生成 `dist/FlClash-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
+Intel 构建先执行 `plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist`，打包参数改为 `amd64`；此配置与上游 Intel 发布矩阵一致。脚本检查应用身份、协议、图标、App/Core 的架构及 bundle 签名，生成 `dist/PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
 
 `Subscription ports - macOS` workflow 在功能分支及 `codex/macos-*` 分支更新时构建，也可手动构建并上传两种架构的 artifact；推送版本标签时，两种架构均通过测试和打包后才附加到 fork 的对应 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。分支和手动构建不会创建 Release。
 

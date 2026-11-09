@@ -606,7 +606,7 @@ void main() {
                 height: _macOSHeaderHeight,
                 onDragStart: () => events.add('drag'),
                 onDoubleTap: () => events.add('maximize'),
-                title: const Text(appName),
+                title: Text(appName),
               ),
             ],
           ),

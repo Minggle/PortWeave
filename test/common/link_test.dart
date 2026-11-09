@@ -39,6 +39,14 @@ void main() {
     expect(received, ['https://example.com/a.yaml']);
   });
 
+  test('a PortWeave link reaches the profile importer', () async {
+    await listen();
+
+    await emit('portweave://install-config?url=https://example.com/a.yaml');
+
+    expect(received, ['https://example.com/a.yaml']);
+  });
+
   test('an install-config link without a url is ignored', () async {
     await listen();
 
@@ -125,7 +133,7 @@ void main() {
     });
 
     test('unwraps the url of an install-config link for every scheme', () {
-      for (final scheme in ['clash', 'clashmeta', 'flclash']) {
+      for (final scheme in ['clash', 'clashmeta', 'flclash', 'portweave']) {
         expect(
           profileUrlFromQrCodes([
             '$scheme://install-config?url=https%3A%2F%2Fexample.com%2Fa.yaml',

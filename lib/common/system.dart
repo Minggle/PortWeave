@@ -371,7 +371,7 @@ Future<AuthorizeCode> registerHelperService(
         logLevel: LogLevel.warning,
       );
       dialogs.showBanner(
-        currentAppLocalizations.helperCorruptTip,
+        currentAppLocalizations.helperCorruptTip(appName),
         level: BannerLevel.error,
       );
       return AuthorizeCode.error;

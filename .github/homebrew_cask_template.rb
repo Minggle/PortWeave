@@ -1,4 +1,4 @@
-cask "flclash" do
+cask "portweave" do
   version "VERSION"
 
   on_macos do
@@ -7,10 +7,10 @@ cask "flclash" do
     sha256 arm:   "ARM_SHA256",
            intel: "AMD_SHA256"
 
-    url "https://github.com/chen08209/FlClash/releases/download/v#{version}/FlClash-#{version}-macos-#{arch}.dmg"
+    url "https://github.com/chen08209/FlClash/releases/download/v#{version}/PortWeave-#{version}-macos-#{arch}.dmg"
   end
 
-  name "FlClash"
+  name "PortWeave"
   desc "Multi-platform proxy client based on ClashMeta"
   homepage "https://github.com/chen08209/FlClash"
 
@@ -21,21 +21,21 @@ cask "flclash" do
 
   depends_on :macos
 
-  app "FlClash.app"
+  app "PortWeave.app"
 
   postflight_steps do
     run "/usr/bin/xattr",
-        args:           ["-rd", "com.apple.quarantine", "{{appdir}}/FlClash.app"],
-        writable_paths: ["FlClash.app"],
+        args:           ["-rd", "com.apple.quarantine", "{{appdir}}/PortWeave.app"],
+        writable_paths: ["PortWeave.app"],
         writable_base:  :appdir
   end
 
-  uninstall quit: "com.follow.clash"
+  uninstall quit: "io.github.minggle.portweave"
 
   zap trash: [
-    "~/Library/Application Support/com.follow.clash",
-    "~/Library/Caches/com.follow.clash",
-    "~/Library/Preferences/com.follow.clash.plist",
-    "~/Library/Saved Application State/com.follow.clash.savedState",
+    "~/Library/Application Support/io.github.minggle.portweave",
+    "~/Library/Caches/io.github.minggle.portweave",
+    "~/Library/Preferences/io.github.minggle.portweave.plist",
+    "~/Library/Saved Application State/io.github.minggle.portweave.savedState",
   ]
 end

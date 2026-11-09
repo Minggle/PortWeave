@@ -5,6 +5,7 @@ import 'package:win32_registry/win32_registry.dart';
 import 'print.dart';
 
 const protocolSchemes = ['clash', 'clashmeta', 'flclash'];
+const importProtocolSchemes = [...protocolSchemes, 'portweave'];
 
 class ProtocolRegistrationPlan {
   final String scheme;

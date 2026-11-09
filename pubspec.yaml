@@ -100,8 +100,12 @@ flutter:
     - assets/images/services/
     - core/Clash.Meta/component/ca/ca-certificates.crt
     - path: assets/images/tray/unix/
-      platforms: [ linux, macos ]
-    - path: assets/images/tray/macos/
+      platforms: [ linux ]
+    - path: assets/images/portweave/
+      platforms: [ macos ]
+    - path: assets/images/portweave/tray/monochrome/
+      platforms: [ macos ]
+    - path: assets/images/portweave/tray/color/
       platforms: [ macos ]
     - path: assets/images/tray/windows/
       platforms: [ windows ]

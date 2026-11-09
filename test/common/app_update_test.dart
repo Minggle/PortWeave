@@ -55,6 +55,10 @@ void main() {
       releaseAssetName('v0.9.3', 'android-arm64-v8a.apk'),
       'FlClash-0.9.3-android-arm64-v8a.apk',
     );
+    expect(
+      releaseAssetName('v0.9.3', 'macos-arm64.dmg'),
+      'PortWeave-0.9.3-macos-arm64.dmg',
+    );
   });
 
   group('releaseChecksum', () {
