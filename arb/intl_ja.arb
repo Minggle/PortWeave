@@ -1106,5 +1106,7 @@
   "portRoutingCoreUnavailable": "コアまたはプロキシポートを利用できません。",
   "portRoutingStaleUpdate": "更新中に設定が変更されました。再試行してください。",
   "portRoutingSourceInUse": "削除前に関連ポートを解除してください。専用設定はこの画面で管理します。",
-  "portRoutingUpdateFailed": "更新に失敗しました。最後に動作したノードを保持しています。"
+  "portRoutingUpdateFailed": "更新に失敗しました。最後に動作したノードを保持しています。",
+  "downloadBuilds": "ビルドをダウンロード",
+  "privateBuildUpdateTip": "ブラウザーで GitHub にログインして、この非公開リポジトリからビルドをダウンロードしてください。更新は手動でインストールします。"
 }

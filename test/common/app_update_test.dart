@@ -7,6 +7,24 @@ import 'package:fl_clash/common/app_update.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'manual builds link to downloads while other platforms retain releases',
+    () {
+      final original = manualUpdateOnly;
+      addTearDown(() => manualUpdateOnly = original);
+      manualUpdateOnly = true;
+      expect(
+        updatePageUrl,
+        'https://github.com/Minggle/FlClash/actions/workflows/ports-macos.yaml',
+      );
+      manualUpdateOnly = false;
+      expect(
+        updatePageUrl,
+        'https://github.com/Minggle/FlClash/releases/latest',
+      );
+    },
+  );
+
   group('selfUpdateAssetSuffix', () {
     test('names the APK built for the running ABI', () {
       expect(

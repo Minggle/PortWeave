@@ -847,6 +847,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "downloadBandwidth": MessageLookupByLibrary.simpleMessage(
       "Bande passante de réception",
     ),
+    "downloadBuilds": MessageLookupByLibrary.simpleMessage(
+      "Télécharger les versions",
+    ),
     "downloadingUpdate": MessageLookupByLibrary.simpleMessage(
       "Téléchargement de la mise à jour",
     ),
@@ -1762,6 +1765,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "preview": MessageLookupByLibrary.simpleMessage("Aperçu"),
     "previousMatch": MessageLookupByLibrary.simpleMessage("Résultat précédent"),
+    "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
+      "Connectez-vous à GitHub dans votre navigateur pour télécharger les versions de ce dépôt privé. Les mises à jour s’installent manuellement.",
+    ),
     "privateKey": MessageLookupByLibrary.simpleMessage("Clé privée"),
     "privateKeyPassphrase": MessageLookupByLibrary.simpleMessage(
       "Phrase secrète de la clé privée",

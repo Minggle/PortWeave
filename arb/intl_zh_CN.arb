@@ -1106,5 +1106,7 @@
   "portRoutingCoreUnavailable": "核心或代理监听端口不可用。",
   "portRoutingStaleUpdate": "更新期间配置已变更，请重试。",
   "portRoutingSourceInUse": "请先移除相关端口绑定再删除订阅；专用配置由“多订阅端口”管理。",
-  "portRoutingUpdateFailed": "更新失败，已保留上次可用节点。"
+  "portRoutingUpdateFailed": "更新失败，已保留上次可用节点。",
+  "downloadBuilds": "下载测试版本",
+  "privateBuildUpdateTip": "请在浏览器中登录 GitHub，下载此私有仓库中的构建版本。更新需要手动安装。"
 }

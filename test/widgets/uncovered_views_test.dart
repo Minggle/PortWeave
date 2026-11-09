@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:fl_clash/common/app_update.dart';
 import 'package:fl_clash/common/l10n_labels.dart';
 import 'package:fl_clash/common/request.dart';
 import 'package:fl_clash/enum/enum.dart';
@@ -276,6 +277,9 @@ void main() {
   testWidgets('about view shows progress while checking for updates', (
     tester,
   ) async {
+    final originalManualUpdateOnly = manualUpdateOnly;
+    manualUpdateOnly = false;
+    addTearDown(() => manualUpdateOnly = originalManualUpdateOnly);
     final container = _containerFor(tester);
     final originalAdapter = request.dio.httpClientAdapter;
     addTearDown(() => request.dio.httpClientAdapter = originalAdapter);
@@ -316,6 +320,39 @@ void main() {
     expect(find.text('The app is already up to date'), findsOneWidget);
     expect(tester.takeException(), null);
   });
+
+  testWidgets(
+    'private builds open the authenticated download page without an API check',
+    (tester) async {
+      final originalManualUpdateOnly = manualUpdateOnly;
+      manualUpdateOnly = true;
+      addTearDown(() => manualUpdateOnly = originalManualUpdateOnly);
+      final originalAdapter = request.dio.httpClientAdapter;
+      addTearDown(() => request.dio.httpClientAdapter = originalAdapter);
+      final adapter = _PendingAdapter();
+      request.dio.httpClientAdapter = adapter;
+      final container = _containerFor(tester);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const TestApp(child: AboutView()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Check for updates'), findsNothing);
+      expect(find.textContaining('Sign in to GitHub'), findsOneWidget);
+      await tester.tap(find.text('Download builds'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(updatePageUrl), findsOneWidget);
+      expect(adapter.requests, 0);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('scripts view lists scripts and offers the add menu', (
     tester,

@@ -1106,5 +1106,7 @@
   "portRoutingCoreUnavailable": "El núcleo o el puerto proxy no está disponible.",
   "portRoutingStaleUpdate": "La configuración cambió durante la actualización. Inténtalo de nuevo.",
   "portRoutingSourceInUse": "Elimina los puertos asociados antes de borrar la suscripción. La configuración dedicada se gestiona aquí.",
-  "portRoutingUpdateFailed": "Error al actualizar. Se conservan los últimos nodos válidos."
+  "portRoutingUpdateFailed": "Error al actualizar. Se conservan los últimos nodos válidos.",
+  "downloadBuilds": "Descargar versiones",
+  "privateBuildUpdateTip": "Inicia sesión en GitHub desde tu navegador para descargar versiones de este repositorio privado. Las actualizaciones se instalan manualmente."
 }

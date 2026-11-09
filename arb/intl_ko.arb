@@ -1106,5 +1106,7 @@
   "portRoutingCoreUnavailable": "코어 또는 프록시 포트를 사용할 수 없습니다.",
   "portRoutingStaleUpdate": "갱신 중 설정이 변경되었습니다. 다시 시도하세요.",
   "portRoutingSourceInUse": "구독을 삭제하기 전에 연결된 포트를 제거하세요. 전용 설정은 이 화면에서 관리됩니다.",
-  "portRoutingUpdateFailed": "갱신 실패. 마지막으로 정상 작동한 노드를 유지합니다."
+  "portRoutingUpdateFailed": "갱신 실패. 마지막으로 정상 작동한 노드를 유지합니다.",
+  "downloadBuilds": "빌드 다운로드",
+  "privateBuildUpdateTip": "브라우저에서 GitHub에 로그인하여 이 비공개 저장소의 빌드를 다운로드하세요. 업데이트는 수동으로 설치해야 합니다."
 }

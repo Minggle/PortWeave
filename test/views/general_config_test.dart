@@ -46,6 +46,23 @@ void main() {
 
   PatchClashConfig config() => container.read(patchClashConfigProvider);
 
+  for (final manual in [true, false]) {
+    testWidgets(
+      'automatic update setting visibility for manual updates: $manual',
+      (tester) async {
+        final original = manualUpdateOnly;
+        manualUpdateOnly = manual;
+        addTearDown(() => manualUpdateOnly = original);
+        await pumpGeneralView(tester);
+
+        expect(
+          find.text(currentAppLocalizations.autoCheckUpdate),
+          manual ? findsNothing : findsOneWidget,
+        );
+      },
+    );
+  }
+
   testWidgets('lists no override until one is added', (tester) async {
     await pumpGeneralView(tester);
     final l = currentAppLocalizations;

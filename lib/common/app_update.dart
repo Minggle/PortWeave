@@ -13,6 +13,17 @@ import 'package:path/path.dart';
 
 const releaseChecksumsName = 'SHA256SUMS';
 
+bool _manualUpdateOnly = Platform.isMacOS;
+
+bool get manualUpdateOnly => _manualUpdateOnly;
+
+@visibleForTesting
+set manualUpdateOnly(bool value) => _manualUpdateOnly = value;
+
+String get updatePageUrl => manualUpdateOnly
+    ? 'https://github.com/$repository/actions/workflows/ports-macos.yaml'
+    : 'https://github.com/$repository/releases/latest';
+
 sealed class UpdateDownload {
   const UpdateDownload(this.tag);
 

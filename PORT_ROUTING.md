@@ -57,7 +57,7 @@ bash tool/package_macos.sh 0.9.3-ports.2 arm64
 
 Intel 构建先执行 `plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist`，打包参数改为 `amd64`；此配置与上游 Intel 发布矩阵一致。脚本检查应用身份、协议、图标、App/Core 的架构及 bundle 签名，生成 `dist/PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
 
-`Subscription ports - macOS` workflow 在功能分支及 `codex/macos-*` 分支更新时构建，也可手动构建并上传两种架构的 artifact；推送版本标签时，两种架构均通过测试和打包后才附加到 fork 的对应 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。分支和手动构建不会创建 Release。
+`Subscription ports - macOS` workflow 在功能分支及 `codex/macos-*` 分支更新时构建，也可手动构建并上传两种架构的 artifact；推送版本标签时，两种架构均通过测试和打包后才附加到 fork 的对应 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。分支和手动构建不会创建 Release。仓库现为私有，下载 artifact 需要使用有权限的 GitHub 账号登录。Mac 关于页的“下载测试版本”进入构建列表，选择成功的构建，在 Artifacts 中按架构下载并手动安装；启动时不进行匿名 Release 查询。
 
 DMG 内含应用和 Applications 快捷方式。退出已安装的 FlClash 后，将应用拖入 Applications，再由用户启动。当前流程沿用临时签名，尚未接入 Developer ID 签名或 Apple 公证；正式分发前需要补齐凭据和 Gatekeeper 安装验收。Mac 更新通过发布页手动下载，不提供应用内自动替换。预发行版本不会由 `releases/latest` 返回。
 

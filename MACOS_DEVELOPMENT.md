@@ -14,7 +14,7 @@
 
 当前主机为 Apple Silicon，已在临时目录准备 Flutter 3.47.6、Dart 3.13.5、Go 1.27.1、Rust 1.99.0。
 仅有 Command Line Tools，缺少完整 Xcode，本机 Release 命令已确认因此不能编译。
-工作区存在大量 CRLF/LF 差异及文件模式差异；开发保留这些原有变更，只提交本任务相关修改。
+原始工作区存在大量 CRLF/LF 和文件模式差异；后续开发在独立 worktree `codex/macos-subscription-ports` 完成，原始工作区变更保留。
 
 ## 开发顺序与验收
 
@@ -25,10 +25,12 @@
 | M2 | 状态恢复与 Mac 回归 | 检查失败显示可靠状态；停机/重启不显示过期结果；系统代理、TUN、DNS 保存值保持可恢复 | 已实现，自动化回归通过；系统实机验收待完成 |
 | M3 | fork 的 Mac 构建交付 | ARM64、Intel 分别测试与 Release 构建，输出 DMG 和各自校验文件；保留 Intel Impeller 配置 | 两架构测试、Release 编译、DMG 打包和上传均通过 |
 | M4 | 使用文档与完整验收记录 | 操作入口、安装/更新、验证命令和未验收范围清晰；记录实际执行结果 | 已完成本轮开发记录；人工验收范围见清单 |
-| M5 | PortWeave 独立 Mac 品牌 | 应用、包名、Bundle ID、网址协议、图标及数据独立；完成两架构重新构建 | 已实现，正在验证与重新打包 |
-| M6 | 测试版默认监听端口错开原版 | 主代理 7891、控制接口 9091、多端口绑定起点 18082；重置入口和配置提示一致 | 已实现，正在回归与重建 |
+| M5 | PortWeave 独立 Mac 品牌 | 应用、包名、Bundle ID、网址协议、图标及数据独立；完成两架构重新构建 | 已完成，双架构构建与下载后验收通过 |
+| M6 | 测试版默认监听端口错开原版 | 主代理 7891、控制接口 9091、多端口绑定起点 18082；重置入口和配置提示一致 | 已完成，4,912 项全套测试及双架构验收通过 |
 
-先完成 M1，再连续推进 M2—M4。以以上验收条件收敛本轮工作；后续新功能另列待办，不以无限增加功能代替完成。
+| M7 | 私有仓库更新与个人分发 | GitHub 仓库为 Private；Mac 手动下载入口需登录；不自动请求匿名 Release API | 仓库已私有；更新入口实现完成，4,917 项测试通过，正在打包 |
+
+M0—M6 已完成本轮自动化与打包验收。M7 完成后优先做签名分发及明确列出的实机验收；性能优化以实际测量为依据。
 
 ## 实现约束
 
@@ -50,8 +52,8 @@
 - [x] 新 workflow 的 `actionlint` 和打包脚本的 `bash -n`。
 - [x] Mac ARM64 Release 编译、产物内容和 DMG 检查：云端构建成功；下载后 SHA256、DMG 完整性、GUI/Core/Rust/SQLite 的 ARM64 架构及 bundle 签名均通过。
 - [x] Mac Intel Release 编译、签名/架构检查和 DMG 打包：云端构建通过；下载后 SHA256、DMG 完整性及 GUI/Core/Rust/SQLite 的 x86_64 架构检查通过，确认 `FLTEnableImpeller=false`；Intel 硬件的运行体验待人工验收。
-- [x] ARM64 安全模式启动：`com.follow.clash.debug` 应用及 Core IPC 成功启动；启动前后系统代理和 DNS 快照一致，Core 无 TCP 监听；记录 PID 后结束测试，GUI/Core 均退出。
-- [ ] 安全模式 GUI 点击验收：当前 Mac 锁屏，界面工具无法操作；菜单入口和表单已有自动化 widget 测试通过。
+- [x] ARM64 安全模式启动：改名前基线的 `com.follow.clash.debug` 应用及 Core IPC 成功启动；启动前后系统代理和 DNS 快照一致，Core 无 TCP 监听；记录 PID 后结束测试，GUI/Core 均退出。
+- [ ] 安全模式 GUI 点击验收：早期检查时 Mac 锁屏，后续界面读取工具超时；菜单入口和表单已有自动化 widget 测试通过。
 - [ ] 测试环境：真实订阅、两个应用的出口隔离、睡眠唤醒、网络切换、退出后的系统状态恢复
 
 完整 Xcode 是本机 Flutter macOS 原生编译的外部前提。未通过的检查保持未勾选，并记录具体原因。
@@ -67,7 +69,7 @@ PortWeave 可与 FlClash 同时安装，但系统代理、TUN 和监听端口仍
 应用及菜单栏图标源文件在 `assets_source/images/portweave/`，安装 librsvg 后运行
 `bash tool/generate_portweave_icons.sh` 可重建所有尺寸。上游许可证和作者信息保留。
 
-以下 CI 与包验证记录属于改名前的基线；M5 的 PortWeave 产物验证完成后补充记录。
+M5/M6 交付基线为 `37d171d`，以下为实际验收结果。
 
 M5 本地验证：136 项专项测试及 2,692 项公共模块、界面、窗口、语言和规范回归全部通过；
 代码生成、全仓格式检查、actionlint 和打包负向检查通过。依赖锁文件未变化。
@@ -83,13 +85,16 @@ DNS 协议目的端口 53、远端服务端口以及系统分配的临时端口�
 旧备份里的控制接口开启状态仍可导入，实际监听使用 9091。
 
 M6 本地 `flutter analyze --no-fatal-infos`、262 项专项测试和全套 4,912 项 Flutter 测试通过；
-代码生成、全仓格式检查及注释密度检查通过。新端口产物正在重新构建。
+代码生成、全仓格式检查及注释密度检查通过。ARM64/Intel 新端口包均已完成构建与本机下载验收。两包的 SHA256、DMG 完整性、应用身份/协议、GUI/Core/Flutter/App/Rust/SQLite 架构、bundle 签名和 25 个图标资源一致性通过；Intel 保留 `FLTEnableImpeller=false`。
 
 - 开发分支：`codex/macos-subscription-ports`；[草稿 PR #1](https://github.com/Minggle/FlClash/pull/1)。
-- [完整跨平台 CI](https://github.com/Minggle/FlClash/actions/runs/42499770847) 在 `276c706` 上通过，包含 Dart 全套、插件、Go、Rust、Android 单元测试和三桌面平台 Debug 编译。
-- [Mac 双架构构建](https://github.com/Minggle/FlClash/actions/runs/42499770844) 产出独立 DMG、`SHA256SUMS-macos-*` 和单独的 ARM64 安全模式调试包。
-- 本机产物保存在 `dist/macos-validation/arm64/`、`dist/macos-validation/amd64/` 和 `dist/macos-validation/safe-mode/`；这些构建输出不提交 Git。
+- [完整跨平台 CI](https://github.com/Minggle/FlClash/actions/runs/42575216818) 在 `37d171d` 上通过，包含 Dart 全套、插件、Go、Rust、Android 单元测试和三桌面平台 Debug 编译。
+- [Mac 双架构构建](https://github.com/Minggle/FlClash/actions/runs/42575216808) 产出独立 DMG、`SHA256SUMS-macos-*` 和单独的 ARM64 安全模式调试包。
+- 本机产物保存在 `dist/portweave-37d171d/subscription-ports-macos-arm64/`、`subscription-ports-macos-amd64/` 和 `subscription-ports-macos-safe-mode/`；这些构建输出不提交 Git。
 - 当前构建是开发测试包，应用数字版本仍为 `0.9.3`。正式发版应选取新版本标签；本轮未创建或发布版本标签。
 - Developer ID 签名、公证、Gatekeeper 首次安装、Intel 实机运行、真实订阅公网出口以及睡眠/网络切换验收尚未完成。
 - 后续优先级：先完成上述实机验收及签名分发，再基于大量绑定/订阅下的实际测量优化状态列表和后台能耗；不预先更换 Core 生命周期或重写现有 UI。
-- fork 当前没有可供 `releases/latest` 返回的稳定版本，安全模式启动日志出现更新查询 404；启动和 Core 连接正常，预发行更新继续走手动下载。该既有行为作为发布准备待办记录。
+- 仓库已在 2026-11-09 设为 **PRIVATE**，GitHub 再次读取确认 `isPrivate=true`。后续代码及构建仅向此私有仓库推送。
+- 私有仓库不提供匿名更新查询；M7 将 Mac 关于页改为“下载测试版本”，通过浏览器登录 GitHub 下载构建，并关闭自动查询入口。应用不存储 GitHub 令牌。
+
+M7 验证：依赖锁文件未变化，代码与本地化生成器运行成功，静态分析、50 项专项测试及全套 4,917 项测试通过。Mac 更新策略由 `lib/common/app_update.dart` 统一提供；关于页、自动查询和设置入口复用同一策略。

@@ -9372,6 +9372,26 @@ class AppLocalizations {
       args: [],
     );
   }
+
+  /// `Download builds`
+  String get downloadBuilds {
+    return Intl.message(
+      'Download builds',
+      name: 'downloadBuilds',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign in to GitHub in your browser to download builds from this private repository. Updates are installed manually.`
+  String get privateBuildUpdateTip {
+    return Intl.message(
+      'Sign in to GitHub in your browser to download builds from this private repository. Updates are installed manually.',
+      name: 'privateBuildUpdateTip',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {

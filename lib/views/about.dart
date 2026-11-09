@@ -26,6 +26,10 @@ class AboutView extends ConsumerWidget {
   ];
 
   Future<void> _checkUpdate(BuildContext context, WidgetRef ref) async {
+    if (manualUpdateOnly) {
+      await dialogs.openUrl(updatePageUrl);
+      return;
+    }
     if (ref.read(loadingProvider(LoadingTag.checkUpdate))) return;
     final commonAction = ref.read(commonActionProvider.notifier);
     final result = await globalState.loadingRun(
@@ -215,10 +219,22 @@ class _AboutHero extends StatelessWidget {
           const SizedBox(height: 20),
           TonalButton(
             size: TonalButtonSize.bar,
-            glyph: AppGlyphs.sync,
-            label: appLocalizations.checkUpdate,
+            glyph: manualUpdateOnly ? AppGlyphs.openExternal : AppGlyphs.sync,
+            label: manualUpdateOnly
+                ? appLocalizations.downloadBuilds
+                : appLocalizations.checkUpdate,
             onPressed: isCheckingUpdate ? null : onCheckUpdate,
           ),
+          if (manualUpdateOnly) ...[
+            const SizedBox(height: 12),
+            Text(
+              appLocalizations.privateBuildUpdateTip,
+              textAlign: TextAlign.center,
+              style: AppTextStyle.footnote
+                  .of(context)
+                  .copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+          ],
         ],
       ),
     );

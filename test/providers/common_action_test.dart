@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+import 'package:fl_clash/common/app_update.dart';
+import 'package:fl_clash/common/request.dart';
 import 'package:fl_clash/core/controller.dart';
 import 'package:fl_clash/core/interface.dart';
 import 'package:fl_clash/enum/enum.dart';
@@ -157,6 +160,35 @@ void main() {
   });
 
   group('CommonAction.autoCheckUpdate', () {
+    test(
+      'private builds skip automatic requests even with a saved enabled setting',
+      () async {
+        final originalManualUpdateOnly = manualUpdateOnly;
+        manualUpdateOnly = true;
+        addTearDown(() => manualUpdateOnly = originalManualUpdateOnly);
+        var requests = 0;
+        final interceptor = InterceptorsWrapper(
+          onRequest: (options, handler) {
+            requests++;
+            handler.reject(DioException(requestOptions: options));
+          },
+        );
+        request.dio.interceptors.add(interceptor);
+        addTearDown(() => request.dio.interceptors.remove(interceptor));
+        final container = buildContainer();
+        container
+            .read(appSettingProvider.notifier)
+            .update((state) => state.copyWith(autoCheckUpdate: true));
+
+        expect(
+          await container.read(commonActionProvider.notifier).autoCheckUpdate(),
+          isFalse,
+        );
+        expect(requests, 0);
+        expect(container.read(appSettingProvider).autoCheckUpdate, isTrue);
+      },
+    );
+
     test('returns without a network call when the setting is off', () async {
       final container = buildContainer();
       container

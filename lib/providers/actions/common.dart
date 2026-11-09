@@ -84,7 +84,9 @@ class CommonAction extends _$CommonAction {
   }
 
   Future<bool> autoCheckUpdate() async {
-    if (!ref.read(appSettingProvider).autoCheckUpdate) return false;
+    if (manualUpdateOnly || !ref.read(appSettingProvider).autoCheckUpdate) {
+      return false;
+    }
     final Map<String, dynamic>? res;
     try {
       res = await request.checkForUpdate();
@@ -181,9 +183,7 @@ class CommonAction extends _$CommonAction {
   }
 
   void _openReleasePage() {
-    unawaited(
-      launchUrl(Uri.parse('https://github.com/$repository/releases/latest')),
-    );
+    unawaited(launchUrl(Uri.parse(updatePageUrl)));
   }
 
   /// Downloads the latest release for this build even when it is not newer.

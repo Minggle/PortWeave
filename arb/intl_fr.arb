@@ -1106,5 +1106,7 @@
   "portRoutingCoreUnavailable": "Le cœur ou le port proxy est indisponible.",
   "portRoutingStaleUpdate": "La configuration a changé pendant l’actualisation. Réessayez.",
   "portRoutingSourceInUse": "Retirez les ports associés avant de supprimer cet abonnement. La configuration dédiée est gérée ici.",
-  "portRoutingUpdateFailed": "Échec de l’actualisation. Les derniers nœuds valides sont conservés."
+  "portRoutingUpdateFailed": "Échec de l’actualisation. Les derniers nœuds valides sont conservés.",
+  "downloadBuilds": "Télécharger les versions",
+  "privateBuildUpdateTip": "Connectez-vous à GitHub dans votre navigateur pour télécharger les versions de ce dépôt privé. Les mises à jour s’installent manuellement."
 }
