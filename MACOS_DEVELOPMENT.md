@@ -145,3 +145,7 @@ M9 应用提交为 `26bc633`，[双架构 CI](https://github.com/Minggle/FlClash
 收到保存失败截图后，使用内存数据库延迟查询复现 `UnmountedRefException`。原因是优先级依赖在数据库查询之后才 `ref.watch`，而未观察的异步 provider 可在查询期间被释放；查询期间的优先级变化也未及时触发重建。修复将此依赖读取与订阅移到第一次异步等待之前。新增测试分别覆盖自动释放后完成、等待期间修改优先级后仅发布新状态，以及撤回优先级。修复前两项均失败，修复后通过；Mac CI 已加入该测试套件。不读取或上传个人配置。
 
 该修复本地全套 4,945 项 Flutter 测试、静态分析、格式和 actionlint 通过。应用提交 `e176c6f` 的 Intel CI 与下载验收通过；ARM64 首次因 hosted runner 容量不足、未分配 runner 而取消。打包矩阵的 ARM64 改用 `macos-15`（Apple Silicon，已核对包含 Xcode 26.3/26.2），应用代码不变；Intel 仍使用 `macos-15-intel`。
+
+修复版构建提交 `97bbe54` 的 ARM64 在 `macos-15` 上通过分析、包含新增异步时序测试的回归、Release 打包及安全模式构建。下载后的 SHA256、DMG 完整性、Bundle ID/URL协议、各二进制 ARM64 架构、签名和 25 个图标资源一致性通过。安全模式 Core IPC 连接成功、无 TCP 监听、代理/DNS 未变化，测试 App/Core 均按记录 PID 退出。文件在 `dist/portweave-97bbe54/arm64/`，验收日志在同级 `validation/`；此提交相对 `e176c6f` 仅更改 CI 镜像和文档，应用修复相同。
+
+最终 [修复版双架构 CI](https://github.com/Minggle/FlClash/actions/runs/42840587707) 在 `97bbe54` 上全部成功；Intel 同样完成下载后 SHA256、完整性、Bundle ID/协议、x86_64、签名、Impeller 设置与图标资源校验。两份最新包位于 `dist/portweave-97bbe54/{arm64,amd64}/`。版本号仍为 0.9.3，安装时以此构建目录区分旧包。个人配置未读取、未上传；本轮回归只使用内存数据库与虚构策略。
