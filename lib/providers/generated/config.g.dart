@@ -9,6 +9,59 @@ part of '../config.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(PriorityPolicySetting)
+final priorityPolicySettingProvider = PriorityPolicySettingProvider._();
+
+final class PriorityPolicySettingProvider
+    extends $NotifierProvider<PriorityPolicySetting, PriorityPolicies> {
+  PriorityPolicySettingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'priorityPolicySettingProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$priorityPolicySettingHash();
+
+  @$internal
+  @override
+  PriorityPolicySetting create() => PriorityPolicySetting();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PriorityPolicies value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PriorityPolicies>(value),
+    );
+  }
+}
+
+String _$priorityPolicySettingHash() =>
+    r'4e3754ebc9a37721839964dcf01afecae4185c35';
+
+abstract class _$PriorityPolicySetting extends $Notifier<PriorityPolicies> {
+  PriorityPolicies build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<PriorityPolicies, PriorityPolicies>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<PriorityPolicies, PriorityPolicies>,
+              PriorityPolicies,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(PortRoutingSetting)
 final portRoutingSettingProvider = PortRoutingSettingProvider._();
 
@@ -713,4 +766,4 @@ final class _ConfigProvider extends $FunctionalProvider<Config, Config, Config>
   }
 }
 
-String _$_configHash() => r'da67fb7170d023d14ed50c70b09fd68929022ea7';
+String _$_configHash() => r'3dde7c27e74343898c7497121575c9c45291d335';

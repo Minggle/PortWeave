@@ -428,6 +428,11 @@ _Config _$ConfigFromJson(Map<String, dynamic> json) => _Config(
   portRouting: json['portRouting'] == null
       ? const PortRoutingConfig()
       : PortRoutingConfig.fromJson(json['portRouting'] as Map<String, dynamic>),
+  priorityPolicies: json['priorityPolicies'] == null
+      ? const PriorityPolicies()
+      : PriorityPolicies.fromJson(
+          json['priorityPolicies'] as Map<String, dynamic>,
+        ),
   hotKeyActions:
       (json['hotKeyActions'] as List<dynamic>?)
           ?.map((e) => HotKeyAction.fromJson(e as Map<String, dynamic>))
@@ -473,6 +478,7 @@ _Config _$ConfigFromJson(Map<String, dynamic> json) => _Config(
 Map<String, dynamic> _$ConfigToJson(_Config instance) => <String, dynamic>{
   'currentProfileId': instance.currentProfileId,
   'portRouting': instance.portRouting,
+  'priorityPolicies': instance.priorityPolicies,
   'hotKeyActions': instance.hotKeyActions,
   'appSettingProps': instance.appSettingProps,
   'davProps': instance.davProps,

@@ -107,6 +107,9 @@ Future<SetupState> setupState(Ref ref, int? profileId) async {
     }
   }
   return SetupState(
+    priorityPolicies: profileType == ProfileType.custom
+        ? const []
+        : ref.watch(priorityPolicySettingProvider).forProfile(profileId),
     portRouting: portRouting.isActive(profileId)
         ? portRouting
         : const PortRoutingConfig(),

@@ -1282,6 +1282,43 @@ class MessageLookup extends MessageLookupByLibrary {
     "pressKeyboard": MessageLookupByLibrary.simpleMessage("请按下组合键"),
     "preview": MessageLookupByLibrary.simpleMessage("预览"),
     "previousMatch": MessageLookupByLibrary.simpleMessage("上一个匹配"),
+    "priorityAddTier": MessageLookupByLibrary.simpleMessage("添加优先级"),
+    "priorityAll": MessageLookupByLibrary.simpleMessage("全部节点"),
+    "priorityBase": MessageLookupByLibrary.simpleMessage("底稿配置"),
+    "priorityCycle": MessageLookupByLibrary.simpleMessage(
+      "策略组存在循环引用，请选择其他本地组。",
+    ),
+    "priorityDescription": MessageLookupByLibrary.simpleMessage(
+      "增强普通配置，不改写源文件。分流规则继续指向原业务组，使用第一个可用优先级。使用时请在配置页选中此底稿。",
+    ),
+    "priorityEmpty": MessageLookupByLibrary.simpleMessage(
+      "选择底稿，为其中的业务组添加优先级链。",
+    ),
+    "priorityExclude": MessageLookupByLibrary.simpleMessage("排除关键词"),
+    "priorityFilterHint": MessageLookupByLibrary.simpleMessage(
+      "关键词以 | 分隔，忽略大小写；包含留空表示全部节点。层级内按延迟自动优选。订阅更新遵循各来源的自动更新设置。",
+    ),
+    "priorityInclude": MessageLookupByLibrary.simpleMessage("包含关键词"),
+    "priorityInvalid": MessageLookupByLibrary.simpleMessage(
+      "优先级保存失败，请检查策略组、订阅来源及内核连接。",
+    ),
+    "priorityKind": MessageLookupByLibrary.simpleMessage("来源类型"),
+    "priorityLocal": MessageLookupByLibrary.simpleMessage("底稿策略组或节点"),
+    "priorityManaged": MessageLookupByLibrary.simpleMessage(
+      "此组按优先级链自动选择，请在“策略优先级”中修改。",
+    ),
+    "priorityMissingTarget": MessageLookupByLibrary.simpleMessage(
+      "底稿中的策略组不存在，或配置使用了脚本。请选择标准配置和有效策略组。",
+    ),
+    "priorityMoveDown": MessageLookupByLibrary.simpleMessage("下移"),
+    "priorityMoveUp": MessageLookupByLibrary.simpleMessage("上移"),
+    "priorityOrderHint": MessageLookupByLibrary.simpleMessage(
+      "越靠上优先级越高。右键或长按可上移、下移；高优先级探测失败才使用后续层级，恢复后新连接自动回切。只有明确添加 DIRECT 才会直连。",
+    ),
+    "priorityPreview": MessageLookupByLibrary.simpleMessage("预览匹配"),
+    "prioritySubscriptions": MessageLookupByLibrary.simpleMessage("订阅节点"),
+    "priorityTier": MessageLookupByLibrary.simpleMessage("优先级层级"),
+    "priorityTitle": MessageLookupByLibrary.simpleMessage("策略优先级"),
     "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
       "请在浏览器中登录 GitHub，下载此私有仓库中的构建版本。更新需要手动安装。",
     ),

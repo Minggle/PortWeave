@@ -1781,6 +1781,53 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "preview": MessageLookupByLibrary.simpleMessage("Aperçu"),
     "previousMatch": MessageLookupByLibrary.simpleMessage("Résultat précédent"),
+    "priorityAddTier": MessageLookupByLibrary.simpleMessage(
+      "Ajouter une priorité",
+    ),
+    "priorityAll": MessageLookupByLibrary.simpleMessage("Tous les nœuds"),
+    "priorityBase": MessageLookupByLibrary.simpleMessage("Profil de base"),
+    "priorityCycle": MessageLookupByLibrary.simpleMessage(
+      "Les groupes forment une boucle. Choisissez un autre groupe local.",
+    ),
+    "priorityDescription": MessageLookupByLibrary.simpleMessage(
+      "Améliore un profil normal sans modifier sa source. Les règles gardent leurs cibles et utilisent la première priorité disponible. Sélectionnez ce profil pour l’utiliser.",
+    ),
+    "priorityEmpty": MessageLookupByLibrary.simpleMessage(
+      "Choisissez un profil et ajoutez une chaîne de priorités à un groupe.",
+    ),
+    "priorityExclude": MessageLookupByLibrary.simpleMessage("Mots-clés exclus"),
+    "priorityFilterHint": MessageLookupByLibrary.simpleMessage(
+      "Séparez les mots-clés par |, sans distinction de casse. Laisser vide inclut tous les nœuds. La latence départage les nœuds du même niveau. Les mises à jour suivent les paramètres de chaque abonnement.",
+    ),
+    "priorityInclude": MessageLookupByLibrary.simpleMessage("Mots-clés inclus"),
+    "priorityInvalid": MessageLookupByLibrary.simpleMessage(
+      "Enregistrement impossible. Vérifiez les groupes, les sources et la connexion au cœur.",
+    ),
+    "priorityKind": MessageLookupByLibrary.simpleMessage("Type de source"),
+    "priorityLocal": MessageLookupByLibrary.simpleMessage(
+      "Groupe ou nœud de base",
+    ),
+    "priorityManaged": MessageLookupByLibrary.simpleMessage(
+      "Ce groupe suit sa chaîne de priorités. Modifiez-la dans Priorités des politiques.",
+    ),
+    "priorityMissingTarget": MessageLookupByLibrary.simpleMessage(
+      "Groupe absent ou profil utilisant un script. Choisissez un profil standard et un groupe valide.",
+    ),
+    "priorityMoveDown": MessageLookupByLibrary.simpleMessage("Descendre"),
+    "priorityMoveUp": MessageLookupByLibrary.simpleMessage("Monter"),
+    "priorityOrderHint": MessageLookupByLibrary.simpleMessage(
+      "Les lignes du haut sont prioritaires. Clic droit ou appui long pour les déplacer. Un niveau inférieur sert seulement si les contrôles des précédents échouent. Après rétablissement, les nouvelles connexions reviennent. DIRECT doit être ajouté explicitement.",
+    ),
+    "priorityPreview": MessageLookupByLibrary.simpleMessage(
+      "Aperçu des résultats",
+    ),
+    "prioritySubscriptions": MessageLookupByLibrary.simpleMessage(
+      "Nœuds des abonnements",
+    ),
+    "priorityTier": MessageLookupByLibrary.simpleMessage("Niveau de priorité"),
+    "priorityTitle": MessageLookupByLibrary.simpleMessage(
+      "Priorités des politiques",
+    ),
     "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
       "Connectez-vous à GitHub dans votre navigateur pour télécharger les versions de ce dépôt privé. Les mises à jour s’installent manuellement.",
     ),

@@ -7,6 +7,7 @@ export 'core.dart';
 export 'ip_quality.dart';
 export 'profile.dart';
 export 'port_routing.dart';
+export 'priority_policy.dart';
 export 'record_filter.dart';
 export 'references.dart';
 export 'state.dart';

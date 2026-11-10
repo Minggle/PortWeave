@@ -8,6 +8,7 @@ import 'common.dart';
 import 'core.dart';
 import 'profile.dart';
 import 'port_routing.dart';
+import 'priority_policy.dart';
 
 part 'generated/state.freezed.dart';
 part 'generated/state.g.dart';
@@ -249,6 +250,7 @@ abstract class MigrationData with _$MigrationData {
 abstract class SetupState with _$SetupState {
   const factory SetupState({
     @Default(PortRoutingConfig()) PortRoutingConfig portRouting,
+    @Default([]) List<PriorityPolicy> priorityPolicies,
     required int? profileId,
     required int? profileLastUpdateDate,
     required ProfileType profileType,

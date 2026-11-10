@@ -505,6 +505,7 @@ abstract class Config with _$Config {
   const factory Config({
     int? currentProfileId,
     @Default(PortRoutingConfig()) PortRoutingConfig portRouting,
+    @Default(PriorityPolicies()) PriorityPolicies priorityPolicies,
     @Default([]) List<HotKeyAction> hotKeyActions,
     @JsonKey(fromJson: AppSettingProps.safeFromJson)
     @Default(defaultAppSettingProps)

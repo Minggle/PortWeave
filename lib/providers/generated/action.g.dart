@@ -91,7 +91,7 @@ final class SetupActionProvider extends $NotifierProvider<SetupAction, void> {
   }
 }
 
-String _$setupActionHash() => r'f7f3d8637a33316bd1d7b5b92292bd184cc2694a';
+String _$setupActionHash() => r'31b9577ad47a807a2327fdfbce2d8393a1467ffb';
 
 abstract class _$SetupAction extends $Notifier<void> {
   void build();
@@ -142,7 +142,7 @@ final class BackupActionProvider extends $NotifierProvider<BackupAction, void> {
   }
 }
 
-String _$backupActionHash() => r'4bef9e18b2537b5f13328509593aaae15ec43fc3';
+String _$backupActionHash() => r'a74b860d7b4293f0a07c6a35d478159a8a6eeb2e';
 
 abstract class _$BackupAction extends $Notifier<void> {
   void build();
@@ -398,7 +398,7 @@ final class ProxiesActionProvider
   }
 }
 
-String _$proxiesActionHash() => r'09ba0ec4e7776a78aebca8ed2c54579bfdc59f8c';
+String _$proxiesActionHash() => r'650f653823bb352197e694b4fb9dd3adc482d69c';
 
 abstract class _$ProxiesAction extends $Notifier<void> {
   void build();
@@ -450,7 +450,7 @@ final class ProfilesActionProvider
   }
 }
 
-String _$profilesActionHash() => r'bfd7fbcd28cd01877103a645f087a51c15ec2913';
+String _$profilesActionHash() => r'2830a2f9fd7b54224bf2c4848af323e9b2298eb9';
 
 abstract class _$ProfilesAction extends $Notifier<void> {
   void build();
@@ -505,6 +505,59 @@ final class PortRoutingActionProvider
 String _$portRoutingActionHash() => r'b73d968e09d717c02fe3ba6117cff398779668e5';
 
 abstract class _$PortRoutingAction extends $Notifier<void> {
+  void build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<void, void>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<void, void>,
+              void,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(PriorityPolicyAction)
+final priorityPolicyActionProvider = PriorityPolicyActionProvider._();
+
+final class PriorityPolicyActionProvider
+    extends $NotifierProvider<PriorityPolicyAction, void> {
+  PriorityPolicyActionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'priorityPolicyActionProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$priorityPolicyActionHash();
+
+  @$internal
+  @override
+  PriorityPolicyAction create() => PriorityPolicyAction();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$priorityPolicyActionHash() =>
+    r'eed31a3cac5f3e97126e77af18933b5f18633f5a';
+
+abstract class _$PriorityPolicyAction extends $Notifier<void> {
   void build();
   @$mustCallSuper
   @override

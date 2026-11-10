@@ -1654,6 +1654,45 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "preview": MessageLookupByLibrary.simpleMessage("Preview"),
     "previousMatch": MessageLookupByLibrary.simpleMessage("Previous match"),
+    "priorityAddTier": MessageLookupByLibrary.simpleMessage("Add priority"),
+    "priorityAll": MessageLookupByLibrary.simpleMessage("All nodes"),
+    "priorityBase": MessageLookupByLibrary.simpleMessage("Base profile"),
+    "priorityCycle": MessageLookupByLibrary.simpleMessage(
+      "The groups form a cycle. Choose a different local group.",
+    ),
+    "priorityDescription": MessageLookupByLibrary.simpleMessage(
+      "Enhance a normal profile without rewriting its source. Rules keep their targets; the first available priority is used. Select this profile in Profiles to use it.",
+    ),
+    "priorityEmpty": MessageLookupByLibrary.simpleMessage(
+      "Select a profile and add a priority chain for one of its groups.",
+    ),
+    "priorityExclude": MessageLookupByLibrary.simpleMessage("Exclude keywords"),
+    "priorityFilterHint": MessageLookupByLibrary.simpleMessage(
+      "Keywords are separated by | and ignore case. Leave inclusion blank to match all nodes. Nodes within this tier are selected by latency. Source updates follow each subscription’s update settings.",
+    ),
+    "priorityInclude": MessageLookupByLibrary.simpleMessage("Include keywords"),
+    "priorityInvalid": MessageLookupByLibrary.simpleMessage(
+      "Could not save the priority chain. Check its groups, sources and Core connection.",
+    ),
+    "priorityKind": MessageLookupByLibrary.simpleMessage("Source type"),
+    "priorityLocal": MessageLookupByLibrary.simpleMessage("Base group or node"),
+    "priorityManaged": MessageLookupByLibrary.simpleMessage(
+      "This group follows its priority chain. Edit it in Policy priorities.",
+    ),
+    "priorityMissingTarget": MessageLookupByLibrary.simpleMessage(
+      "The base group is missing or the profile uses a script. Choose a standard profile and an existing group.",
+    ),
+    "priorityMoveDown": MessageLookupByLibrary.simpleMessage("Move down"),
+    "priorityMoveUp": MessageLookupByLibrary.simpleMessage("Move up"),
+    "priorityOrderHint": MessageLookupByLibrary.simpleMessage(
+      "Higher rows have higher priority. Right-click or long-press a row to move it. Lower priorities are used only when higher ones fail health checks. Recovered priorities handle new connections. DIRECT is used only if explicitly added.",
+    ),
+    "priorityPreview": MessageLookupByLibrary.simpleMessage("Preview matches"),
+    "prioritySubscriptions": MessageLookupByLibrary.simpleMessage(
+      "Subscription nodes",
+    ),
+    "priorityTier": MessageLookupByLibrary.simpleMessage("Priority tier"),
+    "priorityTitle": MessageLookupByLibrary.simpleMessage("Policy priorities"),
     "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
       "Sign in to GitHub in your browser to download builds from this private repository. Updates are installed manually.",
     ),

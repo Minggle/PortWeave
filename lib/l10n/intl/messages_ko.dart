@@ -1394,6 +1394,43 @@ class MessageLookup extends MessageLookupByLibrary {
     "pressKeyboard": MessageLookupByLibrary.simpleMessage("키 조합을 누르세요"),
     "preview": MessageLookupByLibrary.simpleMessage("미리보기"),
     "previousMatch": MessageLookupByLibrary.simpleMessage("이전 결과"),
+    "priorityAddTier": MessageLookupByLibrary.simpleMessage("우선순위 추가"),
+    "priorityAll": MessageLookupByLibrary.simpleMessage("모든 노드"),
+    "priorityBase": MessageLookupByLibrary.simpleMessage("기본 프로필"),
+    "priorityCycle": MessageLookupByLibrary.simpleMessage(
+      "그룹에 순환 참조가 있습니다. 다른 로컬 그룹을 선택하세요.",
+    ),
+    "priorityDescription": MessageLookupByLibrary.simpleMessage(
+      "원본 파일을 변경하지 않고 일반 프로필을 확장합니다. 규칙의 대상을 유지하며 사용 가능한 첫 우선순위를 사용합니다. 프로필 목록에서 이 구성을 선택하세요.",
+    ),
+    "priorityEmpty": MessageLookupByLibrary.simpleMessage(
+      "프로필을 선택하고 그룹에 우선순위를 추가하세요.",
+    ),
+    "priorityExclude": MessageLookupByLibrary.simpleMessage("제외 키워드"),
+    "priorityFilterHint": MessageLookupByLibrary.simpleMessage(
+      "키워드는 |로 구분하며 대소문자를 구분하지 않습니다. 비우면 모든 노드입니다. 단계 내에서는 지연 시간으로 선택합니다. 업데이트는 각 구독 설정을 따릅니다.",
+    ),
+    "priorityInclude": MessageLookupByLibrary.simpleMessage("포함 키워드"),
+    "priorityInvalid": MessageLookupByLibrary.simpleMessage(
+      "저장하지 못했습니다. 그룹, 구독 및 코어 연결을 확인하세요.",
+    ),
+    "priorityKind": MessageLookupByLibrary.simpleMessage("소스 유형"),
+    "priorityLocal": MessageLookupByLibrary.simpleMessage("기본 그룹 또는 노드"),
+    "priorityManaged": MessageLookupByLibrary.simpleMessage(
+      "이 그룹은 우선순위를 따릅니다. 정책 우선순위에서 수정하세요.",
+    ),
+    "priorityMissingTarget": MessageLookupByLibrary.simpleMessage(
+      "그룹이 없거나 스크립트를 사용하는 프로필입니다. 표준 프로필의 유효한 그룹을 선택하세요.",
+    ),
+    "priorityMoveDown": MessageLookupByLibrary.simpleMessage("아래로"),
+    "priorityMoveUp": MessageLookupByLibrary.simpleMessage("위로"),
+    "priorityOrderHint": MessageLookupByLibrary.simpleMessage(
+      "위에 있는 항목이 우선입니다. 우클릭 또는 길게 눌러 이동합니다. 상위 상태 확인 실패 시에만 하위를 사용하며 복구 후 새 연결은 상위로 돌아갑니다. DIRECT는 명시적으로 추가한 경우만 사용합니다.",
+    ),
+    "priorityPreview": MessageLookupByLibrary.simpleMessage("일치 항목 미리보기"),
+    "prioritySubscriptions": MessageLookupByLibrary.simpleMessage("구독 노드"),
+    "priorityTier": MessageLookupByLibrary.simpleMessage("우선순위 단계"),
+    "priorityTitle": MessageLookupByLibrary.simpleMessage("정책 우선순위"),
     "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
       "브라우저에서 GitHub에 로그인하여 이 비공개 저장소의 빌드를 다운로드하세요. 업데이트는 수동으로 설치해야 합니다.",
     ),

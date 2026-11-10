@@ -64,7 +64,14 @@ class SetupAction extends _$SetupAction {
           ref.read(appSettingProvider).showTrayTitle);
 
   SetupParams get _setupParams => SetupParams(
-    selectedMap: ref.read(selectedMapProvider),
+    selectedMap: {
+      for (final entry in ref.read(selectedMapProvider).entries)
+        if (!ref
+            .read(priorityPolicySettingProvider)
+            .forProfile(ref.read(currentProfileIdProvider))
+            .any((policy) => policy.group == entry.key))
+          entry.key: entry.value,
+    },
     options: ref.read(coreOptionsProvider),
   );
 
@@ -504,7 +511,8 @@ class SetupAction extends _$SetupAction {
         ? await setupState.script?.content
         : null;
     final hasScript = scriptContent?.isNotEmpty == true;
-    final profileBase = !isCustom && !hasScript
+    final profileBase =
+        !isCustom && !hasScript && setupState.priorityPolicies.isEmpty
         ? await _core.getProfileBase(profileId)
         : null;
     Map<String, dynamic> rawConfig = isCustom
@@ -531,6 +539,13 @@ class SetupAction extends _$SetupAction {
       rules: rules,
     );
     Map<String, dynamic> portProviders = const {};
+    if (setupState.priorityPolicies.isNotEmpty) {
+      final enhanced = await ref
+          .read(priorityPolicyActionProvider.notifier)
+          .prepare(rawConfig, setupState.priorityPolicies, patchConfig.testUrl);
+      rawConfig = enhanced.config;
+      portProviders = enhanced.providers;
+    }
     if (portWorkspace) {
       patchConfig = portRoutingPatch(patchConfig);
       final fragment = await ref

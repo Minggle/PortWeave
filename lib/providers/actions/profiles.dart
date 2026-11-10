@@ -21,6 +21,7 @@ class ProfilesAction extends _$ProfilesAction {
 
   Future<void> deleteProfile(int id) async {
     if (ref.read(portRoutingActionProvider.notifier).references(id) ||
+        ref.read(priorityPolicySettingProvider).references(id) ||
         ref.read(portRoutingSettingProvider).workspaceProfileId == id) {
       throw MessageException(currentAppLocalizations.portRoutingSourceInUse);
     }
@@ -155,7 +156,14 @@ class ProfilesAction extends _$ProfilesAction {
     try {
       ref.read(profilesProvider.notifier).put(profile);
       final updated = await profile.update(
-        validate: (path, key) => _core.validateProfile(path, key),
+        validate: (path, key) async {
+          final issue = await _core.validateProfile(path, key);
+          if (issue != null) return issue;
+          await ref
+              .read(priorityPolicyActionProvider.notifier)
+              .validateSource(profile.id, path);
+          return null;
+        },
       );
       // The download can take minutes; edits and deletes made meanwhile win.
       final latest = ref.read(profilesProvider).getProfile(profile.id);
@@ -169,6 +177,7 @@ class ProfilesAction extends _$ProfilesAction {
         lastUpdateDate: updated.lastUpdateDate,
       );
       ref.read(profilesProvider.notifier).put(newProfile);
+      ref.read(priorityPolicyActionProvider.notifier).sourceUpdated(profile.id);
       if (profile.id == ref.read(currentProfileIdProvider)) {
         ref
             .read(setupActionProvider.notifier)
@@ -229,6 +238,7 @@ class ProfilesAction extends _$ProfilesAction {
     ref
         .read(profilesProvider.notifier)
         .put(profile.copyWith(lastUpdateDate: DateTime.now()));
+    ref.read(priorityPolicyActionProvider.notifier).sourceUpdated(id);
   }
 
   Future<CustomProfileImport> readCustomImport(

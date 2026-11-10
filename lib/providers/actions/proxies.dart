@@ -92,6 +92,7 @@ class ProxiesAction extends _$ProxiesAction {
   }
 
   void changeProxyDebounce(String groupName, String proxyName) {
+    if (_priorityManaged(groupName)) return;
     _pendingSelectedRollback.putIfAbsent(
       groupName,
       () => _currentSelectedName(groupName),
@@ -179,6 +180,7 @@ class ProxiesAction extends _$ProxiesAction {
     required String groupName,
     required String proxyName,
   }) async {
+    if (_priorityManaged(groupName)) return;
     final profilesAction = ref.read(profilesActionProvider.notifier);
     final rollbackName =
         _pendingSelectedRollback.remove(groupName) ??
@@ -219,6 +221,15 @@ class ProxiesAction extends _$ProxiesAction {
         logLevel: coreFailureLogLevel(error),
       );
     }
+  }
+
+  bool _priorityManaged(String groupName) {
+    final managed = ref
+        .read(priorityPolicySettingProvider)
+        .forProfile(ref.read(currentProfileIdProvider))
+        .any((policy) => policy.group == groupName);
+    if (managed) dialogs.showBanner(currentAppLocalizations.priorityManaged);
+    return managed;
   }
 
   Future<void> updateProvider(

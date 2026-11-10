@@ -1410,6 +1410,45 @@ class MessageLookup extends MessageLookupByLibrary {
     "pressKeyboard": MessageLookupByLibrary.simpleMessage("キーの組み合わせを押してください"),
     "preview": MessageLookupByLibrary.simpleMessage("プレビュー"),
     "previousMatch": MessageLookupByLibrary.simpleMessage("前の一致"),
+    "priorityAddTier": MessageLookupByLibrary.simpleMessage("優先順位を追加"),
+    "priorityAll": MessageLookupByLibrary.simpleMessage("すべてのノード"),
+    "priorityBase": MessageLookupByLibrary.simpleMessage("基本プロファイル"),
+    "priorityCycle": MessageLookupByLibrary.simpleMessage(
+      "グループが循環参照しています。別のローカルグループを選んでください。",
+    ),
+    "priorityDescription": MessageLookupByLibrary.simpleMessage(
+      "元のファイルを書き換えずに通常のプロファイルを拡張します。ルールの参照先を保ち、最初の利用可能な優先順位を使用します。利用するにはプロファイル一覧でこの構成を選択してください。",
+    ),
+    "priorityEmpty": MessageLookupByLibrary.simpleMessage(
+      "プロファイルを選び、グループに優先順位を追加します。",
+    ),
+    "priorityExclude": MessageLookupByLibrary.simpleMessage("除外キーワード"),
+    "priorityFilterHint": MessageLookupByLibrary.simpleMessage(
+      "キーワードは | 区切りで大文字小文字を区別しません。空欄は全ノードです。階層内では遅延で選択します。更新は各サブスクリプションの設定に従います。",
+    ),
+    "priorityInclude": MessageLookupByLibrary.simpleMessage("含めるキーワード"),
+    "priorityInvalid": MessageLookupByLibrary.simpleMessage(
+      "保存できません。グループ、サブスクリプション、コア接続を確認してください。",
+    ),
+    "priorityKind": MessageLookupByLibrary.simpleMessage("ソースの種類"),
+    "priorityLocal": MessageLookupByLibrary.simpleMessage("基本構成のグループまたはノード"),
+    "priorityManaged": MessageLookupByLibrary.simpleMessage(
+      "このグループは優先順位に従います。ポリシーの優先順位で編集してください。",
+    ),
+    "priorityMissingTarget": MessageLookupByLibrary.simpleMessage(
+      "グループが存在しないかスクリプトを使用しています。標準プロファイルの有効なグループを選んでください。",
+    ),
+    "priorityMoveDown": MessageLookupByLibrary.simpleMessage("下へ"),
+    "priorityMoveUp": MessageLookupByLibrary.simpleMessage("上へ"),
+    "priorityOrderHint": MessageLookupByLibrary.simpleMessage(
+      "上の行ほど優先されます。右クリックまたは長押しで移動します。上位のチェックが失敗したときだけ下位を使用し、復旧後は新規接続が戻ります。DIRECT は明示的に追加した場合のみ使用します。",
+    ),
+    "priorityPreview": MessageLookupByLibrary.simpleMessage("一致をプレビュー"),
+    "prioritySubscriptions": MessageLookupByLibrary.simpleMessage(
+      "サブスクリプションのノード",
+    ),
+    "priorityTier": MessageLookupByLibrary.simpleMessage("優先順位"),
+    "priorityTitle": MessageLookupByLibrary.simpleMessage("ポリシーの優先順位"),
     "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
       "ブラウザーで GitHub にログインして、この非公開リポジトリからビルドをダウンロードしてください。更新は手動でインストールします。",
     ),

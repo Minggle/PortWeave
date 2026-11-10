@@ -625,6 +625,13 @@ void main() {
   });
 
   test('activation and deactivation preserve the previous profile', () async {
+    final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final port = socket.port;
+    await socket.close();
+    final config = container.read(portRoutingSettingProvider);
+    container.read(portRoutingSettingProvider.notifier).value = config.copyWith(
+      bindings: [config.bindings.single.copyWith(port: port)],
+    );
     container.read(currentProfileIdProvider.notifier).value = 11;
     container.read(coreStatusProvider.notifier).value = CoreStatus.connected;
     await action.activate();

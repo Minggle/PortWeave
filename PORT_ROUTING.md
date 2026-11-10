@@ -110,3 +110,9 @@ gh variable set MACOS_CI_RUNNER --repo Minggle/FlClash --body macos-15-intel
 - Windows Release 编译成功，包含 GUI、Go Core、Helper、Rust DLL 和 SQLite DLL。未使用真实订阅验证公网出口，也没有在主机上启动普通代理模式。
 - 原有 `test/lint/` 在 Windows 下有 9 项路径相关误报，因检查用 `/` 匹配豁免路径而 Windows 返回 `\`。与新功能相关的布局检查、国际化键集合检查已通过。
 - 全部 Go wrapper 测试在 Windows 下仍有两项既有兼容问题：`TestApplyConfigTellsARejectedProfileFromAFailedCall` 的 cache.db 句柄阻止临时目录清理；`TestHandleValidateProxiesLeavesARunningProxysResolverInPlace` 的路径错误文本断言不同。独立 Windows workflow 运行新增流量测试和 `go vet`，原有 Linux workflow 继续跑 Go 全套。
+
+## 按业务规则使用自建主用与订阅备用
+
+“工具 → 策略优先级”用于普通配置，不需要创建额外端口。选择底稿和业务组后，保留底稿中的分流规则，为目标组建立从上到下的优先级链。例如视频组为“台湾自建组 → 家宽订阅中的 US 节点 → 其他订阅中的指定地区节点”。每个订阅层可勾选多个来源，使用包含/排除关键词筛选，并预览匹配结果。右键或长按层级行可上移、下移或删除。
+
+高层探测可用时始终优先；低层不会因为延迟更低抢占高层。每个订阅层内部自动优选，来源刷新后重新计算候选。恢复高层后新连接回切；现有连接不保证无缝迁移。使用时在“配置”页选择底稿并开启规则模式；系统代理、TUN 的启用仍由已有设置控制。修改只保存增强策略，不覆盖原文件；删除增强策略即可恢复原始组。

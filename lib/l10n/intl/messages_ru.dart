@@ -1736,6 +1736,49 @@ class MessageLookup extends MessageLookupByLibrary {
     "previousMatch": MessageLookupByLibrary.simpleMessage(
       "Предыдущее совпадение",
     ),
+    "priorityAddTier": MessageLookupByLibrary.simpleMessage(
+      "Добавить приоритет",
+    ),
+    "priorityAll": MessageLookupByLibrary.simpleMessage("Все узлы"),
+    "priorityBase": MessageLookupByLibrary.simpleMessage("Базовый профиль"),
+    "priorityCycle": MessageLookupByLibrary.simpleMessage(
+      "Обнаружен цикл групп. Выберите другую локальную группу.",
+    ),
+    "priorityDescription": MessageLookupByLibrary.simpleMessage(
+      "Дополняет обычный профиль без изменения исходного файла. Правила сохраняют цели и используют первый доступный приоритет. Для работы выберите этот профиль.",
+    ),
+    "priorityEmpty": MessageLookupByLibrary.simpleMessage(
+      "Выберите профиль и добавьте цепочку приоритетов для группы.",
+    ),
+    "priorityExclude": MessageLookupByLibrary.simpleMessage("Исключить слова"),
+    "priorityFilterHint": MessageLookupByLibrary.simpleMessage(
+      "Разделяйте слова символом | без учёта регистра. Пустое поле включает все узлы. Внутри уровня выбор идёт по задержке. Обновления следуют настройкам каждой подписки.",
+    ),
+    "priorityInclude": MessageLookupByLibrary.simpleMessage("Включить слова"),
+    "priorityInvalid": MessageLookupByLibrary.simpleMessage(
+      "Не удалось сохранить. Проверьте группы, источники и соединение с ядром.",
+    ),
+    "priorityKind": MessageLookupByLibrary.simpleMessage("Тип источника"),
+    "priorityLocal": MessageLookupByLibrary.simpleMessage(
+      "Группа или узел профиля",
+    ),
+    "priorityManaged": MessageLookupByLibrary.simpleMessage(
+      "Эта группа следует цепочке приоритетов. Измените её в разделе приоритетов политик.",
+    ),
+    "priorityMissingTarget": MessageLookupByLibrary.simpleMessage(
+      "Группа отсутствует или профиль использует скрипт. Выберите стандартный профиль и существующую группу.",
+    ),
+    "priorityMoveDown": MessageLookupByLibrary.simpleMessage("Ниже"),
+    "priorityMoveUp": MessageLookupByLibrary.simpleMessage("Выше"),
+    "priorityOrderHint": MessageLookupByLibrary.simpleMessage(
+      "Строки сверху имеют больший приоритет. Для перемещения нажмите правой кнопкой или удерживайте строку. Нижний уровень используется лишь при провале проверок верхних. После восстановления новые соединения возвращаются. DIRECT добавляется только явно.",
+    ),
+    "priorityPreview": MessageLookupByLibrary.simpleMessage("Предпросмотр"),
+    "prioritySubscriptions": MessageLookupByLibrary.simpleMessage(
+      "Узлы подписок",
+    ),
+    "priorityTier": MessageLookupByLibrary.simpleMessage("Уровень приоритета"),
+    "priorityTitle": MessageLookupByLibrary.simpleMessage("Приоритеты политик"),
     "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
       "Войдите в GitHub в браузере, чтобы скачать сборки из этого закрытого репозитория. Обновления устанавливаются вручную.",
     ),

@@ -143,6 +143,10 @@ class BackupAction extends _$BackupAction {
       ref,
       config.copyWith(
         portRouting: restoredPortRouting,
+        priorityPolicies: config.priorityPolicies.remapProfiles({
+          for (final profile in await database.profilesDao.query().get())
+            profile.id: profile.id,
+        }),
         davProps: config.davProps ?? ref.read(davSettingProvider),
         vpnProps: config.vpnProps.copyWith(
           accessControlProps: accessControlProps,

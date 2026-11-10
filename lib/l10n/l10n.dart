@@ -9442,6 +9442,206 @@ class AppLocalizations {
       args: [nodes],
     );
   }
+
+  /// `Policy priorities`
+  String get priorityTitle {
+    return Intl.message(
+      'Policy priorities',
+      name: 'priorityTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enhance a normal profile without rewriting its source. Rules keep their targets; the first available priority is used. Select this profile in Profiles to use it.`
+  String get priorityDescription {
+    return Intl.message(
+      'Enhance a normal profile without rewriting its source. Rules keep their targets; the first available priority is used. Select this profile in Profiles to use it.',
+      name: 'priorityDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Base profile`
+  String get priorityBase {
+    return Intl.message(
+      'Base profile',
+      name: 'priorityBase',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select a profile and add a priority chain for one of its groups.`
+  String get priorityEmpty {
+    return Intl.message(
+      'Select a profile and add a priority chain for one of its groups.',
+      name: 'priorityEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The groups form a cycle. Choose a different local group.`
+  String get priorityCycle {
+    return Intl.message(
+      'The groups form a cycle. Choose a different local group.',
+      name: 'priorityCycle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The base group is missing or the profile uses a script. Choose a standard profile and an existing group.`
+  String get priorityMissingTarget {
+    return Intl.message(
+      'The base group is missing or the profile uses a script. Choose a standard profile and an existing group.',
+      name: 'priorityMissingTarget',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not save the priority chain. Check its groups, sources and Core connection.`
+  String get priorityInvalid {
+    return Intl.message(
+      'Could not save the priority chain. Check its groups, sources and Core connection.',
+      name: 'priorityInvalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Higher rows have higher priority. Right-click or long-press a row to move it. Lower priorities are used only when higher ones fail health checks. Recovered priorities handle new connections. DIRECT is used only if explicitly added.`
+  String get priorityOrderHint {
+    return Intl.message(
+      'Higher rows have higher priority. Right-click or long-press a row to move it. Lower priorities are used only when higher ones fail health checks. Recovered priorities handle new connections. DIRECT is used only if explicitly added.',
+      name: 'priorityOrderHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move up`
+  String get priorityMoveUp {
+    return Intl.message('Move up', name: 'priorityMoveUp', desc: '', args: []);
+  }
+
+  /// `Move down`
+  String get priorityMoveDown {
+    return Intl.message(
+      'Move down',
+      name: 'priorityMoveDown',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add priority`
+  String get priorityAddTier {
+    return Intl.message(
+      'Add priority',
+      name: 'priorityAddTier',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Priority tier`
+  String get priorityTier {
+    return Intl.message(
+      'Priority tier',
+      name: 'priorityTier',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Base group or node`
+  String get priorityLocal {
+    return Intl.message(
+      'Base group or node',
+      name: 'priorityLocal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Subscription nodes`
+  String get prioritySubscriptions {
+    return Intl.message(
+      'Subscription nodes',
+      name: 'prioritySubscriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Include keywords`
+  String get priorityInclude {
+    return Intl.message(
+      'Include keywords',
+      name: 'priorityInclude',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Exclude keywords`
+  String get priorityExclude {
+    return Intl.message(
+      'Exclude keywords',
+      name: 'priorityExclude',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Preview matches`
+  String get priorityPreview {
+    return Intl.message(
+      'Preview matches',
+      name: 'priorityPreview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Keywords are separated by | and ignore case. Leave inclusion blank to match all nodes. Nodes within this tier are selected by latency. Source updates follow each subscription’s update settings.`
+  String get priorityFilterHint {
+    return Intl.message(
+      'Keywords are separated by | and ignore case. Leave inclusion blank to match all nodes. Nodes within this tier are selected by latency. Source updates follow each subscription’s update settings.',
+      name: 'priorityFilterHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All nodes`
+  String get priorityAll {
+    return Intl.message('All nodes', name: 'priorityAll', desc: '', args: []);
+  }
+
+  /// `Source type`
+  String get priorityKind {
+    return Intl.message(
+      'Source type',
+      name: 'priorityKind',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This group follows its priority chain. Edit it in Policy priorities.`
+  String get priorityManaged {
+    return Intl.message(
+      'This group follows its priority chain. Edit it in Policy priorities.',
+      name: 'priorityManaged',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {

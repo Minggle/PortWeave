@@ -18,6 +18,7 @@ import 'developer.dart';
 import 'disclaimer.dart';
 import 'theme.dart';
 import 'port_routing.dart';
+import 'priority_policy.dart';
 
 class ToolsView extends ConsumerStatefulWidget {
   final bool? isWindows;
@@ -54,6 +55,11 @@ class _ToolViewState extends ConsumerState<ToolsView> {
     return generateSection(
       title: context.appLocalizations.settings,
       items: [
+        ListItem.open(
+          leading: const GlyphIcon(AppGlyphs.proxies),
+          title: Text(context.appLocalizations.priorityTitle),
+          widget: const PriorityPolicyView(),
+        ),
         if ((widget.isWindows ?? system.isWindows) ||
             (widget.isMacOS ?? system.isMacOS))
           ListItem.open(

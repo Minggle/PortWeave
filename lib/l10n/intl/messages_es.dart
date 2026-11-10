@@ -1779,6 +1779,51 @@ class MessageLookup extends MessageLookupByLibrary {
     "previousMatch": MessageLookupByLibrary.simpleMessage(
       "Coincidencia anterior",
     ),
+    "priorityAddTier": MessageLookupByLibrary.simpleMessage("Añadir prioridad"),
+    "priorityAll": MessageLookupByLibrary.simpleMessage("Todos los nodos"),
+    "priorityBase": MessageLookupByLibrary.simpleMessage("Perfil base"),
+    "priorityCycle": MessageLookupByLibrary.simpleMessage(
+      "Los grupos forman un ciclo. Elige otro grupo local.",
+    ),
+    "priorityDescription": MessageLookupByLibrary.simpleMessage(
+      "Amplía un perfil normal sin modificar su archivo. Las reglas conservan sus destinos y usan la primera prioridad disponible. Selecciona este perfil para usarlo.",
+    ),
+    "priorityEmpty": MessageLookupByLibrary.simpleMessage(
+      "Elige un perfil y añade prioridades a uno de sus grupos.",
+    ),
+    "priorityExclude": MessageLookupByLibrary.simpleMessage(
+      "Palabras excluidas",
+    ),
+    "priorityFilterHint": MessageLookupByLibrary.simpleMessage(
+      "Separa palabras con |, sin distinguir mayúsculas. Vacío incluye todos los nodos. Dentro del nivel se elige por latencia. Las actualizaciones siguen los ajustes de cada suscripción.",
+    ),
+    "priorityInclude": MessageLookupByLibrary.simpleMessage(
+      "Palabras incluidas",
+    ),
+    "priorityInvalid": MessageLookupByLibrary.simpleMessage(
+      "No se pudo guardar. Revisa los grupos, las fuentes y la conexión al núcleo.",
+    ),
+    "priorityKind": MessageLookupByLibrary.simpleMessage("Tipo de fuente"),
+    "priorityLocal": MessageLookupByLibrary.simpleMessage("Grupo o nodo base"),
+    "priorityManaged": MessageLookupByLibrary.simpleMessage(
+      "Este grupo sigue su cadena de prioridades. Edítala en Prioridades de políticas.",
+    ),
+    "priorityMissingTarget": MessageLookupByLibrary.simpleMessage(
+      "El grupo no existe o el perfil usa un script. Elige un perfil estándar y un grupo válido.",
+    ),
+    "priorityMoveDown": MessageLookupByLibrary.simpleMessage("Bajar"),
+    "priorityMoveUp": MessageLookupByLibrary.simpleMessage("Subir"),
+    "priorityOrderHint": MessageLookupByLibrary.simpleMessage(
+      "Las filas superiores tienen prioridad. Usa clic derecho o pulsación larga para moverlas. Solo se usan niveles inferiores cuando fallan las comprobaciones de los superiores. Al recuperarse, las nuevas conexiones vuelven. DIRECT debe añadirse explícitamente.",
+    ),
+    "priorityPreview": MessageLookupByLibrary.simpleMessage("Vista previa"),
+    "prioritySubscriptions": MessageLookupByLibrary.simpleMessage(
+      "Nodos de suscripción",
+    ),
+    "priorityTier": MessageLookupByLibrary.simpleMessage("Nivel de prioridad"),
+    "priorityTitle": MessageLookupByLibrary.simpleMessage(
+      "Prioridades de políticas",
+    ),
     "privateBuildUpdateTip": MessageLookupByLibrary.simpleMessage(
       "Inicia sesión en GitHub desde tu navegador para descargar versiones de este repositorio privado. Las actualizaciones se instalan manualmente.",
     ),
