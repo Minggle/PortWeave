@@ -51,6 +51,9 @@ Future<SetupState> setupState(Ref ref, int? profileId) async {
   final profileLastUpdateDate = profile?.lastUpdateDate?.millisecondsSinceEpoch;
   final profileType = profile?.type ?? ProfileType.file;
   final extendType = profile?.extendType ?? ExtendType.standard;
+  final priorityPolicies = profileType == ProfileType.custom
+      ? const <PriorityPolicy>[]
+      : ref.watch(priorityPolicySettingProvider).forProfile(profileId);
   final overrides = profileType == ProfileType.custom
       ? ref.watch(
           patchClashConfigProvider.select(
@@ -107,9 +110,7 @@ Future<SetupState> setupState(Ref ref, int? profileId) async {
     }
   }
   return SetupState(
-    priorityPolicies: profileType == ProfileType.custom
-        ? const []
-        : ref.watch(priorityPolicySettingProvider).forProfile(profileId),
+    priorityPolicies: priorityPolicies,
     portRouting: portRouting.isActive(profileId)
         ? portRouting
         : const PortRoutingConfig(),

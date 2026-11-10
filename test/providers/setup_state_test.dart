@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart' show LazyDatabase;
 import 'package:drift/native.dart';
 import 'package:fl_clash/database/database.dart' as db;
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/database.dart';
+import 'package:fl_clash/providers/config.dart';
 import 'package:fl_clash/providers/state.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +25,132 @@ void main() {
   tearDown(() async {
     await testDatabase.close();
   });
+
+  testWidgets(
+    'a standard setup can finish after its unobserved ref is disposed',
+    (tester) async {
+      await testDatabase.close();
+      final started = Completer<void>();
+      final release = Completer<void>();
+      testDatabase = db.Database(
+        LazyDatabase(() async {
+          started.complete();
+          await release.future;
+          return NativeDatabase.memory();
+        }),
+      );
+      db.database = testDatabase;
+      const profile = Profile(id: 1, autoUpdateDuration: Duration.zero);
+      const policy = PriorityPolicy(
+        profileId: 1,
+        group: 'Video',
+        tiers: [PriorityTier(target: 'Primary')],
+      );
+      final disposed = Completer<void>();
+      final container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWith(() => TestProfiles([profile])),
+          priorityPolicySettingProvider.overrideWithBuild(
+            (_, _) => const PriorityPolicies(policies: [policy]),
+          ),
+          setupStateProvider.overrideWith((ref, id) {
+            ref.onDispose(() {
+              if (!disposed.isCompleted) disposed.complete();
+            });
+            return setupState(ref, id);
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(() {
+        if (!release.isCompleted) release.complete();
+      });
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const SizedBox.shrink(),
+        ),
+      );
+      final pending = container.read(setupStateProvider(profile.id).future);
+      await started.future;
+      await tester.pump();
+      expect(disposed.isCompleted, isTrue);
+      release.complete();
+      final state = await pending;
+      expect(state.priorityPolicies, [policy]);
+      expect(state.profileType, ProfileType.file);
+    },
+  );
+
+  test(
+    'priority edits during a pending query invalidate the old setup build',
+    () async {
+      await testDatabase.close();
+      final started = Completer<void>();
+      final release = Completer<void>();
+      testDatabase = db.Database(
+        LazyDatabase(() async {
+          started.complete();
+          await release.future;
+          return NativeDatabase.memory();
+        }),
+      );
+      db.database = testDatabase;
+      const profile = Profile(id: 1, autoUpdateDuration: Duration.zero);
+      const policy = PriorityPolicy(
+        profileId: 1,
+        group: 'Video',
+        tiers: [PriorityTier(target: 'Primary')],
+      );
+      var builds = 0;
+      var disposals = 0;
+      final container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWith(() => TestProfiles([profile])),
+          setupStateProvider.overrideWith((ref, id) {
+            builds++;
+            ref.onDispose(() => disposals++);
+            return setupState(ref, id);
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(() {
+        if (!release.isCompleted) release.complete();
+      });
+      final observed = <SetupState>[];
+      container.listen(setupStateProvider(profile.id), (_, next) {
+        if (next case AsyncData(:final value)) observed.add(value);
+      });
+      final pending = container.read(setupStateProvider(profile.id).future);
+      await started.future;
+      container.read(priorityPolicySettingProvider.notifier).value =
+          const PriorityPolicies(policies: [policy]);
+      container.read(setupStateProvider(profile.id));
+      expect(builds, 2);
+      expect(disposals, 1);
+      release.complete();
+      final state = await pending;
+      expect(state.priorityPolicies, [policy]);
+      expect(observed, isNotEmpty);
+      expect(
+        observed,
+        everyElement(
+          isA<SetupState>().having(
+            (state) => state.priorityPolicies,
+            'latest priorities',
+            [policy],
+          ),
+        ),
+      );
+      container.read(priorityPolicySettingProvider.notifier).value =
+          const PriorityPolicies();
+      final restored = await container.read(
+        setupStateProvider(profile.id).future,
+      );
+      expect(restored.priorityPolicies, isEmpty);
+    },
+  );
 
   testWidgets('a custom setup disposed before its queries return resolves', (
     tester,
