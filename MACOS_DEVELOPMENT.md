@@ -143,3 +143,5 @@ M9 应用提交为 `26bc633`，[双架构 CI](https://github.com/Minggle/FlClash
 ### M9 保存时异步 Ref 释放修复
 
 收到保存失败截图后，使用内存数据库延迟查询复现 `UnmountedRefException`。原因是优先级依赖在数据库查询之后才 `ref.watch`，而未观察的异步 provider 可在查询期间被释放；查询期间的优先级变化也未及时触发重建。修复将此依赖读取与订阅移到第一次异步等待之前。新增测试分别覆盖自动释放后完成、等待期间修改优先级后仅发布新状态，以及撤回优先级。修复前两项均失败，修复后通过；Mac CI 已加入该测试套件。不读取或上传个人配置。
+
+该修复本地全套 4,945 项 Flutter 测试、静态分析、格式和 actionlint 通过。应用提交 `e176c6f` 的 Intel CI 与下载验收通过；ARM64 首次因 hosted runner 容量不足、未分配 runner 而取消。打包矩阵的 ARM64 改用 `macos-15`（Apple Silicon，已核对包含 Xcode 26.3/26.2），应用代码不变；Intel 仍使用 `macos-15-intel`。
