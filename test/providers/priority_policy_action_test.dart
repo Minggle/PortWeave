@@ -6,7 +6,6 @@ import 'package:fl_clash/common/priority_policy.dart';
 import 'package:fl_clash/core/controller.dart';
 import 'package:fl_clash/core/interface.dart';
 import 'package:fl_clash/enum/enum.dart';
-import 'package:fl_clash/l10n/l10n.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/state.dart';
@@ -74,7 +73,7 @@ void main() {
   };
 
   setUp(() async {
-    await AppLocalizations.load(const Locale('en'));
+    loadAppLocalizations(const Locale('en'));
     home = await Directory.systemTemp.createTemp('priority-policy-');
     await useAppPaths(home);
     core = _Core();
@@ -139,7 +138,6 @@ void main() {
               profileId: 10,
               profileLastUpdateDate: null,
               profileType: ProfileType.file,
-              extendType: ExtendType.standard,
               rules: [],
               proxyGroups: [],
               addedRules: [],

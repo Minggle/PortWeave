@@ -25,8 +25,8 @@ Windows / macOS：打开 **工具 → 多订阅端口**。先在原有配置页�
 
 ```powershell
 flutter pub get
-dart run build_runner build
-dart run intl_utils:generate
+dart run build_runner build --delete-conflicting-outputs
+flutter gen-l10n
 flutter analyze --no-fatal-infos
 flutter test test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart
 $env:CGO_ENABLED = '0'
@@ -46,18 +46,18 @@ Mac 应用现名 **PortWeave（端流）**，使用独立图标、Bundle ID `io.
 
 测试版普通混合代理默认端口为 **7891**，控制接口开启后为 **9091**，新建订阅端口从 **18082** 开始找空位。DNS 默认不开放监听，编辑器示例使用 **1054**。导入备份会保留其中明确设置的代理端口；网络设置里的“重置”可恢复 7891。
 
-需要完整 Xcode（仅 Command Line Tools 不够）、Flutter 3.47.6、Go 1.27 和 Rust。以下命令在对应架构的 Mac 上执行，`ARCHS` 由现有 Release 配置选取本机架构：
+需要完整 Xcode（仅 Command Line Tools 不够）、Flutter 3.50.0、Go 1.27 和 Rust。以下命令在对应架构的 Mac 上执行，`ARCHS` 由现有 Release 配置选取本机架构：
 
 ```bash
 flutter pub get
 flutter analyze --no-fatal-infos
 flutter test test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/common/system_dns_test.dart test/core/desktop
 CGO_ENABLED=0 go test -C core . -run '^TestPortRoutingWire$' -count=1
-flutter build macos --release --dart-define=APP_ENV=pre
-bash tool/package_macos.sh 0.9.3-ports.2 arm64
+FLUTTER_MACOS_ARM64_ONLY=true flutter build macos --release --dart-define=APP_ENV=pre
+bash tool/package_macos.sh 0.9.4-ports.1 arm64
 ```
 
-Intel 构建先执行 `plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist`，打包参数改为 `amd64`；此配置与上游 Intel 发布矩阵一致。脚本检查应用身份、协议、图标、App/Core 的架构及 bundle 签名，生成 `dist/PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
+ARM64 构建设置 `FLUTTER_MACOS_ARM64_ONLY=true`，Intel 构建打包参数改为 `amd64`（无需再设置 `FLTEnableImpeller`，Flutter 3.50 已默认在 Intel Mac 启用 Impeller，如遇渲染异常再按 `.agents/flutter-upgrade.md` 临时关闭）；此配置与上游发布矩阵一致。脚本检查应用身份、协议、图标、App/Core 的架构及 bundle 签名，生成 `dist/PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
 
 `Subscription ports - macOS` workflow 在功能分支及 `codex/macos-*` 分支更新时构建，也可手动构建并上传两种架构的 artifact；推送版本标签时，两种架构均通过测试和打包后才附加到 fork 的对应 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。分支和手动构建不会创建 Release。仓库现为私有，下载 artifact 需要使用有权限的 GitHub 账号登录。Mac 关于页的“下载测试版本”进入构建列表，选择成功的构建，在 Artifacts 中按架构下载并手动安装；启动时不进行匿名 Release 查询。
 

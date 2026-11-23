@@ -12,6 +12,9 @@ import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+bool _isStandardBase(Profile profile) =>
+    profile.type != ProfileType.custom && profile.scriptId == null;
+
 String _priorityError(AppLocalizations l, Object error) => switch (error) {
   PriorityPolicyException(issue: PriorityPolicyIssue.cycle) => l.priorityCycle,
   PriorityPolicyException(issue: PriorityPolicyIssue.missingTarget) =>
@@ -61,13 +64,8 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
     unawaited(_loadBase());
   }
 
-  List<Profile> get _profiles => ref
-      .read(profilesProvider)
-      .where(
-        (p) =>
-            p.type != ProfileType.custom && p.extendType == ExtendType.standard,
-      )
-      .toList();
+  List<Profile> get _profiles =>
+      ref.read(profilesProvider).where(_isStandardBase).toList();
 
   Future<void> _loadBase() async {
     final load = ++_load;
@@ -132,13 +130,7 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
   Widget build(BuildContext context) {
     final l = context.appLocalizations;
     final profiles = ref.watch(profilesProvider);
-    final eligible = profiles
-        .where(
-          (p) =>
-              p.type != ProfileType.custom &&
-              p.extendType == ExtendType.standard,
-        )
-        .toList();
+    final eligible = profiles.where(_isStandardBase).toList();
     final policies = ref
         .watch(priorityPolicySettingProvider)
         .forProfile(_profileId);

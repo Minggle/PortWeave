@@ -7,7 +7,6 @@ import 'package:fl_clash/common/port_routing.dart';
 import 'package:fl_clash/core/controller.dart';
 import 'package:fl_clash/core/interface.dart';
 import 'package:fl_clash/enum/enum.dart';
-import 'package:fl_clash/l10n/l10n.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/state.dart';
@@ -79,7 +78,7 @@ void main() {
   setUpAll(() async {
     originalOverrides = HttpOverrides.current;
     HttpOverrides.global = null;
-    await AppLocalizations.load(const Locale('en'));
+    loadAppLocalizations(const Locale('en'));
     globalState.packageInfo = PackageInfo(
       appName: 'FlClash',
       packageName: 'test',
@@ -94,6 +93,21 @@ void main() {
     );
     registerFallbackValue(
       const ChangeProxyParams(groupName: '', proxyName: ''),
+    );
+    registerFallbackValue(
+      const UpdateParams(
+        tun: Tun(),
+        mixedPort: 7891,
+        allowLan: false,
+        findProcessMode: FindProcessMode.strict,
+        mode: Mode.rule,
+        logLevel: LogLevel.info,
+        ipv6: false,
+        tcpConcurrent: false,
+        externalController: ExternalControllerStatus.close,
+        unifiedDelay: false,
+        options: CoreOptions(testUrl: ''),
+      ),
     );
   });
 
@@ -446,24 +460,66 @@ void main() {
     );
   });
 
-  test('dedicated mode releases macOS DNS without changing saved TUN', () {
-    container
-        .read(networkSettingProvider.notifier)
-        .update((value) => value.copyWith(autoSetSystemDns: true));
-    container
-        .read(patchClashConfigProvider.notifier)
-        .update(
-          (value) => value.copyWith(tun: value.tun.copyWith(enable: true)),
-        );
-    container.read(authorizedTunEnableProvider.notifier).value =
-        TunAuthorizationState.authorized;
-    startChecks();
-    expect(container.read(shouldPatchSystemDnsProvider), isFalse);
-    expect(container.read(patchClashConfigProvider).tun.enable, isTrue);
-    expect(container.read(networkSettingProvider).autoSetSystemDns, isTrue);
-    container.read(currentProfileIdProvider.notifier).value = 11;
-    expect(container.read(shouldPatchSystemDnsProvider), isTrue);
-  });
+  test(
+    'dedicated mode disables effective TUN without changing saved TUN',
+    () async {
+      when(() => core.updateConfig(any())).thenAnswer((_) async {});
+      container.listen(patchClashConfigProvider, (_, _) {});
+      container
+          .read(patchClashConfigProvider.notifier)
+          .update(
+            (value) => value.copyWith(tun: value.tun.copyWith(enable: true)),
+          );
+      container.read(authorizedTunEnableProvider.notifier).value =
+          TunAuthorizationState.authorized;
+      startChecks();
+      expect(container.read(trayStateProvider).tunEnable, isFalse);
+      expect(container.read(patchClashConfigProvider).tun.enable, isTrue);
+      container.read(currentProfileIdProvider.notifier).value = 11;
+      expect(container.read(trayStateProvider).tunEnable, isTrue);
+
+      final scoped = ProviderContainer(
+        overrides: [
+          coreHandlerProvider.overrideWithValue(CoreController.scoped(core)),
+          setupActionProvider.overrideWith(SetupAction.new),
+          ...buildConfigOverrides(
+            const Config(
+              themeProps: defaultThemeProps,
+              currentProfileId: 9,
+              portRouting: PortRoutingConfig(
+                workspaceProfileId: 9,
+                previousProfileId: 11,
+                bindings: [
+                  PortBinding(
+                    id: 1,
+                    name: 'One',
+                    profileId: 11,
+                    port: 18081,
+                    node: 'US One',
+                  ),
+                ],
+              ),
+              patchClashConfig: PatchClashConfig(tun: Tun(enable: true)),
+            ),
+          ),
+        ],
+      );
+      addTearDown(scoped.dispose);
+      scoped.listen(configProvider, (_, _) {});
+      scoped.read(authorizedTunEnableProvider.notifier).value =
+          TunAuthorizationState.authorized;
+
+      await scoped.read(setupActionProvider.notifier).updateConfig();
+      scoped.read(currentProfileIdProvider.notifier).value = 11;
+      await scoped.read(setupActionProvider.notifier).updateConfig();
+
+      final params = verify(
+        () => core.updateConfig(captureAny()),
+      ).captured.cast<UpdateParams>();
+      expect(params.map((item) => item.tun.enable), [false, true]);
+      expect(scoped.read(patchClashConfigProvider).tun.enable, isTrue);
+    },
+  );
 
   test('owned SOCKS listener shows its selected node', () async {
     final listener = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);

@@ -14,7 +14,7 @@ class PriorityPolicyAction extends _$PriorityPolicyAction {
     final profile = ref.read(profilesProvider).getProfile(profileId);
     if (profile == null ||
         profile.type == ProfileType.custom ||
-        profile.extendType == ExtendType.script) {
+        profile.scriptId != null) {
       throw const PriorityPolicyException(PriorityPolicyIssue.missingTarget);
     }
     return _core.readConfig(profileId);

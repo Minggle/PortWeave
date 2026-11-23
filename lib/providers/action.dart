@@ -10,7 +10,6 @@ import 'package:fl_clash/common/mitm_module.dart';
 import 'package:fl_clash/common/port_routing.dart';
 import 'package:fl_clash/common/port_probe.dart';
 import 'package:fl_clash/common/priority_policy.dart';
-import 'package:fl_clash/common/system_dns.dart';
 import 'package:fl_clash/core/core.dart';
 import 'package:fl_clash/database/database.dart';
 import 'package:fl_clash/enum/enum.dart';
