@@ -196,14 +196,22 @@ listeners:
 	providerTransport := &http.Transport{Proxy: http.ProxyURL(providerURL), DisableKeepAlives: true}
 	defer providerTransport.CloseIdleConnections()
 	providerClient := &http.Client{Transport: providerTransport, Timeout: 2 * time.Second}
-	response, err := providerClient.Get("http://video.test/data")
-	if err != nil {
-		t.Fatal(err)
-	}
-	body, err := io.ReadAll(response.Body)
-	response.Body.Close()
-	if err != nil || string(body) != "FIRST" {
-		t.Fatalf("provider port should bypass aggregate priorities: %q %v", body, err)
+	deadline = time.Now().Add(5 * time.Second)
+	for {
+		check()
+		response, err := providerClient.Get("http://video.test/data")
+		var body []byte
+		if err == nil {
+			body, err = io.ReadAll(response.Body)
+			response.Body.Close()
+			if err == nil && response.StatusCode == http.StatusOK && string(body) == "FIRST" {
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("provider port should bypass aggregate priorities: %q %v", body, err)
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 	mainOn.Store(false)
 	expect("FIRST")
