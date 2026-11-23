@@ -1,20 +1,50 @@
-name: Subscription ports - macOS
+name: PortWeave - macOS
 
 on:
   workflow_dispatch:
+    inputs:
+      safe_mode:
+        description: Build and upload the ARM64 safe-mode debug app within its artifact budget
+        type: boolean
+        default: false
   push:
     branches:
-      - feature/multi-subscription-ports
-      - 'codex/macos-*'
+      - main
     tags:
       - 'v*'
+
+# One run owns this platform's artifacts through release publication, across all refs.
+concurrency:
+  group: portweave-ports-macos
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  prepare-artifacts:
+    if: github.repository == 'Minggle/PortWeave'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free space for this platform's next artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const cleanup = require('./.github/scripts/ports-artifacts.js');
+            await cleanup({github, context, core, platform: 'macos', phase: 'prepare'});
+
   macos:
-    if: github.repository == 'Minggle/FlClash'
+    needs: prepare-artifacts
+    permissions:
+      contents: read
+      actions: write
+    timeout-minutes: 90
+    if: github.repository == 'Minggle/PortWeave'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -54,9 +84,17 @@ jobs:
           flutter pub get
           dart format --output=none --set-exit-if-changed lib test tool plugins
           flutter analyze --no-fatal-infos
-      - name: Feature and desktop regression tests
+      - name: Full Flutter regression suite (ARM64)
+        if: matrix.arch == 'arm64'
+        timeout-minutes: 45
+        run: dart run tool/test.dart -- --reporter expanded
+      - name: Feature and desktop regression tests (Intel)
+        if: matrix.arch == 'amd64'
+        timeout-minutes: 30
         run: |
-          dart run tool/test.dart test/providers/setup_state_test.dart test/common/priority_policy_test.dart test/providers/priority_policy_action_test.dart test/views/priority_policy_test.dart test/tool/packaging_config_test.dart test/tool/package_test.dart test/common/app_update_test.dart test/common/tray_test.dart test/common/tray_menu_test.dart test/common/tray_lifecycle_test.dart test/plugins/rust_api/tray_test.dart test/common/link_test.dart test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/providers/config_test.dart test/providers/backup_action_test.dart test/common/http_test.dart test/common/system_dns_test.dart test/manager/proxy_manager_test.dart test/manager/tray_manager_test.dart test/manager/window_manager_test.dart test/core/desktop test/core/service_test.dart test/l10n
+          dart run tool/test.dart test/providers/setup_state_test.dart test/common/priority_policy_test.dart test/providers/priority_policy_action_test.dart test/views/priority_policy_test.dart test/tool/packaging_config_test.dart test/tool/package_test.dart test/common/app_update_test.dart test/common/tray_test.dart test/common/tray_menu_test.dart test/common/tray_lifecycle_test.dart test/plugins/rust_api/tray_test.dart test/common/link_test.dart test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/providers/config_test.dart test/providers/backup_action_test.dart test/common/http_test.dart test/common/system_dns_test.dart test/manager/proxy_manager_test.dart test/manager/tray_manager_test.dart test/manager/window_manager_test.dart test/core/desktop test/core/service_test.dart test/l10n test/database/migration_v1_to_v2_test.dart test/common/backup_task_test.dart test/providers/script_outbounds_test.dart
+      - name: Go wire tests and analysis
+        run: |
           CGO_ENABLED=0 go test -C core . -run '^Test(PortRouting|PriorityPolicy)Wire$' -count=1
           CGO_ENABLED=0 go vet -C core . ./cmd/...
       - name: Build and package
@@ -77,27 +115,43 @@ jobs:
           fi
           flutter build macos --release --build-name="${version%%-*}" --dart-define=APP_ENV="$app_env"
           bash tool/package_macos.sh "$version" "$PACKAGE_ARCH"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: subscription-ports-macos-${{ matrix.arch }}
-          path: dist/*
-          if-no-files-found: error
       - name: Build safe mode smoke app
-        if: github.ref_type != 'tag' && matrix.arch == 'arm64'
+        if: github.event_name == 'workflow_dispatch' && inputs.safe_mode && github.ref_type != 'tag' && matrix.arch == 'arm64'
         env:
           FLUTTER_MACOS_ARM64_ONLY: true
         run: |
           flutter build macos --debug --dart-define=SAFE_MODE=true --dart-define=APP_ENV=dev
           ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Debug/PortWeave.app build/PortWeave-safe-mode-arm64.zip
+      - name: Check size and clear superseded artifacts before upload
+        uses: actions/github-script@v7
+        env:
+          INCLUDE_SAFE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.safe_mode && github.ref_type != 'tag' && matrix.arch == 'arm64' }}
+        with:
+          script: |
+            const check = require('./.github/scripts/ports-artifacts.js');
+            const paths = ['dist'];
+            if (process.env.INCLUDE_SAFE_MODE === 'true') paths.push('build/PortWeave-safe-mode-arm64.zip');
+            await check({github, context, core, platform: 'macos', arch: '${{ matrix.arch }}', phase: 'upload', paths});
       - uses: actions/upload-artifact@v4
-        if: github.ref_type != 'tag' && matrix.arch == 'arm64'
+        with:
+          name: subscription-ports-macos-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.safe_mode && github.ref_type != 'tag' && matrix.arch == 'arm64'
         with:
           name: subscription-ports-macos-safe-mode
           path: build/PortWeave-safe-mode-arm64.zip
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
 
   release:
-    if: github.repository == 'Minggle/FlClash' && github.ref_type == 'tag'
+    if: github.repository == 'Minggle/PortWeave' && github.ref_type == 'tag'
     needs: macos
     runs-on: ubuntu-latest
     permissions:
@@ -114,3 +168,20 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
+
+  cleanup-artifacts:
+    if: always() && github.repository == 'Minggle/PortWeave'
+    needs: [prepare-artifacts, macos, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep only the latest run's platform artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const cleanup = require('./.github/scripts/ports-artifacts.js');
+            await cleanup({github, context, core, platform: 'macos', phase: 'finish'});

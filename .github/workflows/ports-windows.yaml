@@ -1,17 +1,45 @@
-name: Subscription ports - Windows
+name: PortWeave - Windows
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+
+# One run owns this platform's artifacts through release publication, across all refs.
+concurrency:
+  group: portweave-ports-windows
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  prepare-artifacts:
+    if: github.repository == 'Minggle/PortWeave'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free space for this platform's next artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const cleanup = require('./.github/scripts/ports-artifacts.js');
+            await cleanup({github, context, core, platform: 'windows', phase: 'prepare'});
+
   windows:
-    if: github.repository == 'Minggle/FlClash'
+    needs: prepare-artifacts
+    permissions:
+      contents: read
+      actions: write
+    timeout-minutes: 90
+    if: github.repository == 'Minggle/PortWeave'
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -80,13 +108,23 @@ jobs:
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath "dist/$name"
           $hash = (Get-FileHash "dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $name" | Set-Content -Encoding ascii dist/SHA256SUMS
+      - name: Check size and clear superseded artifacts before upload
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const check = require('./.github/scripts/ports-artifacts.js');
+            await check({github, context, core, platform: 'windows', arch: 'amd64', phase: 'upload', paths: ['dist']});
       - uses: actions/upload-artifact@v4
         with:
           name: subscription-ports-windows
           path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
 
   release:
-    if: github.repository == 'Minggle/FlClash' && github.ref_type == 'tag'
+    if: github.repository == 'Minggle/PortWeave' && github.ref_type == 'tag'
     needs: windows
     runs-on: ubuntu-latest
     permissions:
@@ -99,5 +137,23 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          fail_on_unmatched_files: true
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
+
+  cleanup-artifacts:
+    if: always() && github.repository == 'Minggle/PortWeave'
+    needs: [prepare-artifacts, windows, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep only the latest run's platform artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const cleanup = require('./.github/scripts/ports-artifacts.js');
+            await cleanup({github, context, core, platform: 'windows', phase: 'finish'});

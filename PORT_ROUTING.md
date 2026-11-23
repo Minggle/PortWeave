@@ -1,15 +1,21 @@
-# 多订阅独立端口
+# PortWeave（端流）：多订阅端口与策略优先级
+
+更新日期：2026-11-23。当前开发版本 `0.9.4`，Flutter `3.50.0`。仓库已更名为 `Minggle/PortWeave`，`origin` 已更新，当前保持公开。升级、测试和交付进度统一记录在 [Mac 开发记录](MACOS_DEVELOPMENT.md)；本页旧版结果不代表 0.9.4 已验证。
+
+[English overview](README.md) · [中文介绍](README_zh_CN.md) · [发布记录](RELEASE_PORTS.md) · [Mac 验证进度](MACOS_DEVELOPMENT.md)
+
+## 多订阅独立端口
 
 Windows / macOS：打开 **工具 → 多订阅端口**。先在原有配置页面导入订阅，再添加端口绑定：选择端口和策略：默认沿用一个订阅的原有规则/策略组，或选择固定节点、按关键词聚合多个订阅，最后开启专用多端口模式。区域关键词以 `|` 分隔，忽略大小写，按节点名称匹配；自动选择衡量延迟，不是带宽或出口国家认证。
 
 每个端口同时支持 HTTP、HTTPS CONNECT 和 SOCKS5 TCP，只监听 `127.0.0.1`。例如两个应用分别设置 `http://127.0.0.1:18082` 和 `socks5h://127.0.0.1:18083`。右键绑定可复制地址、更新订阅和设置更新间隔。一个订阅可建立多条绑定。此版本不支持 UDP、局域网共享或按进程接管。
 
-开启时切入受管理的自定义配置，关闭时恢复此前配置。选择其他普通配置也会停用端口。此模式在运行时关闭系统代理、TUN 和默认混合端口，不改写这些功能原有的保存值。应用自身下载在此模式直接连接，避免使用已经关闭的默认端口。
+开启时切入受管理的自定义配置，关闭时恢复此前配置。选择其他普通配置也会停用端口。此模式在运行时关闭系统代理、TUN、控制接口和默认混合端口，不改写这些功能原有的保存值。应用自身下载在此模式直接连接，避免使用已经关闭的默认端口。
 
 ## 节点与更新
 
 - 使用已有订阅的顶层代理节点；嵌套 `proxy-providers`、直接连接节点、重复节点名和带 `dialer-proxy` 的代理链会被拒绝。现有导入支持的分享链接与加密订阅仍由原校验流程转换。
-- “沿用原有策略”使用一个订阅的原始规则、策略组及已保存的组选项，保留规则中的 DIRECT/REJECT。每个原策略端口拥有独立规则空间，不使用其他订阅的规则；全局/直连模式分别映射到此订阅的组/直连。DNS、TUN、系统代理和额外监听等主机设置仍由专用模式统一管理。
+- “沿用原有策略”使用一个订阅的原始规则、策略组及已保存的组选项，保留规则中的 DIRECT/REJECT。规则空间按来源隔离，不使用其他订阅的规则；引用同一来源的原策略端口共用该来源的规则和组。全局/直连模式分别映射到此订阅的组/直连，原规则未命中时也保留直连兜底。DNS、TUN、系统代理和额外监听等主机设置仍由专用模式统一管理。
 - “固定节点”按完整名称匹配；消失后拒绝新连接。“按区域自动选择”可在配置选择页勾选多个订阅，例如用 `US|美国` 汇总所有所选订阅的匹配节点。同名节点保留来源标识，候选为空时拒绝连接；不会扩大到未选订阅或自动直连。
 - 每个订阅默认每 5 分钟拉取，调度器每 30 秒检查到期任务。更新设置对同一订阅的所有端口生效，可暂停或改为 1～1440 分钟。程序退出期间不更新。
 - 仅用于固定/关键词绑定的订阅继续使用临时文件校验及 provider 局部加载，失败保留最后可用缓存，更新一个来源会刷新引用它的聚合组。涉及原策略绑定的订阅更新时会重新应用多端口配置，以同步规则和组的变化，可能短暂重连；失败恢复旧源文件、缓存和配置。
@@ -19,9 +25,9 @@ Windows / macOS：打开 **工具 → 多订阅端口**。先在原有配置页�
 
 ## 维护与验证
 
-主功能分支：`feature/multi-subscription-ports`。新增代码集中在 `lib/common/port_*`、`lib/models/port_routing.dart`、`lib/providers/*port_routing*` 和 `lib/views/port_routing.dart`。配置持久化使用 `Config.portRouting`，没有新增数据库 schema 版本；旧设置默认关闭。恢复备份时检查订阅引用并丢弃可重建缓存。
+历史功能基线见固定提交 [`f2b03c06`](https://github.com/Minggle/PortWeave/tree/f2b03c06)。多端口代码集中在 `lib/common/port_*`、`lib/models/port_routing.dart`、`lib/providers/port_routing.dart`、`lib/providers/actions/port_routing.dart` 和 `lib/views/port_routing.dart`；策略优先级对应 `priority_policy.dart`。多端口配置持久化使用 `Config.portRouting`，功能引入时没有新增数据库 schema 版本；旧设置默认关闭。恢复备份时检查订阅引用并丢弃可重建缓存。
 
-没有修改 mihomo、Rust、Helper 或原生生命周期。`CoreService.processId` 只读暴露已持有的进程 ID，用于监听归属检查。
+多端口功能复用单一 Core 与原有生命周期，不另建进程管理入口。`CoreService.processId` 只读暴露已持有的进程 ID，用于监听归属检查。以下为开发验证命令，不是本轮已完成的结果：
 
 ```powershell
 flutter pub get
@@ -29,22 +35,24 @@ dart run build_runner build --delete-conflicting-outputs
 flutter gen-l10n
 flutter analyze --no-fatal-infos
 flutter test test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart
+flutter test test/common/priority_policy_test.dart test/providers/priority_policy_action_test.dart test/views/priority_policy_test.dart
+flutter test test/database/migration_v1_to_v2_test.dart test/common/backup_task_test.dart test/providers/script_outbounds_test.dart test/providers/setup_state_test.dart
 $env:CGO_ENABLED = '0'
-go test -C core . -run '^TestPortRoutingWire$' -count=1 -v
+go test -C core . -run '^Test(PortRouting|PriorityPolicy)Wire$' -count=1 -v
 flutter build windows --release
 ```
 
 Go 测试在独立子进程与临时目录运行，只使用回环端口和本地模拟出口，覆盖 HTTP/SOCKS5 分离、区域选择、局部更新保留另一个订阅的持续连接，以及空源/节点消失的拒绝行为。不会启动 GUI、TUN 或修改系统代理。外部真实订阅与公网出口仍需实际环境验收。
 
-本机 GUI 调试必须使用 `flutter run --dart-define=SAFE_MODE=true`。安全模式不会开放这些端口，真实流量测试应使用上述隔离测试或单独的测试环境。
+本机 GUI 调试必须使用 `flutter run --dart-define-from-file=env.json --dart-define=SAFE_MODE=true`。安全模式不会开放这些端口，真实流量测试应使用上述隔离测试或单独的测试环境。只结束自行启动并记录 PID 的测试进程。
 
 ## macOS 开发与构建
 
-支持目标为 macOS 12 及以上，Apple Silicon（`arm64`）和 Intel（`amd64`）分别构建。开发顺序、进度和实际验证结果见 [Mac 开发计划](MACOS_DEVELOPMENT.md)。
+最低部署目标为 macOS 12.0，Apple Silicon（`arm64`）和 Intel（`amd64`）分别构建。实际验证范围见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。
 
 Mac 应用现名 **PortWeave（端流）**，使用独立图标、Bundle ID `io.github.minggle.portweave` 和 `portweave://` 协议，可与 FlClash 同时安装。配置、缓存与登录项独立，初次使用需导入订阅或备份。两者同时运行时，仍需避免抢占系统代理/TUN 和相同监听端口；建议 PortWeave 使用专用多端口模式。
 
-测试版普通混合代理默认端口为 **7891**，控制接口开启后为 **9091**，新建订阅端口从 **18082** 开始找空位。DNS 默认不开放监听，编辑器示例使用 **1054**。导入备份会保留其中明确设置的代理端口；网络设置里的“重置”可恢复 7891。
+测试版普通混合代理默认端口为 **7891**。外部控制接口默认关闭，开启后监听 `127.0.0.1:9091`，未设置密钥时自动生成。新建订阅端口从 **18082** 开始跳过已有绑定的端口；其他进程占用仍需通过监听检查确认。DNS 默认不开放监听，编辑器示例使用 **1054**。导入备份会保留其中明确设置的代理端口；网络设置里的“重置”可恢复 7891。
 
 需要完整 Xcode（仅 Command Line Tools 不够）、Flutter 3.50.0、Go 1.27 和 Rust。以下命令在对应架构的 Mac 上执行，`ARCHS` 由现有 Release 配置选取本机架构：
 
@@ -52,20 +60,26 @@ Mac 应用现名 **PortWeave（端流）**，使用独立图标、Bundle ID `io.
 flutter pub get
 flutter analyze --no-fatal-infos
 flutter test test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/common/system_dns_test.dart test/core/desktop
-CGO_ENABLED=0 go test -C core . -run '^TestPortRoutingWire$' -count=1
-FLUTTER_MACOS_ARM64_ONLY=true flutter build macos --release --dart-define=APP_ENV=pre
+flutter test test/common/priority_policy_test.dart test/providers/priority_policy_action_test.dart test/views/priority_policy_test.dart
+flutter test test/database/migration_v1_to_v2_test.dart test/common/backup_task_test.dart test/providers/script_outbounds_test.dart test/providers/setup_state_test.dart
+CGO_ENABLED=0 go test -C core . -run '^Test(PortRouting|PriorityPolicy)Wire$' -count=1
+FLUTTER_MACOS_ARM64_ONLY=true flutter build macos --release --build-name=0.9.4 --dart-define=APP_ENV=pre
 bash tool/package_macos.sh 0.9.4-ports.1 arm64
 ```
 
 ARM64 构建设置 `FLUTTER_MACOS_ARM64_ONLY=true`，Intel 构建打包参数改为 `amd64`（无需再设置 `FLTEnableImpeller`，Flutter 3.50 已默认在 Intel Mac 启用 Impeller，如遇渲染异常再按 `.agents/flutter-upgrade.md` 临时关闭）；此配置与上游发布矩阵一致。脚本检查应用身份、协议、图标、App/Core 的架构及 bundle 签名，生成 `dist/PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
 
-`Subscription ports - macOS` workflow 在功能分支及 `codex/macos-*` 分支更新时构建，也可手动构建并上传两种架构的 artifact；推送版本标签时，两种架构均通过测试和打包后才附加到 fork 的对应 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。分支和手动构建不会创建 Release。仓库现为私有，下载 artifact 需要使用有权限的 GitHub 账号登录。Mac 关于页的“下载测试版本”进入构建列表，选择成功的构建，在 Artifacts 中按架构下载并手动安装；启动时不进行匿名 Release 查询。
+通过 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) 的 **Run workflow** 选择分支，手动构建两种架构的 artifact。macOS／Windows workflows 均支持 `main` 推送、`v*` 标签和手动触发。Mac 的 `safe_mode` 手动选项默认 `false`，仅在手动开启时额外构建 ARM64 安全模式调试包。版本标签的 Release 上传与普通 artifact 分开，分支／手动构建不会创建 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。本文的 `0.9.4-ports.1` 仅为打包示例，不代表已有该标签或安装包。
 
-DMG 内含应用和 Applications 快捷方式。更新时退出已安装的 PortWeave，将新应用拖入 Applications，再由用户启动。当前流程沿用临时签名，尚未接入 Developer ID 签名或 Apple 公证；正式分发前需要补齐凭据和 Gatekeeper 安装验收。Mac 更新通过私有构建列表手动下载，不提供应用内自动替换。预发行版本不会由 `releases/latest` 返回。
+每个平台仅保留最新 run 的 artifact，一天后到期。上传文件总预算为 450 MB：macOS ARM64 250 MB（包含可选安全模式包）、macOS Intel 100 MB、Windows 100 MB，超出相应预算会阻止上传。这些规则针对端口 workflows 的 Actions artifact，Release 附件另行保留。
 
-## Fork 发布
+仓库当前公开，下载 Actions artifact 仍需按 GitHub 要求登录并具有读取权限。Mac 关于页的“下载测试版本”进入构建列表，选择目标提交的成功运行，在 Artifacts 中按架构下载并手动安装；启动时不查询 Releases。此手动更新策略不随仓库公开状态自动改变。
 
-应用更新来源为 `Minggle/FlClash`。独立的 `Subscription ports - Windows` workflow 可以手动构建 ZIP；推送 `v*` 标签时发布并生成 `SHA256SUMS`，带 `-` 的标签（例如 `v0.9.4-ports.1`）发布为预发行版，纯数字标签（例如 `v0.9.4`）发布为正式版。原有上游 workflow 保留，未接入上游的 Telegram、Homebrew 或 F-Droid 发布凭据。GitHub 的 `releases/latest` 不包含预发行版本，因此预发行测试包手动安装；发布稳定版本时使用新的纯数字版本标签，构建会把标签中的数字版本写入应用。ZIP 便携版通过发布页手动更新；尚未提供安装器的自动替换流程。
+DMG 内含应用和 Applications 快捷方式。更新时退出已安装的 PortWeave，将新应用拖入 Applications，再由用户启动。当前流程沿用临时签名，尚未接入 Developer ID 签名或 Apple 公证；正式分发前需要补齐凭据和 Gatekeeper 安装验收。Mac 更新通过 Actions 构建列表手动下载，不提供应用内自动替换。预发行版本不会由 `releases/latest` 返回。
+
+## 仓库与发布
+
+仓库及下载来源为 `Minggle/PortWeave`。独立的 `PortWeave - Windows` workflow 保留手动 ZIP 构建路径，Windows 包名和可执行文件仍使用 `FlClash`。端口专用 workflows 的标签发布路径生成校验文件，带 `-` 的版本标签标为预发行，纯数字版本标签标为正式版；具体是否可下载需确认对应运行成功。GitHub 的 `releases/latest` 不包含预发行版本，测试包与 ZIP 便携版使用手动下载。
 
 合并上游稳定版本后重新生成代码，并优先运行多端口功能测试、配置/备份/HTTP 回归和桌面 Core 测试。不要在正式构建中关闭 `pubspec.yaml` 的原生 `build_assets` hooks。
 
@@ -73,18 +87,18 @@ DMG 内含应用和 Applications 快捷方式。更新时退出已安装的 Port
 
 `build` workflow 的 Dart、Plugins、Go core、Android unit tests、Rust 和 Desktop linux 共用仓库变量 `LINUX_CI_RUNNER`。未设置时使用 GitHub 的 `ubuntu-latest`，合并到其他仓库不会自动启用 Instabox。测试步骤、工具链版本和检查范围保持一致。
 
-在 Instabox 的目标工作区连接 GitHub 的 `Minggle` 账号，并授权 `Minggle/FlClash` 后启用：
+在 Instabox 的目标工作区连接 GitHub 的 `Minggle` 账号，并授权 `Minggle/PortWeave` 后启用：
 
 ```powershell
-gh variable set LINUX_CI_RUNNER --repo Minggle/FlClash --body instabox-medium
+gh variable set LINUX_CI_RUNNER --repo Minggle/PortWeave --body instabox-medium
 ```
 
 `instabox-medium` 是 Ubuntu 24.04、4 vCPU / 8 GiB 的临时机器，支持免费计划；每个 job 结束后自动删除。Windows、macOS 原生构建仍使用 GitHub 对应平台的 runner；Instabox 无法解决 macOS 构建机容量不足。实际耗时取决于排队、缓存和工作区额度，应比较完整 CI 耗时后再判断是否加速。
 
-首次启用后同时查看 `gh run view <run-id> --repo Minggle/FlClash` 和 `instabox ci`。若 GitHub 排队而 Instabox 没有对应 job，检查 App 对此仓库的访问授权；若 Instabox 显示拒绝或等待，按其中的原因处理。回退命令只影响之后调度的任务：
+首次启用后同时查看 `gh run view <run-id> --repo Minggle/PortWeave` 和 `instabox ci`。若 GitHub 排队而 Instabox 没有对应 job，检查 App 对此仓库的访问授权；若 Instabox 显示拒绝或等待，按其中的原因处理。回退命令只影响之后调度的任务：
 
 ```powershell
-gh variable delete LINUX_CI_RUNNER --repo Minggle/FlClash
+gh variable delete LINUX_CI_RUNNER --repo Minggle/PortWeave
 ```
 
 已排队的任务需要取消后重新运行才会使用回退后的 runner。原有上游发布 job 和独立的 Windows 发布 workflow 不受这个变量控制。
@@ -92,7 +106,7 @@ gh variable delete LINUX_CI_RUNNER --repo Minggle/FlClash
 macOS ARM runner 容量不足时，可将普通编译检查临时切到 Intel runner：
 
 ```powershell
-gh variable set MACOS_CI_RUNNER --repo Minggle/FlClash --body macos-15-intel
+gh variable set MACOS_CI_RUNNER --repo Minggle/PortWeave --body macos-15-intel
 ```
 
 未设置 `MACOS_CI_RUNNER` 时仍用 `macos-latest`，删除变量即可恢复。Intel 编译不能代替 ARM 编译验证；此开关只影响普通检查，原有发布矩阵中的 macOS 两种架构不变。
@@ -100,6 +114,8 @@ gh variable set MACOS_CI_RUNNER --repo Minggle/FlClash --body macos-15-intel
 参考：[Instabox CI 官方文档](https://instabox.sh/docs/ci.md)。
 
 ## 本次验证记录
+
+以下是 v0.9.3 Windows 首版的历史记录，保留原始结果与阻塞项，不作为 0.9.4 的通过结论。
 
 基线 `be847366`（v0.9.3），Windows x64，Flutter 3.47.6 / Dart 3.13.5 / Go 1.27.3。
 
@@ -113,6 +129,6 @@ gh variable set MACOS_CI_RUNNER --repo Minggle/FlClash --body macos-15-intel
 
 ## 按业务规则使用自建主用与订阅备用
 
-“工具 → 策略优先级”用于普通配置，不需要创建额外端口。选择底稿和业务组后，保留底稿中的分流规则，为目标组建立从上到下的优先级链。例如视频组为“台湾自建组 → 家宽订阅中的 US 节点 → 其他订阅中的指定地区节点”。每个订阅层可勾选多个来源，使用包含/排除关键词筛选，并预览匹配结果。右键或长按层级行可上移、下移或删除。
+“工具 → 策略优先级”用于未关联脚本的普通配置，不需要创建额外端口。选择底稿和业务组后，保留底稿中的分流规则，为目标组建立从上到下的优先级链。例如视频组为“台湾自建组 → 家宽订阅中的 US 节点 → 其他订阅中的指定地区节点”。每个订阅层可勾选多个来源，使用包含/排除关键词筛选，并预览匹配结果；关键词以 `|` 分隔且忽略大小写，包含留空匹配全部。右键或长按层级行可上移、下移或删除。
 
-高层探测可用时始终优先；低层不会因为延迟更低抢占高层。每个订阅层内部自动优选，来源刷新后重新计算候选。恢复高层后新连接回切；现有连接不保证无缝迁移。使用时在“配置”页选择底稿并开启规则模式；系统代理、TUN 的启用仍由已有设置控制。修改只保存增强策略，不覆盖原文件；删除增强策略即可恢复原始组。
+高层探测可用时始终优先；低层不会因为延迟更低抢占高层。层级间使用 fallback，订阅层内使用 url-test，每 60 秒探测，来源刷新后重新计算候选。恢复高层后新连接回切；现有连接不保证无缝迁移。使用时在“配置”页选择底稿并开启规则模式；系统代理、TUN 的启用仍由已有设置控制。修改只保存增强策略，不覆盖原文件；删除增强策略即可恢复原始组。DIRECT 仅在显式层级或原规则包含时生效。

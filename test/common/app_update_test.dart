@@ -18,12 +18,12 @@ void main() {
       manualUpdateOnly = true;
       expect(
         updatePageUrl,
-        'https://github.com/Minggle/FlClash/actions/workflows/ports-macos.yaml',
+        'https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml',
       );
       manualUpdateOnly = false;
       expect(
         updatePageUrl,
-        'https://github.com/Minggle/FlClash/releases/latest',
+        'https://github.com/Minggle/PortWeave/releases/latest',
       );
     },
   );
