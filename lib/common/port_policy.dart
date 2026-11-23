@@ -4,22 +4,21 @@ Map<String, dynamic> _compilePortPolicies({
   required List<PortBinding> bindings,
   required Map<int, Map<String, dynamic>> sources,
   Map<int, Map<String, String>> selectedMaps = const {},
+  required String testUrl,
 }) {
   final proxies = <Map<String, dynamic>>[];
   final groups = <Map<String, dynamic>>[];
   final subRules = <String, List<String>>{};
   final ruleProviders = <String, dynamic>{};
-  final seen = <int>{};
   for (final binding in bindings) {
-    if (binding.selection != PortSelection.original ||
-        !seen.add(binding.profileId)) {
-      continue;
-    }
-    final source = sources[binding.profileId];
+    if (!binding.usesRules) continue;
+    final source = binding.selection == PortSelection.aggregate
+        ? _aggregateDocument(binding, sources, testUrl)
+        : sources[binding.profileId];
     if (source == null) {
       throw const PortRoutingException(PortRoutingIssue.missingSubscription);
     }
-    final prefix = '[policy:${binding.profileId}] ';
+    final prefix = binding.policyPrefix;
     final nodes = (source['proxies'] as List).cast<Map>();
     final sourceGroups = (source['proxy-groups'] as List? ?? []).cast<Map>();
     final names = <String, String>{
@@ -54,7 +53,9 @@ Map<String, dynamic> _compilePortPolicies({
             for (final name in _policyMembers(group, nodes)) target(name),
           ],
           'exclude-filter': '',
-          if (selectedMaps[binding.profileId]?[group['name']] ??
+          if ((binding.policies.any((policy) => policy.group == group['name'])
+                      ? null
+                      : selectedMaps[binding.profileId]?[group['name']]) ??
                   group['default-selected']
               case final String selected)
             'default-selected': target(selected),
@@ -103,6 +104,87 @@ Map<String, dynamic> _compilePortPolicies({
     if (groups.isNotEmpty) 'proxy-groups': groups,
     if (subRules.isNotEmpty) 'sub-rules': subRules,
     if (ruleProviders.isNotEmpty) 'rule-providers': ruleProviders,
+  };
+}
+
+Map<String, dynamic> _aggregateDocument(
+  PortBinding binding,
+  Map<int, Map<String, dynamic>> sources,
+  String testUrl,
+) {
+  final base = sources[binding.profileId];
+  if (base == null || !binding.sourceIds.every(sources.containsKey)) {
+    throw const PortRoutingException(PortRoutingIssue.missingSubscription);
+  }
+  final nodes = (base['proxies'] as List).cast<Map>();
+  final baseGroups = (base['proxy-groups'] as List? ?? []).cast<Map>();
+  final compiled = compilePriorityPolicies(
+    base: {
+      ...base,
+      'proxy-groups': [
+        for (final group in baseGroups)
+          {
+            ...group.cast<String, dynamic>(),
+            'proxies': _policyMembers(group, nodes),
+            'include-all': false,
+            'include-all-proxies': false,
+            'include-all-providers': false,
+            'exclude-filter': '',
+          },
+      ],
+    },
+    policies: binding.policies,
+    sourcePaths: {for (final id in binding.sourceIds) id: ''},
+    testUrl: testUrl,
+  );
+  final imported = <String, Map<String, dynamic>>{};
+  final members = <String, List<String>>{};
+  final names = {
+    for (final node in nodes) node['name'] as String,
+    for (final group in compiled.config['proxy-groups'] as List)
+      group['name'] as String,
+  };
+  for (final policy in binding.policies) {
+    for (final (index, tier) in policy.tiers.indexed) {
+      if (tier.isLocal) continue;
+      final selected = <String>[];
+      for (final id in tier.sourceIds) {
+        final sourceNodes = (sources[id]!['proxies'] as List).cast<Map>();
+        final matches = priorityMatches(
+          tier,
+          sourceNodes.map((node) => node['name'] as String),
+        ).toSet();
+        for (final node in sourceNodes) {
+          if (!matches.contains(node['name'])) continue;
+          final name = '${priorityNodePrefix(id)}${node['name']}';
+          if (names.contains(name)) {
+            throw const PriorityPolicyException(PriorityPolicyIssue.collision);
+          }
+          imported[name] = {...node.cast<String, dynamic>(), 'name': name};
+          selected.add(name);
+        }
+      }
+      members['${policy.group} · ${index + 1}'] = selected.isEmpty
+          ? ['REJECT']
+          : selected;
+    }
+  }
+  return {
+    ...compiled.config,
+    'mode': 'rule',
+    'proxies': [...nodes, ...imported.values],
+    'proxy-groups': [
+      for (final group in (compiled.config['proxy-groups'] as List).cast<Map>())
+        if (members[group['name']] case final values?)
+          {
+            for (final entry in group.entries)
+              if (!{'use', 'filter', 'exclude-filter'}.contains(entry.key))
+                entry.key as String: entry.value,
+            'proxies': values,
+          }
+        else
+          group,
+    ],
   };
 }
 

@@ -78,7 +78,7 @@ jobs:
       - name: Feature and regression tests
         shell: pwsh
         run: |
-          dart run tool/test.dart test/providers/setup_state_test.dart test/common/priority_policy_test.dart test/providers/priority_policy_action_test.dart test/views/priority_policy_test.dart test/common/app_update_test.dart test/tool/package_test.dart test/tool/packaging_config_test.dart test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/providers/config_test.dart test/providers/backup_action_test.dart test/common/http_test.dart test/core/desktop test/l10n
+          dart run tool/test.dart test/common/aggregate_port_test.dart test/views/aggregate_proxy_test.dart test/pages/home_test.dart test/providers/setup_state_test.dart test/common/priority_policy_test.dart test/providers/priority_policy_action_test.dart test/views/priority_policy_test.dart test/common/app_update_test.dart test/tool/package_test.dart test/tool/packaging_config_test.dart test/common/port_routing_test.dart test/providers/port_routing_action_test.dart test/views/port_routing_test.dart test/providers/config_test.dart test/providers/backup_action_test.dart test/common/http_test.dart test/core/desktop test/l10n
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $env:CGO_ENABLED = '0'
           go test -C core . -run '^Test(PortRouting|PriorityPolicy)Wire$' -count=1

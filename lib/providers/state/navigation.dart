@@ -10,11 +10,14 @@ NavigationItemsState navigationItemsState(Ref ref) {
     currentGroupsStateProvider.select((state) => state.value.isNotEmpty),
   );
   final isInit = ref.watch(initProvider);
+  final hasPorts = ref.watch(
+    portRoutingSettingProvider.select((config) => config.bindings.isNotEmpty),
+  );
   return NavigationItemsState(
     value:
         navigationPort?.getItems(
           openLogs: openLogs,
-          hasProxies: !isInit ? hasProfiles : hasProxies,
+          hasProxies: hasPorts || (!isInit ? hasProfiles : hasProxies),
         ) ??
         const [],
   );

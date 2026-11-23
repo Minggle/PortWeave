@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PortBinding {
 
- int get id; String get name; int get profileId; List<int> get additionalProfileIds; int get port; bool get enabled; PortSelection get selection; String get node; String get filter;
+ int get id; String get name; int get profileId; List<int> get additionalProfileIds; int get port; bool get enabled; PortSelection get selection; String get node; String get filter; List<PriorityPolicy> get policies;
 /// Create a copy of PortBinding
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $PortBindingCopyWith<PortBinding> get copyWith => _$PortBindingCopyWithImpl<Port
 @override
 bool operator ==(Object other) {
   final _this = this as PortBinding;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PortBinding&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.profileId, _this.profileId) || other.profileId == _this.profileId)&&const DeepCollectionEquality().equals(other.additionalProfileIds, _this.additionalProfileIds)&&(identical(other.port, _this.port) || other.port == _this.port)&&(identical(other.enabled, _this.enabled) || other.enabled == _this.enabled)&&(identical(other.selection, _this.selection) || other.selection == _this.selection)&&(identical(other.node, _this.node) || other.node == _this.node)&&(identical(other.filter, _this.filter) || other.filter == _this.filter));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PortBinding&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.profileId, _this.profileId) || other.profileId == _this.profileId)&&const DeepCollectionEquality().equals(other.additionalProfileIds, _this.additionalProfileIds)&&(identical(other.port, _this.port) || other.port == _this.port)&&(identical(other.enabled, _this.enabled) || other.enabled == _this.enabled)&&(identical(other.selection, _this.selection) || other.selection == _this.selection)&&(identical(other.node, _this.node) || other.node == _this.node)&&(identical(other.filter, _this.filter) || other.filter == _this.filter)&&const DeepCollectionEquality().equals(other.policies, _this.policies));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PortBinding;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.profileId,const DeepCollectionEquality().hash(_this.additionalProfileIds),_this.port,_this.enabled,_this.selection,_this.node,_this.filter);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.profileId,const DeepCollectionEquality().hash(_this.additionalProfileIds),_this.port,_this.enabled,_this.selection,_this.node,_this.filter,const DeepCollectionEquality().hash(_this.policies));
 }
 
 @override
 String toString() {
   final _this = this as PortBinding;
-  return 'PortBinding(id: ${_this.id}, name: ${_this.name}, profileId: ${_this.profileId}, additionalProfileIds: ${_this.additionalProfileIds}, port: ${_this.port}, enabled: ${_this.enabled}, selection: ${_this.selection}, node: ${_this.node}, filter: ${_this.filter})';
+  return 'PortBinding(id: ${_this.id}, name: ${_this.name}, profileId: ${_this.profileId}, additionalProfileIds: ${_this.additionalProfileIds}, port: ${_this.port}, enabled: ${_this.enabled}, selection: ${_this.selection}, node: ${_this.node}, filter: ${_this.filter}, policies: ${_this.policies})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $PortBindingCopyWith<$Res>  {
   factory $PortBindingCopyWith(PortBinding value, $Res Function(PortBinding) _then) = _$PortBindingCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, int profileId, List<int> additionalProfileIds, int port, bool enabled, PortSelection selection, String node, String filter
+ int id, String name, int profileId, List<int> additionalProfileIds, int port, bool enabled, PortSelection selection, String node, String filter, List<PriorityPolicy> policies
 });
 
 
@@ -71,7 +71,7 @@ class _$PortBindingCopyWithImpl<$Res>
 
 /// Create a copy of PortBinding
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? profileId = null,Object? additionalProfileIds = null,Object? port = null,Object? enabled = null,Object? selection = null,Object? node = null,Object? filter = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? profileId = null,Object? additionalProfileIds = null,Object? port = null,Object? enabled = null,Object? selection = null,Object? node = null,Object? filter = null,Object? policies = null,}) {
   return _then(PortBinding(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -82,7 +82,8 @@ as int,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullab
 as bool,selection: null == selection ? _self.selection : selection // ignore: cast_nullable_to_non_nullable
 as PortSelection,node: null == node ? _self.node : node // ignore: cast_nullable_to_non_nullable
 as String,filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
-as String,
+as String,policies: null == policies ? _self.policies : policies // ignore: cast_nullable_to_non_nullable
+as List<PriorityPolicy>,
   ));
 }
 
@@ -167,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  int profileId,  List<int> additionalProfileIds,  int port,  bool enabled,  PortSelection selection,  String node,  String filter)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  int profileId,  List<int> additionalProfileIds,  int port,  bool enabled,  PortSelection selection,  String node,  String filter,  List<PriorityPolicy> policies)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PortBinding() when $default != null:
-return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_that.port,_that.enabled,_that.selection,_that.node,_that.filter);case _:
+return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_that.port,_that.enabled,_that.selection,_that.node,_that.filter,_that.policies);case _:
   return orElse();
 
 }
@@ -188,10 +189,10 @@ return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  int profileId,  List<int> additionalProfileIds,  int port,  bool enabled,  PortSelection selection,  String node,  String filter)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  int profileId,  List<int> additionalProfileIds,  int port,  bool enabled,  PortSelection selection,  String node,  String filter,  List<PriorityPolicy> policies)  $default,) {final _that = this;
 switch (_that) {
 case _PortBinding():
-return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_that.port,_that.enabled,_that.selection,_that.node,_that.filter);case _:
+return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_that.port,_that.enabled,_that.selection,_that.node,_that.filter,_that.policies);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +209,10 @@ return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  int profileId,  List<int> additionalProfileIds,  int port,  bool enabled,  PortSelection selection,  String node,  String filter)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  int profileId,  List<int> additionalProfileIds,  int port,  bool enabled,  PortSelection selection,  String node,  String filter,  List<PriorityPolicy> policies)?  $default,) {final _that = this;
 switch (_that) {
 case _PortBinding() when $default != null:
-return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_that.port,_that.enabled,_that.selection,_that.node,_that.filter);case _:
+return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_that.port,_that.enabled,_that.selection,_that.node,_that.filter,_that.policies);case _:
   return null;
 
 }
@@ -223,7 +224,7 @@ return $default(_that.id,_that.name,_that.profileId,_that.additionalProfileIds,_
 @JsonSerializable()
 
 class _PortBinding extends PortBinding {
-  const _PortBinding({required this.id, required this.name, required this.profileId,  List<int> additionalProfileIds = const [], required this.port, this.enabled = true, this.selection = PortSelection.fixed, this.node = '', this.filter = ''}): _additionalProfileIds = additionalProfileIds,super._();
+  const _PortBinding({required this.id, required this.name, required this.profileId,  List<int> additionalProfileIds = const [], required this.port, this.enabled = true, this.selection = PortSelection.fixed, this.node = '', this.filter = '',  List<PriorityPolicy> policies = const []}): _additionalProfileIds = additionalProfileIds,_policies = policies,super._();
   factory _PortBinding.fromJson(Map<String, dynamic> json) => _$PortBindingFromJson(json);
 
 @override final  int id;
@@ -241,6 +242,13 @@ class _PortBinding extends PortBinding {
 @override@JsonKey() final  PortSelection selection;
 @override@JsonKey() final  String node;
 @override@JsonKey() final  String filter;
+ final  List<PriorityPolicy> _policies;
+@override@JsonKey() List<PriorityPolicy> get policies {
+  if (_policies is EqualUnmodifiableListView) return _policies;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_policies);
+}
+
 
 /// Create a copy of PortBinding
 /// with the given fields replaced by the non-null parameter values.
@@ -255,18 +263,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PortBinding&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&const DeepCollectionEquality().equals(other.additionalProfileIds, _additionalProfileIds)&&(identical(other.port, port) || other.port == port)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.selection, selection) || other.selection == selection)&&(identical(other.node, node) || other.node == node)&&(identical(other.filter, filter) || other.filter == filter));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PortBinding&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&const DeepCollectionEquality().equals(other.additionalProfileIds, _additionalProfileIds)&&(identical(other.port, port) || other.port == port)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.selection, selection) || other.selection == selection)&&(identical(other.node, node) || other.node == node)&&(identical(other.filter, filter) || other.filter == filter)&&const DeepCollectionEquality().equals(other.policies, _policies));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,profileId,const DeepCollectionEquality().hash(_additionalProfileIds),port,enabled,selection,node,filter);
+    return Object.hash(runtimeType,id,name,profileId,const DeepCollectionEquality().hash(_additionalProfileIds),port,enabled,selection,node,filter,const DeepCollectionEquality().hash(_policies));
 }
 
 @override
 String toString() {
-    return 'PortBinding(id: $id, name: $name, profileId: $profileId, additionalProfileIds: $additionalProfileIds, port: $port, enabled: $enabled, selection: $selection, node: $node, filter: $filter)';
+    return 'PortBinding(id: $id, name: $name, profileId: $profileId, additionalProfileIds: $additionalProfileIds, port: $port, enabled: $enabled, selection: $selection, node: $node, filter: $filter, policies: $policies)';
 }
 
 
@@ -277,7 +285,7 @@ abstract mixin class _$PortBindingCopyWith<$Res> implements $PortBindingCopyWith
   factory _$PortBindingCopyWith(_PortBinding value, $Res Function(_PortBinding) _then) = __$PortBindingCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, int profileId, List<int> additionalProfileIds, int port, bool enabled, PortSelection selection, String node, String filter
+ int id, String name, int profileId, List<int> additionalProfileIds, int port, bool enabled, PortSelection selection, String node, String filter, List<PriorityPolicy> policies
 });
 
 
@@ -294,7 +302,7 @@ class __$PortBindingCopyWithImpl<$Res>
 
 /// Create a copy of PortBinding
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? profileId = null,Object? additionalProfileIds = null,Object? port = null,Object? enabled = null,Object? selection = null,Object? node = null,Object? filter = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? profileId = null,Object? additionalProfileIds = null,Object? port = null,Object? enabled = null,Object? selection = null,Object? node = null,Object? filter = null,Object? policies = null,}) {
   return _then(_PortBinding(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -305,7 +313,8 @@ as int,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullab
 as bool,selection: null == selection ? _self.selection : selection // ignore: cast_nullable_to_non_nullable
 as PortSelection,node: null == node ? _self.node : node // ignore: cast_nullable_to_non_nullable
 as String,filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
-as String,
+as String,policies: null == policies ? _self._policies : policies // ignore: cast_nullable_to_non_nullable
+as List<PriorityPolicy>,
   ));
 }
 

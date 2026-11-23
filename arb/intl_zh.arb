@@ -1195,5 +1195,11 @@
   "priorityFilterHint": "关键词以 | 分隔，忽略大小写；包含留空表示全部节点。层级内按延迟自动优选。订阅更新遵循各来源的自动更新设置。",
   "priorityAll": "全部节点",
   "priorityKind": "来源类型",
-  "priorityManaged": "此组按优先级链自动选择，请在“策略优先级”中修改。"
+  "priorityManaged": "此组按优先级链自动选择，请在“策略优先级”中修改。",
+  "aggregateProxy": "聚合代理",
+  "aggregateProxyDescription": "此端口保留底稿的分流规则，可单独设置各策略组的主用与备用顺序，不影响其他端口。",
+  "aggregateProxyGroups": "策略组与优先级",
+  "aggregateProxyCopyPriorities": "复制底稿的优先级设置",
+  "portProxyPageHint": "将应用代理地址指向这里，即使用此端口的配置。开启专用模式会运行所有已启用端口，并关闭普通混合端口。",
+  "priorityLegacy": "普通混合端口的原有优先级设置"
 }

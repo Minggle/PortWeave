@@ -4216,4 +4216,25 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get priorityManaged =>
       'Ce groupe suit sa chaîne de priorités. Modifiez-la dans Priorités des politiques.';
+
+  @override
+  String get aggregateProxy => 'Proxy agrégé';
+
+  @override
+  String get aggregateProxyDescription =>
+      'Ce port conserve les règles du profil de base. Définissez les priorités principales et de secours de chaque groupe sans affecter les autres ports.';
+
+  @override
+  String get aggregateProxyGroups => 'Groupes et priorités';
+
+  @override
+  String get aggregateProxyCopyPriorities =>
+      'Copier les priorités du profil de base';
+
+  @override
+  String get portProxyPageHint =>
+      'Utilisez cette adresse comme proxy dans votre application. Le mode dédié démarre tous les ports activés et ferme le port mixte normal.';
+
+  @override
+  String get priorityLegacy => 'Anciennes priorités du port mixte normal';
 }

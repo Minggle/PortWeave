@@ -3046,7 +3046,7 @@ final class NavigationItemsStateProvider
 }
 
 String _$navigationItemsStateHash() =>
-    r'3c633d4f3e5f2e80b7cfd166a46397f9a207bb1e';
+    r'8034500cb70a8269680f830e4b79efce130d3d64';
 
 @ProviderFor(currentNavigationItemsState)
 final currentNavigationItemsStateProvider =

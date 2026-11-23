@@ -206,8 +206,66 @@ void main() {
     await home.delete(recursive: true);
   });
 
-  Future<File> goodCache() async => File(
-    '${(await action.prepare(container.read(portRoutingSettingProvider))).providers[portProviderName(11)]['path']}.good',
+  Future<File> goodCache() async {
+    final config = container.read(portRoutingSettingProvider);
+    await action.prepare(config);
+    return File(
+      '${await appPath.getProviderDirPath(config.workspaceProfileId!, proxiesProviderDirectoryName)}/ports-11.yaml.good',
+    );
+  }
+
+  test(
+    'aggregate backup subscription refresh recompiles only its port policies',
+    () async {
+      container
+          .read(profilesProvider.notifier)
+          .put(source.copyWith(id: 22, label: 'Backup'));
+      await File(await appPath.getProfilePath('22')).writeAsString(_old);
+      await original.writeAsString(
+        '$_old\nproxy-groups: [{name: Video, type: select, proxies: [US One]}]\nrules: ["MATCH,Video"]',
+      );
+      final before = container.read(portRoutingSettingProvider);
+      final binding = before.bindings.single.copyWith(
+        selection: PortSelection.aggregate,
+        policies: [
+          const PriorityPolicy(
+            profileId: 11,
+            group: 'Video',
+            tiers: [
+              PriorityTier(target: 'US One'),
+              PriorityTier(sourceIds: [22], filter: 'US'),
+            ],
+          ),
+        ],
+      );
+      container.read(portRoutingSettingProvider.notifier).value = before
+          .copyWith(bindings: [binding]);
+      await action.prepare(container.read(portRoutingSettingProvider));
+      setup.onApply = () async {
+        final compiled = await action.prepare(
+          container.read(portRoutingSettingProvider),
+        );
+        final tier = (compiled.config['proxy-groups'] as List).firstWhere(
+          (group) => group['name'] == '${binding.policyPrefix}Video · 2',
+        );
+        expect(tier['proxies'], [
+          '${binding.policyPrefix}[priority:22] US Two',
+        ]);
+        return true;
+      };
+      await action.refresh(22).timeout(const Duration(seconds: 5));
+      expect(setup.applies, 1);
+      expect(
+        container.read(portRoutingSettingProvider).bindings.single.policies,
+        binding.policies,
+      );
+      verifyNever(
+        () => core.sideLoadExternalProvider(
+          providerName: any(named: 'providerName'),
+          data: any(named: 'data'),
+        ),
+      );
+    },
   );
 
   void startChecks() {
@@ -280,8 +338,8 @@ void main() {
           container.read(portRoutingSettingProvider),
         );
         expect(
-          fragment.config['sub-rules']['flclash_ports_rules_11'],
-          contains('MATCH,[policy:11] Original'),
+          fragment.config['sub-rules']['flclash_ports_rules_binding_1'],
+          contains('MATCH,[port:1] Original'),
         );
         return true;
       };

@@ -40,7 +40,9 @@ String _tierLabel(
       ].join(' / ');
 
 class PriorityPolicyView extends ConsumerStatefulWidget {
-  const PriorityPolicyView({super.key});
+  const PriorityPolicyView({super.key, this.bindingId});
+
+  final int? bindingId;
 
   @override
   ConsumerState<PriorityPolicyView> createState() => _PriorityPolicyViewState();
@@ -61,11 +63,24 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
     _profileId = profiles.any((p) => p.id == current)
         ? current
         : profiles.firstOrNull?.id;
+    if (widget.bindingId != null) {
+      _profileId = _binding?.profileId;
+    }
     unawaited(_loadBase());
   }
 
   List<Profile> get _profiles =>
       ref.read(profilesProvider).where(_isStandardBase).toList();
+
+  PortBinding? get _binding => ref
+      .read(portRoutingSettingProvider)
+      .bindings
+      .where((binding) => binding.id == widget.bindingId)
+      .firstOrNull;
+
+  List<PriorityPolicy> get _policies => widget.bindingId == null
+      ? ref.read(priorityPolicySettingProvider).forProfile(_profileId)
+      : _binding?.policies ?? const [];
 
   Future<void> _loadBase() async {
     final load = ++_load;
@@ -76,9 +91,11 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
     final id = _profileId;
     if (id == null) return;
     try {
-      final base = await ref
-          .read(priorityPolicyActionProvider.notifier)
-          .readBase(id);
+      final base = widget.bindingId == null
+          ? await ref.read(priorityPolicyActionProvider.notifier).readBase(id)
+          : await ref
+                .read(portRoutingActionProvider.notifier)
+                .readBindingBase(widget.bindingId!);
       if (mounted && load == _load) setState(() => _base = base);
     } catch (error) {
       if (mounted && load == _load) {
@@ -93,8 +110,12 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
     if (_base == null || _profileId == null) return;
     await showFormSheet<void>(
       context: context,
-      builder: (_) =>
-          _PolicyForm(profileId: _profileId!, base: _base!, policy: policy),
+      builder: (_) => _PolicyForm(
+        profileId: _profileId!,
+        base: _base!,
+        policy: policy,
+        bindingId: widget.bindingId,
+      ),
     );
   }
 
@@ -105,16 +126,16 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
       _error = null;
     });
     try {
-      await ref
-          .read(priorityPolicyActionProvider.notifier)
-          .save(
-            policy.profileId,
-            ref
-                .read(priorityPolicySettingProvider)
-                .forProfile(policy.profileId)
-                .where((p) => p.group != policy.group)
-                .toList(),
-          );
+      final next = _policies.where((p) => p.group != policy.group).toList();
+      if (widget.bindingId case final id?) {
+        await ref
+            .read(portRoutingActionProvider.notifier)
+            .savePolicies(id, next);
+      } else {
+        await ref
+            .read(priorityPolicyActionProvider.notifier)
+            .save(policy.profileId, next);
+      }
     } catch (error) {
       if (mounted) {
         setState(
@@ -131,11 +152,14 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
     final l = context.appLocalizations;
     final profiles = ref.watch(profilesProvider);
     final eligible = profiles.where(_isStandardBase).toList();
-    final policies = ref
-        .watch(priorityPolicySettingProvider)
-        .forProfile(_profileId);
+    ref.watch(priorityPolicySettingProvider);
+    ref.watch(portRoutingSettingProvider);
+    final policies = _policies;
+    final binding = _binding;
     return Scaffold(
-      title: l.priorityTitle,
+      title: binding == null
+          ? l.priorityTitle
+          : '${binding.name} · ${binding.port}',
       iconActions: [
         IconButtonData(
           glyph: AppGlyphs.add,
@@ -157,9 +181,13 @@ class _PriorityPolicyViewState extends ConsumerState<PriorityPolicyView> {
             20 + context.bottomInset,
           ),
           children: [
-            Text(l.priorityDescription),
+            Text(
+              widget.bindingId == null
+                  ? l.priorityDescription
+                  : l.aggregateProxyDescription,
+            ),
             const SizedBox(height: 16),
-            if (eligible.isNotEmpty)
+            if (widget.bindingId == null && eligible.isNotEmpty)
               generateSection(
                 items: [
                   ListItem<int>.options(
@@ -223,8 +251,14 @@ class _PolicyForm extends ConsumerStatefulWidget {
   final int profileId;
   final Map<String, dynamic> base;
   final PriorityPolicy? policy;
+  final int? bindingId;
 
-  const _PolicyForm({required this.profileId, required this.base, this.policy});
+  const _PolicyForm({
+    required this.profileId,
+    required this.base,
+    this.policy,
+    this.bindingId,
+  });
 
   @override
   ConsumerState<_PolicyForm> createState() => _PolicyFormState();
@@ -292,23 +326,39 @@ class _PolicyFormState extends ConsumerState<_PolicyForm> {
       _error = null;
     });
     try {
-      final policies = ref
-          .read(priorityPolicySettingProvider)
-          .forProfile(widget.profileId);
+      final binding = ref
+          .read(portRoutingSettingProvider)
+          .bindings
+          .where((item) => item.id == widget.bindingId)
+          .firstOrNull;
+      final policies = widget.bindingId == null
+          ? ref.read(priorityPolicySettingProvider).forProfile(widget.profileId)
+          : binding?.policies ?? const <PriorityPolicy>[];
+      if (widget.bindingId != null &&
+          (binding == null || binding.profileId != widget.profileId)) {
+        throw const PriorityPolicyException(PriorityPolicyIssue.missingTarget);
+      }
       if (widget.policy == null && policies.any((p) => p.group == _group)) {
         throw const PriorityPolicyException(PriorityPolicyIssue.invalid);
       }
-      await ref
-          .read(priorityPolicyActionProvider.notifier)
-          .save(widget.profileId, [
-            for (final policy in policies)
-              if (policy.group != (widget.policy?.group ?? _group)) policy,
-            PriorityPolicy(
-              profileId: widget.profileId,
-              group: _group,
-              tiers: _tiers,
-            ),
-          ]);
+      final next = [
+        for (final policy in policies)
+          if (policy.group != (widget.policy?.group ?? _group)) policy,
+        PriorityPolicy(
+          profileId: widget.profileId,
+          group: _group,
+          tiers: _tiers,
+        ),
+      ];
+      if (widget.bindingId case final id?) {
+        await ref
+            .read(portRoutingActionProvider.notifier)
+            .savePolicies(id, next);
+      } else {
+        await ref
+            .read(priorityPolicyActionProvider.notifier)
+            .save(widget.profileId, next);
+      }
       if (mounted) Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {

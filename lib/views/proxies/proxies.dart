@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'tab.dart';
+import '../port_routing.dart';
 
 class ProxiesView extends ConsumerStatefulWidget {
   const ProxiesView({super.key, this.picker = false});
@@ -152,6 +153,12 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.picker) {
+      final bindingId = ref.watch(selectedPortBindingProvider);
+      if (bindingId != null || ref.watch(portRoutingActiveProvider)) {
+        return PortRoutingView(key: ValueKey(bindingId), bindingId: bindingId);
+      }
+    }
     final style = ref.watch(proxiesStyleSettingProvider);
     final isLoading = ref.watch(loadingProvider(LoadingTag.proxies));
     final picker = widget.picker;

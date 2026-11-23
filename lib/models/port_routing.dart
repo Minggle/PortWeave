@@ -1,9 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'priority_policy.dart';
+
 part 'generated/port_routing.freezed.dart';
 part 'generated/port_routing.g.dart';
 
-enum PortSelection { original, fixed, region }
+enum PortSelection { original, fixed, region, aggregate }
 
 @freezed
 abstract class PortBinding with _$PortBinding {
@@ -19,14 +21,24 @@ abstract class PortBinding with _$PortBinding {
     @Default(PortSelection.fixed) PortSelection selection,
     @Default('') String node,
     @Default('') String filter,
+    @Default([]) List<PriorityPolicy> policies,
   }) = _PortBinding;
 
   factory PortBinding.fromJson(Map<String, dynamic> json) =>
       _$PortBindingFromJson(json);
 
   String get groupName => 'flclash_ports_group_$id';
-  Set<int> get sourceIds => {profileId, ...additionalProfileIds};
-  String get ruleName => 'flclash_ports_rules_$profileId';
+  bool get usesRules =>
+      selection == PortSelection.original ||
+      selection == PortSelection.aggregate;
+  Set<int> get sourceIds => {
+    profileId,
+    ...additionalProfileIds,
+    if (selection == PortSelection.aggregate)
+      for (final policy in policies) ...policy.sourceIds,
+  };
+  String get policyPrefix => '[port:$id] ';
+  String get ruleName => 'flclash_ports_rules_binding_$id';
   String get listenerName => 'flclash_ports_in_$id';
   String get httpAddress => 'http://127.0.0.1:$port';
   String get socksAddress => 'socks5h://127.0.0.1:$port';
@@ -81,6 +93,9 @@ abstract class PortRoutingConfig with _$PortRoutingConfig {
             additionalProfileIds: [
               for (final id in binding.additionalProfileIds) ids[id]!,
             ],
+            policies: PriorityPolicies(
+              policies: binding.policies,
+            ).remapProfiles(ids).policies,
           ),
     ],
     subscriptions: [

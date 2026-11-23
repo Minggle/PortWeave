@@ -65,17 +65,27 @@ class SetupAction extends _$SetupAction {
           !ref.read(safeModeProvider) &&
           ref.read(appSettingProvider).showTrayTitle);
 
-  SetupParams get _setupParams => SetupParams(
-    selectedMap: {
-      for (final entry in ref.read(selectedMapProvider).entries)
-        if (!ref
-            .read(priorityPolicySettingProvider)
-            .forProfile(ref.read(currentProfileIdProvider))
-            .any((policy) => policy.group == entry.key))
-          entry.key: entry.value,
-    },
-    options: ref.read(coreOptionsProvider),
-  );
+  SetupParams get _setupParams {
+    final managed = {
+      for (final policy
+          in ref
+              .read(priorityPolicySettingProvider)
+              .forProfile(ref.read(currentProfileIdProvider)))
+        policy.group,
+      if (ref.read(portRoutingActiveProvider))
+        for (final binding in ref.read(portRoutingSettingProvider).bindings)
+          if (binding.selection == PortSelection.aggregate)
+            for (final policy in binding.policies)
+              '${binding.policyPrefix}${policy.group}',
+    };
+    return SetupParams(
+      selectedMap: {
+        for (final entry in ref.read(selectedMapProvider).entries)
+          if (!managed.contains(entry.key)) entry.key: entry.value,
+      },
+      options: ref.read(coreOptionsProvider),
+    );
+  }
 
   // The selection reaches the Core through changeProxy, not through an apply.
   SetupParams get _appliedParams =>

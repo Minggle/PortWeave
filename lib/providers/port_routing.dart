@@ -1,7 +1,25 @@
 import 'package:fl_clash/common/port_routing.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'config.dart';
+
 part 'generated/port_routing.g.dart';
+
+@Riverpod(keepAlive: true)
+class SelectedPortBinding extends _$SelectedPortBinding {
+  @override
+  int? build() {
+    ref.listen(portRoutingSettingProvider, (_, next) {
+      if (state != null &&
+          !next.bindings.any((binding) => binding.id == state)) {
+        state = null;
+      }
+    });
+    return null;
+  }
+
+  void select(int? id) => state = id;
+}
 
 enum PortBindingPhase { stopped, checking, listening, blocked, failed }
 

@@ -3923,4 +3923,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get priorityManaged => '此组按优先级链自动选择，请在“策略优先级”中修改。';
+
+  @override
+  String get aggregateProxy => '聚合代理';
+
+  @override
+  String get aggregateProxyDescription =>
+      '此端口保留底稿的分流规则，可单独设置各策略组的主用与备用顺序，不影响其他端口。';
+
+  @override
+  String get aggregateProxyGroups => '策略组与优先级';
+
+  @override
+  String get aggregateProxyCopyPriorities => '复制底稿的优先级设置';
+
+  @override
+  String get portProxyPageHint =>
+      '将应用代理地址指向这里，即使用此端口的配置。开启专用模式会运行所有已启用端口，并关闭普通混合端口。';
+
+  @override
+  String get priorityLegacy => '普通混合端口的原有优先级设置';
 }

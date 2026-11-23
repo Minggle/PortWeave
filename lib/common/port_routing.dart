@@ -3,6 +3,8 @@ import 'package:fl_clash/models/clash_config.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:yaml/yaml.dart';
 
+import 'priority_policy.dart';
+
 part 'port_policy.dart';
 
 enum PortRoutingIssue {
@@ -145,11 +147,22 @@ void validatePortBindings(List<PortBinding> bindings) {
         binding.name.trim().isEmpty ||
         binding.id <= 0 ||
         binding.sourceIds.any((id) => id <= 0) ||
-        binding.additionalProfileIds.length + 1 != binding.sourceIds.length ||
+        {binding.profileId, ...binding.additionalProfileIds}.length !=
+            binding.additionalProfileIds.length + 1 ||
         binding.selection != PortSelection.region &&
-            binding.sourceIds.length != 1 ||
+            binding.additionalProfileIds.isNotEmpty ||
+        binding.selection != PortSelection.aggregate &&
+            binding.policies.isNotEmpty ||
         binding.selection == PortSelection.fixed && binding.node.isEmpty) {
       throw const PortRoutingException(PortRoutingIssue.invalidBinding);
+    }
+    if (binding.selection == PortSelection.aggregate) {
+      if (binding.policies.any(
+        (policy) => policy.profileId != binding.profileId,
+      )) {
+        throw const PortRoutingException(PortRoutingIssue.invalidBinding);
+      }
+      validatePriorityPolicies(binding.policies);
     }
     if (binding.selection == PortSelection.region) {
       if (_regionWords(binding.filter).isEmpty) {
@@ -160,7 +173,7 @@ void validatePortBindings(List<PortBinding> bindings) {
 }
 
 List<String> matchingPortNodes(PortBinding binding, Iterable<String> names) {
-  if (binding.selection == PortSelection.original) return names.toList();
+  if (binding.usesRules) return names.toList();
   if (binding.selection == PortSelection.fixed) {
     return names.where((name) => name == binding.node).toList();
   }
@@ -200,10 +213,15 @@ PortRoutingFragment compilePortRouting({
     bindings: active,
     sources: sourceDocuments,
     selectedMaps: selectedMaps,
+    testUrl: testUrl,
   );
   return (
     providers: {
-      for (final id in active.expand((binding) => binding.sourceIds).toSet())
+      for (final id
+          in active
+              .where((binding) => !binding.usesRules)
+              .expand((binding) => binding.sourceIds)
+              .toSet())
         portProviderName(id): {
           'type': 'file',
           'path': sourcePaths[id],
@@ -222,7 +240,7 @@ PortRoutingFragment compilePortRouting({
       'proxy-groups': [
         ...?original['proxy-groups'] as List?,
         for (final binding in active)
-          if (binding.selection != PortSelection.original)
+          if (!binding.usesRules)
             {
               'name': binding.groupName,
               'type': binding.selection == PortSelection.fixed
@@ -251,7 +269,7 @@ PortRoutingFragment compilePortRouting({
             'port': binding.port,
             'udp': false,
             'users': <Map<String, String>>[],
-            if (binding.selection == PortSelection.original)
+            if (binding.usesRules)
               'rule': binding.ruleName
             else
               'proxy': binding.groupName,

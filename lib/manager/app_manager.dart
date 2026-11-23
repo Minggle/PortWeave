@@ -8,6 +8,7 @@ import 'package:fl_clash/providers/mitm.dart';
 import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/state.dart';
 import 'package:fl_clash/ui/ui.dart';
+import 'package:fl_clash/ui/icons/icons.dart';
 import 'package:fl_clash/widgets/icon.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -160,14 +161,44 @@ class _Sidebar extends ConsumerWidget {
       appSettingProvider.select((state) => state.sidebarExpanded),
     );
     final version = ref.watch(versionProvider);
+    final bindings = ref.watch(portRoutingSettingProvider).bindings;
+    final selectedBinding = ref.watch(selectedPortBindingProvider);
+    final entries = [
+      for (final (index, item) in items.indexed) ...[
+        (index: index, binding: null as PortBinding?),
+        if (item.label == PageLabel.proxies)
+          for (final binding in bindings) (index: index, binding: binding),
+      ],
+    ];
+    final selected = entries.indexWhere(
+      (entry) =>
+          entry.index == currentIndex &&
+          (items[currentIndex].label != PageLabel.proxies ||
+              entry.binding?.id == selectedBinding),
+    );
     return NavigationSidebar(
       destinations: [
-        for (final item in items)
-          SidebarDestination(glyph: item.glyph, label: item.label.label),
+        for (final entry in entries)
+          SidebarDestination(
+            glyph: entry.binding == null
+                ? items[entry.index].glyph
+                : AppGlyphs.link,
+            label: entry.binding == null
+                ? items[entry.index].label.label
+                : '  ${entry.binding!.name} · ${entry.binding!.port}',
+          ),
       ],
-      selectedIndex: currentIndex,
+      selectedIndex: selected < 0 ? currentIndex : selected,
       expanded: canExpand && sidebarExpanded,
-      onSelected: onSelected,
+      onSelected: (index) {
+        final entry = entries[index];
+        if (items[entry.index].label == PageLabel.proxies) {
+          ref
+              .read(selectedPortBindingProvider.notifier)
+              .select(entry.binding?.id);
+        }
+        onSelected(entry.index);
+      },
       onToggle: canExpand
           ? () {
               ref

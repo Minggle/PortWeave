@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/common/port_routing.dart';
+import 'package:fl_clash/common/priority_policy.dart';
 import 'package:fl_clash/core/core.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/features/form/form.dart';
@@ -15,7 +16,10 @@ import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'priority_policy.dart';
+
 String _portRoutingError(AppLocalizations l, Object error) {
+  if (error is PriorityPolicyException) return l.priorityInvalid;
   if (error is CoreMethodException) return l.portRoutingCoreUnavailable;
   if (error is! PortRoutingException) return l.portRoutingUpdateFailed;
   return switch (error.issue) {
@@ -39,7 +43,14 @@ String _portRoutingError(AppLocalizations l, Object error) {
 }
 
 class PortRoutingView extends ConsumerStatefulWidget {
-  const PortRoutingView({super.key});
+  const PortRoutingView({
+    super.key,
+    this.bindingId,
+    this.aggregateOnly = false,
+  });
+
+  final int? bindingId;
+  final bool aggregateOnly;
 
   @override
   ConsumerState<PortRoutingView> createState() => _PortRoutingViewState();
@@ -81,7 +92,11 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
     }
     await showFormSheet<void>(
       context: context,
-      builder: (_) => _BindingForm(binding: binding, profiles: profiles),
+      builder: (_) => _BindingForm(
+        binding: binding,
+        profiles: profiles,
+        aggregate: widget.aggregateOnly,
+      ),
     );
   }
 
@@ -174,6 +189,7 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                   PortSelection.original => l.portRoutingOriginal,
                   PortSelection.fixed => binding.node,
                   PortSelection.region => binding.filter,
+                  PortSelection.aggregate => l.aggregateProxy,
                 },
                 status,
                 if (check?.node != null && active) check!.node!,
@@ -181,7 +197,12 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                   '${l.update}: ${profile!.lastUpdateDate!.toLocal()}',
               ].join('\n'),
             ),
-            onTap: () => _edit(binding),
+            onTap: widget.bindingId == null
+                ? () => showNestedSheet<void>(
+                    context,
+                    builder: (_) => PortRoutingView(bindingId: binding.id),
+                  )
+                : () => _edit(binding),
             trailing: Switch(
               value: binding.enabled,
               onChanged: _busy
@@ -205,14 +226,40 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
     final active = ref.watch(portRoutingActiveProvider);
     final runtime = ref.watch(portRoutingActivityProvider);
     final safe = ref.watch(safeModeProvider);
+    final bindings = config.bindings
+        .where(
+          (binding) => widget.bindingId != null
+              ? binding.id == widget.bindingId
+              : !widget.aggregateOnly ||
+                    binding.selection == PortSelection.aggregate,
+        )
+        .toList();
+    final detail = widget.bindingId == null ? null : bindings.firstOrNull;
+    if (widget.bindingId != null && detail == null) {
+      return Scaffold(
+        title: l.portRoutingTitle,
+        body: Center(child: Text(l.portRoutingInvalidBinding)),
+      );
+    }
     return Scaffold(
-      title: l.portRoutingTitle,
+      title: detail != null
+          ? '${detail.name} · ${detail.port}'
+          : widget.aggregateOnly
+          ? l.aggregateProxy
+          : l.portRoutingTitle,
       iconActions: [
-        IconButtonData(
-          glyph: AppGlyphs.add,
-          tooltip: l.add,
-          onPressed: _busy ? null : _edit,
-        ),
+        if (widget.bindingId == null)
+          IconButtonData(
+            glyph: AppGlyphs.add,
+            tooltip: l.add,
+            onPressed: _busy ? null : _edit,
+          ),
+        if (detail != null)
+          IconButtonData(
+            glyph: AppGlyphs.edit,
+            tooltip: l.edit,
+            onPressed: _busy ? null : () => _edit(detail),
+          ),
         IconButtonData(
           glyph: AppGlyphs.refresh,
           tooltip: l.portRoutingCheck,
@@ -231,11 +278,21 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
             16,
             20 + context.bottomInset,
           ),
-          itemCount: config.bindings.length + 2,
+          itemCount: bindings.length + 2,
           itemBuilder: (context, index) {
             if (index == 0) {
               return generateSection(
                 items: [
+                  if (widget.aggregateOnly)
+                    ListItem(
+                      title: Text(l.aggregateProxy),
+                      subtitle: Text(l.aggregateProxyDescription),
+                    ),
+                  if (detail != null)
+                    ListItem(
+                      title: Text(detail.httpAddress),
+                      subtitle: Text(l.portProxyPageHint),
+                    ),
                   ListItem(
                     title: Text(l.portRoutingMode),
                     subtitle: Text(
@@ -260,13 +317,49 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                             ),
                     ),
                   ),
+                  if (detail?.selection == PortSelection.aggregate) ...[
+                    ListItem.open(
+                      title: Text(l.aggregateProxyGroups),
+                      subtitle: Text('${detail!.policies.length}'),
+                      widget: PriorityPolicyView(bindingId: detail.id),
+                    ),
+                    ListItem(
+                      title: Text(l.aggregateProxyCopyPriorities),
+                      onTap: _busy
+                          ? null
+                          : () => _run(
+                              () => ref
+                                  .read(portRoutingActionProvider.notifier)
+                                  .savePolicies(
+                                    detail.id,
+                                    ref
+                                        .read(priorityPolicySettingProvider)
+                                        .forProfile(detail.profileId),
+                                  ),
+                            ),
+                    ),
+                  ],
+                  if (detail != null &&
+                      detail.usesRules &&
+                      active &&
+                      detail.enabled)
+                    _PortGroupChoices(binding: detail),
+                  if (widget.aggregateOnly && widget.bindingId == null)
+                    ListItem.open(
+                      title: Text(l.priorityTitle),
+                      subtitle: Text(l.priorityLegacy),
+                      widget: const PriorityPolicyView(),
+                    ),
                   if (_busy) const LinearProgressIndicator(),
                   if (_error != null)
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(_error!),
                     ),
-                  for (final entry in runtime.errors.entries)
+                  for (final entry in runtime.errors.entries.where(
+                    (entry) =>
+                        detail == null || detail.sourceIds.contains(entry.key),
+                  ))
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(
@@ -276,18 +369,16 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                 ],
               );
             }
-            if (index == config.bindings.length + 1) {
+            if (index == bindings.length + 1) {
               return Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  config.bindings.isEmpty
-                      ? l.portRoutingEmpty
-                      : l.portRoutingCopyHint,
+                  bindings.isEmpty ? l.portRoutingEmpty : l.portRoutingCopyHint,
                 ),
               );
             }
             return generateSection(
-              items: [_binding(config.bindings[index - 1], active)],
+              items: [_binding(bindings[index - 1], active)],
             );
           },
         ),
@@ -296,10 +387,56 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
   }
 }
 
+class _PortGroupChoices extends ConsumerWidget {
+  const _PortGroupChoices({required this.binding});
+
+  final PortBinding binding;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final groups = ref
+        .watch(groupsProvider)
+        .where(
+          (group) =>
+              group.name.startsWith(binding.policyPrefix) &&
+              group.hidden != true,
+        );
+    final selections = ref.watch(selectedMapProvider);
+    String label(String name) => name.startsWith(binding.policyPrefix)
+        ? name.substring(binding.policyPrefix.length)
+        : name;
+    return Column(
+      children: [
+        for (final group in groups)
+          if (group.type == GroupType.Selector && group.all.isNotEmpty)
+            ListItem<String>.options(
+              title: Text(label(group.name)),
+              value: group.getCurrentSelectedName(selections[group.name] ?? ''),
+              options: group.all.map((proxy) => proxy.name).toList(),
+              textBuilder: label,
+              onChanged: (value) => ref
+                  .read(proxiesActionProvider.notifier)
+                  .changeProxy(groupName: group.name, proxyName: value),
+            )
+          else
+            ListItem(
+              title: Text(label(group.name)),
+              subtitle: Text(label(group.realNow)),
+            ),
+      ],
+    );
+  }
+}
+
 class _BindingForm extends ConsumerStatefulWidget {
   final PortBinding? binding;
   final List<Profile> profiles;
-  const _BindingForm({required this.binding, required this.profiles});
+  final bool aggregate;
+  const _BindingForm({
+    required this.binding,
+    required this.profiles,
+    this.aggregate = false,
+  });
 
   @override
   ConsumerState<_BindingForm> createState() => _BindingFormState();
@@ -332,8 +469,12 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
       text: (binding?.port ?? _nextPort()).toString(),
     );
     _filter = TextEditingController(text: binding?.filter ?? 'HK|Hong Kong');
-    _profileIds = binding?.sourceIds.toList() ?? [widget.profiles.first.id];
-    _selection = binding?.selection ?? PortSelection.original;
+    _profileIds = binding == null
+        ? [widget.profiles.first.id]
+        : [binding.profileId, ...binding.additionalProfileIds];
+    _selection =
+        binding?.selection ??
+        (widget.aggregate ? PortSelection.aggregate : PortSelection.original);
     _node = binding?.node ?? '';
     unawaited(_loadNodes());
   }
@@ -393,6 +534,12 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
     selection: _selection,
     node: _node,
     filter: _filter.text.trim(),
+    policies: _selection != PortSelection.aggregate
+        ? const []
+        : widget.binding?.profileId == _profileIds.first &&
+              widget.binding?.selection == PortSelection.aggregate
+        ? widget.binding!.policies
+        : ref.read(priorityPolicySettingProvider).forProfile(_profileIds.first),
   );
 
   Future<void> _save() async {
@@ -579,6 +726,7 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
                     PortSelection.original => l.portRoutingOriginal,
                     PortSelection.fixed => l.portRoutingFixed,
                     PortSelection.region => l.portRoutingRegion,
+                    PortSelection.aggregate => l.aggregateProxy,
                   },
                   onChanged: (value) {
                     if (_saving) return;
@@ -611,7 +759,9 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                _selection == PortSelection.original
+                _selection == PortSelection.aggregate
+                    ? l.aggregateProxyDescription
+                    : _selection == PortSelection.original
                     ? l.portRoutingOriginalHint
                     : _selection == PortSelection.region
                     ? l.portRoutingAggregateHint

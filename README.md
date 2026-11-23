@@ -12,9 +12,9 @@ A macOS proxy client that connects your apps to different subscriptions through 
 
 </div>
 
-PortWeave lets you keep several subscriptions available at once. Give each app a local proxy address, keep a subscription's original routing rules, pin a node, or collect matching nodes from selected subscriptions. For ordinary profiles, ordered policy tiers let you prefer a self-hosted route and use subscription nodes as backups.
+PortWeave gives applications separate local proxy addresses backed by different subscriptions. A provider port can follow its original policy, use a fixed node, or select matching nodes. An aggregate proxy has its own listening port and routing groups, with a self-hosted route first and nodes from several subscriptions as backups.
 
-**Development version: 0.9.4 · Flutter 3.50.0** (November 23, 2026). Manual installation and real-network acceptance testing are not yet complete. See [macOS development status](MACOS_DEVELOPMENT.md) for progress and verification records.
+**Development version: 0.9.4 · Flutter 3.50.0** (November 23, 2026). See [macOS development status](MACOS_DEVELOPMENT.md) for build, installation and real-network acceptance records.
 
 ## Choose how to route traffic
 
@@ -24,7 +24,7 @@ PortWeave lets you keep several subscriptions available at once. Give each app a
 | Original policy | Uses one subscription's rules, groups and saved group selections, isolated from other subscriptions | Select **Use original policy** for a port binding |
 | Fixed node | Uses one exact node name from one subscription | Select a node for the binding |
 | Keyword aggregation | Collects matching nodes from one or more selected subscriptions and automatically chooses by latency | Select sources and enter keywords such as `US\|美国` |
-| Policy priority | Keeps an ordinary profile's routing rules and adds ordered primary/backup tiers to selected groups | **Tools → Policy priorities** |
+| Aggregate proxy | An independent port with the base profile's rules and ordered primary/backup groups across subscriptions | **Tools → Aggregate proxy**, then its page below **Proxies** |
 
 Keyword matching is case-insensitive and uses node names, with `|` separating alternatives. It does not verify a node's country, bandwidth or access to a particular service. Fixed-node and keyword bindings reject new connections when their candidates disappear; they do not silently switch to another source or direct access. Original-policy bindings retain `DIRECT` / `REJECT` behavior and may route directly according to that policy.
 
@@ -47,9 +47,9 @@ Dedicated mode switches to a managed profile and disables the effective system p
 
 Right-click a binding to copy its address, refresh subscriptions or change the update interval. Each subscription defaults to a five-minute interval; the scheduler checks for due work every 30 seconds while PortWeave is running. Fixed-node and keyword sources update locally and retain their last usable cache on failure. Refreshing a source used by an original-policy binding reapplies the managed configuration and can briefly reconnect traffic.
 
-## Prefer a primary route, with subscription backups
+## Aggregate proxy: an independent port with ordered backups
 
-Open **Tools → Policy priorities**, choose an ordinary profile without an attached script, and select an existing business group. Arrange local groups/nodes and subscription tiers in priority order. For example:
+Open **Tools → Aggregate proxy → Add**, choose a base subscription/file, a name and a free port such as `18084`, and select **Aggregate proxy**. The base file supplies routing rules and groups; its ordinary-profile extension script is not executed. Each binding appears below **Proxies** in the desktop sidebar. Open its page, then **Strategy groups and priorities**, to arrange local groups/nodes and subscription tiers for an existing business group. For example:
 
 ```text
 Video group → self-hosted Taiwan group → US nodes from selected subscriptions → another backup tier
@@ -57,7 +57,23 @@ Video group → self-hosted Taiwan group → US nodes from selected subscription
 
 Each subscription tier can use several sources with include/exclude keywords and a match preview. Higher tiers remain preferred while their health checks succeed; lower latency in a backup tier does not override that order. Each subscription tier automatically chooses among its own candidates. Checks run every 60 seconds, and new connections return to a higher tier after it recovers. Existing connections are not guaranteed to migrate seamlessly.
 
-Select the base profile on **Profiles** and use **Rule** mode. This feature uses the ordinary proxy path, including system proxy or TUN if you enable them. Policy settings are stored separately from the source file; deleting an enhancement restores the original group. Subscription changes recalculate the candidates. Direct access occurs only when explicitly present in a tier or the base rules.
+Enable dedicated multi-port mode and the aggregate binding. An application using `http://127.0.0.1:18084` or `socks5h://127.0.0.1:18084` follows this aggregate configuration. Point it at a provider port such as `18082` to use that provider instead. Both ports can operate simultaneously for different applications.
+
+Each port has its own page, enabled switch, rules and group namespace. Manual selector groups can be changed on that page while running. Groups without a priority enhancement retain the base definition; deleting an enhancement restores it. Source files stay unchanged. Subscription changes rebuild aggregate candidates and may briefly reconnect active traffic. Empty subscription tiers reject traffic; explicit `DIRECT` entries and direct rules in the base retain their meaning.
+
+Legacy ordinary-profile priorities remain under **Tools → Aggregate proxy → Policy priorities** and apply only to the normal mixed port. Creating an aggregate port copies existing priorities for its base; **Copy priorities from base profile** replaces an existing port's priorities. Copies are independent afterwards.
+
+## Choosing between the old mixed port and independent ports
+
+| Route | Address configured in the application | Required state |
+| --- | --- | --- |
+| Ordinary profile | `127.0.0.1:7891`, or your saved mixed port | Dedicated mode off; ordinary profile selected and running |
+| Individual provider | Its binding, for example `127.0.0.1:18082` | Dedicated mode and this binding enabled |
+| Aggregate proxy | Its binding, for example `127.0.0.1:18084` | Dedicated mode and this aggregate binding enabled |
+
+Dedicated mode closes the normal mixed port, TUN and system proxy while preserving their saved settings. Disabling dedicated mode restores the previous ordinary profile. `7890` is a common original FlClash default, while a new PortWeave install uses `7891`; explicit ports from imported backups remain unchanged. `9091` is the control API, not an application proxy port.
+
+For example, `curl --proxy http://127.0.0.1:18084 https://example.com` uses the aggregate port. Change the proxy URL to `socks5h://127.0.0.1:18082` to use the provider binding. Replace example ports with the actual values on their pages.
 
 ## Independent macOS app and defaults
 

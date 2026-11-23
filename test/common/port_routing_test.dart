@@ -112,23 +112,23 @@ rules:
       expect(listeners[0]['rule'], binding.ruleName);
       expect(listeners[0].containsKey('proxy'), isFalse);
       final groups = result.config['proxy-groups'] as List;
-      expect(groups.first['default-selected'], '[policy:11] US');
-      expect(groups.first['proxies'], ['[policy:11] US', 'DIRECT']);
+      expect(groups.first['default-selected'], '[port:1] US');
+      expect(groups.first['proxies'], ['[port:1] US', 'DIRECT']);
       expect(groups[1]['type'], 'url-test');
       expect(groups[1]['interval'], 60);
       expect(result.config['sub-rules'][binding.ruleName], [
         'DOMAIN,local.example,DIRECT',
-        'SUB-RULE,(NETWORK,TCP),[policy:11] nested',
-        'MATCH,[policy:11] Auto',
+        'SUB-RULE,(NETWORK,TCP),[port:1] nested',
+        'MATCH,[port:1] Auto',
         'MATCH,DIRECT',
       ]);
-      expect(result.config['sub-rules']['[policy:22] nested'], [
-        'RULE-SET,[policy:22] ads,REJECT',
-        'MATCH,[policy:22] Select',
+      expect(result.config['sub-rules']['[port:2] nested'], [
+        'RULE-SET,[port:2] ads,REJECT',
+        'MATCH,[port:2] Select',
       ]);
       expect((result.config['rule-providers'] as Map).keys, [
-        '[policy:11] ads',
-        '[policy:22] ads',
+        '[port:1] ads',
+        '[port:2] ads',
       ]);
     },
   );
@@ -147,7 +147,7 @@ rules: ['MATCH,Auto']
       testUrl: '',
     );
     final group = (result.config['proxy-groups'] as List).first;
-    expect(group['proxies'], ['[policy:11] US']);
+    expect(group['proxies'], ['[port:1] US']);
     expect(group['include-all'], isFalse);
   });
 

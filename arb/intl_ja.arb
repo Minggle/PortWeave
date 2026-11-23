@@ -1195,5 +1195,11 @@
   "priorityFilterHint": "キーワードは | 区切りで大文字小文字を区別しません。空欄は全ノードです。階層内では遅延で選択します。更新は各サブスクリプションの設定に従います。",
   "priorityAll": "すべてのノード",
   "priorityKind": "ソースの種類",
-  "priorityManaged": "このグループは優先順位に従います。ポリシーの優先順位で編集してください。"
+  "priorityManaged": "このグループは優先順位に従います。ポリシーの優先順位で編集してください。",
+  "aggregateProxy": "集約プロキシ",
+  "aggregateProxyDescription": "このポートは基本設定のルーティングルールを保持します。各グループの優先・予備経路を個別に設定でき、他のポートには影響しません。",
+  "aggregateProxyGroups": "グループと優先順位",
+  "aggregateProxyCopyPriorities": "基本設定の優先順位をコピー",
+  "portProxyPageHint": "アプリのプロキシをこのアドレスに設定します。専用モードでは有効な全ポートが動作し、通常の混合ポートは閉じます。",
+  "priorityLegacy": "通常の混合ポートの既存の優先順位"
 }

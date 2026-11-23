@@ -231,6 +231,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Browser · 127.0.0.1:18081'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'Browser US');
     await tester.enterText(find.byType(TextFormField).at(1), '18082');
     await tester.tap(find.text('Save').last);
@@ -243,6 +245,8 @@ void main() {
     expect(updated.id, first.id);
     expect(updated.name, 'Browser US');
     expect(updated.port, 18083);
+    globalState.navigatorKey.currentState!.pop();
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Add'));
     await tester.pumpAndSettle();
     expect(

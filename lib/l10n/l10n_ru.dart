@@ -4160,4 +4160,25 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get priorityManaged =>
       'Эта группа следует цепочке приоритетов. Измените её в разделе приоритетов политик.';
+
+  @override
+  String get aggregateProxy => 'Объединённый прокси';
+
+  @override
+  String get aggregateProxyDescription =>
+      'Порт сохраняет правила базового профиля. Настройте основные и резервные приоритеты каждой группы независимо от других портов.';
+
+  @override
+  String get aggregateProxyGroups => 'Группы и приоритеты';
+
+  @override
+  String get aggregateProxyCopyPriorities =>
+      'Скопировать приоритеты базового профиля';
+
+  @override
+  String get portProxyPageHint =>
+      'Укажите этот адрес в настройках прокси приложения. Выделенный режим запускает все включённые порты и закрывает обычный смешанный порт.';
+
+  @override
+  String get priorityLegacy => 'Прежние приоритеты обычного смешанного порта';
 }

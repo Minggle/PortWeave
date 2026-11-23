@@ -86,6 +86,15 @@ func TestPriorityPolicyWire(t *testing.T) {
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
 	listener.Close()
+	ports := make([]int, 2)
+	for i := range ports {
+		reserved, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ports[i] = reserved.Addr().(*net.TCPAddr).Port
+		reserved.Close()
+	}
 	const probe = "http://probe.test/health"
 	config := fmt.Sprintf(`mixed-port: %d
 mode: rule
@@ -102,7 +111,12 @@ proxy-groups:
   - {name: TierB, type: url-test, use: [Second], empty-fallback: REJECT, url: '%s', interval: 3600, lazy: true}
   - {name: Video, type: fallback, proxies: [Taiwan, TierA, TierB], url: '%s', interval: 3600, lazy: true}
 rules: ['DOMAIN,video.test,Video','MATCH,REJECT']
-`, port, primary.Listener.Addr().(*net.TCPAddr).Port, filepath.Join(home, "first.yaml"), filepath.Join(home, "second.yaml"), probe, probe, probe, probe)
+sub-rules:
+  aggregate_port: ['DOMAIN,video.test,Video','MATCH,REJECT']
+listeners:
+  - {name: aggregate, type: mixed, listen: 127.0.0.1, port: %d, rule: aggregate_port, udp: false, users: []}
+  - {name: provider, type: mixed, listen: 127.0.0.1, port: %d, proxy: TierA, udp: false, users: []}
+`, port, primary.Listener.Addr().(*net.TCPAddr).Port, filepath.Join(home, "first.yaml"), filepath.Join(home, "second.yaml"), probe, probe, probe, probe, ports[0], ports[1])
 	if err := os.WriteFile(runningConfigPath(), []byte(config), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -151,6 +165,10 @@ rules: ['DOMAIN,video.test,Video','MATCH,REJECT']
 		}
 		return string(b), e
 	}
+	aggregateURL, _ := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", ports[0]))
+	aggregateTransport := &http.Transport{Proxy: http.ProxyURL(aggregateURL), DisableKeepAlives: true}
+	defer aggregateTransport.CloseIdleConnections()
+	aggregateClient := &http.Client{Transport: aggregateTransport, Timeout: 2 * time.Second}
 	expect := func(want string) {
 		t.Helper()
 		deadline := time.Now().Add(5 * time.Second)
@@ -158,7 +176,14 @@ rules: ['DOMAIN,video.test,Video','MATCH,REJECT']
 			check()
 			body, e := request()
 			if e == nil && body == want {
-				return
+				response, err := aggregateClient.Get("http://video.test/data")
+				if err == nil {
+					got, readErr := io.ReadAll(response.Body)
+					response.Body.Close()
+					if readErr == nil && string(got) == want {
+						return
+					}
+				}
 			}
 			if time.Now().After(deadline) {
 				t.Fatalf("got %q %v, want %s", body, e, want)
@@ -167,6 +192,19 @@ rules: ['DOMAIN,video.test,Video','MATCH,REJECT']
 		}
 	}
 	expect("SELF")
+	providerURL, _ := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", ports[1]))
+	providerTransport := &http.Transport{Proxy: http.ProxyURL(providerURL), DisableKeepAlives: true}
+	defer providerTransport.CloseIdleConnections()
+	providerClient := &http.Client{Transport: providerTransport, Timeout: 2 * time.Second}
+	response, err := providerClient.Get("http://video.test/data")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(response.Body)
+	response.Body.Close()
+	if err != nil || string(body) != "FIRST" {
+		t.Fatalf("provider port should bypass aggregate priorities: %q %v", body, err)
+	}
 	mainOn.Store(false)
 	expect("FIRST")
 	firstOn.Store(false)

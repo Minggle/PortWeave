@@ -7289,6 +7289,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This group follows its priority chain. Edit it in Policy priorities.'**
   String get priorityManaged;
+
+  /// No description provided for @aggregateProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Aggregate proxy'**
+  String get aggregateProxy;
+
+  /// No description provided for @aggregateProxyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This port keeps the base profile’s routing rules. Set each group’s primary and backup priorities independently; other ports keep their own settings.'**
+  String get aggregateProxyDescription;
+
+  /// No description provided for @aggregateProxyGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Strategy groups and priorities'**
+  String get aggregateProxyGroups;
+
+  /// No description provided for @aggregateProxyCopyPriorities.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy priorities from base profile'**
+  String get aggregateProxyCopyPriorities;
+
+  /// No description provided for @portProxyPageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point an application at this address to use this port’s configuration. Enabling dedicated mode starts all enabled ports and closes the normal mixed port.'**
+  String get portProxyPageHint;
+
+  /// No description provided for @priorityLegacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Legacy priorities for the normal mixed port'**
+  String get priorityLegacy;
 }
 
 class _AppLocalizationsDelegate

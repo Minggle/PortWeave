@@ -4052,4 +4052,24 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get priorityManaged => '이 그룹은 우선순위를 따릅니다. 정책 우선순위에서 수정하세요.';
+
+  @override
+  String get aggregateProxy => '통합 프록시';
+
+  @override
+  String get aggregateProxyDescription =>
+      '이 포트는 기본 프로필의 라우팅 규칙을 유지합니다. 다른 포트에 영향을 주지 않고 각 그룹의 기본 및 예비 우선순위를 설정합니다.';
+
+  @override
+  String get aggregateProxyGroups => '그룹 및 우선순위';
+
+  @override
+  String get aggregateProxyCopyPriorities => '기본 프로필의 우선순위 복사';
+
+  @override
+  String get portProxyPageHint =>
+      '앱의 프록시를 이 주소로 설정하세요. 전용 모드는 활성화된 모든 포트를 시작하고 일반 혼합 포트를 닫습니다.';
+
+  @override
+  String get priorityLegacy => '일반 혼합 포트의 기존 우선순위';
 }

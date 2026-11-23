@@ -9,6 +9,59 @@ part of '../port_routing.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(SelectedPortBinding)
+final selectedPortBindingProvider = SelectedPortBindingProvider._();
+
+final class SelectedPortBindingProvider
+    extends $NotifierProvider<SelectedPortBinding, int?> {
+  SelectedPortBindingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'selectedPortBindingProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$selectedPortBindingHash();
+
+  @$internal
+  @override
+  SelectedPortBinding create() => SelectedPortBinding();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int?>(value),
+    );
+  }
+}
+
+String _$selectedPortBindingHash() =>
+    r'958b4918d287cca5ab02dc0beadabe9435aa89ca';
+
+abstract class _$SelectedPortBinding extends $Notifier<int?> {
+  int? build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<int?, int?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int?, int?>,
+              int?,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(PortRoutingActivity)
 final portRoutingActivityProvider = PortRoutingActivityProvider._();
 

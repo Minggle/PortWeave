@@ -1195,5 +1195,11 @@
   "priorityFilterHint": "Separa palabras con |, sin distinguir mayúsculas. Vacío incluye todos los nodos. Dentro del nivel se elige por latencia. Las actualizaciones siguen los ajustes de cada suscripción.",
   "priorityAll": "Todos los nodos",
   "priorityKind": "Tipo de fuente",
-  "priorityManaged": "Este grupo sigue su cadena de prioridades. Edítala en Prioridades de políticas."
+  "priorityManaged": "Este grupo sigue su cadena de prioridades. Edítala en Prioridades de políticas.",
+  "aggregateProxy": "Proxy agregado",
+  "aggregateProxyDescription": "Este puerto conserva las reglas del perfil base. Configure las prioridades principales y de respaldo de cada grupo sin afectar a otros puertos.",
+  "aggregateProxyGroups": "Grupos y prioridades",
+  "aggregateProxyCopyPriorities": "Copiar prioridades del perfil base",
+  "portProxyPageHint": "Use esta dirección como proxy de la aplicación. El modo dedicado activa todos los puertos habilitados y cierra el puerto mixto normal.",
+  "priorityLegacy": "Prioridades anteriores del puerto mixto normal"
 }

@@ -3977,4 +3977,24 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get priorityManaged => 'このグループは優先順位に従います。ポリシーの優先順位で編集してください。';
+
+  @override
+  String get aggregateProxy => '集約プロキシ';
+
+  @override
+  String get aggregateProxyDescription =>
+      'このポートは基本設定のルーティングルールを保持します。各グループの優先・予備経路を個別に設定でき、他のポートには影響しません。';
+
+  @override
+  String get aggregateProxyGroups => 'グループと優先順位';
+
+  @override
+  String get aggregateProxyCopyPriorities => '基本設定の優先順位をコピー';
+
+  @override
+  String get portProxyPageHint =>
+      'アプリのプロキシをこのアドレスに設定します。専用モードでは有効な全ポートが動作し、通常の混合ポートは閉じます。';
+
+  @override
+  String get priorityLegacy => '通常の混合ポートの既存の優先順位';
 }

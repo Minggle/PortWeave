@@ -1,6 +1,10 @@
 # PortWeave（端流）发布状态与历史
 
-更新日期：2026-11-23。当前开发版本 `0.9.4`，Flutter `3.50.0`，人工安装与真实网络验收尚未完成。升级、测试与最新包状态见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。此页下半部分保留 Windows `v0.9.3-ports.1` 首版记录，其通过结果不代表 0.9.4 已通过。
+更新日期：2026-11-23。当前开发版本 `0.9.4`，Flutter `3.50.0`，ARM64 已安装供用户测试，真实网络验收尚未完成。升级、测试与最新包状态见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。此页下半部分保留 Windows `v0.9.3-ports.1` 首版记录，其通过结果不代表 0.9.4 已通过。
+
+本轮工作已归并回原主工作区，以 `ac80b820` 提交并推送 `main`；临时升级工作区已删除，本地及 origin 开发分支仅保留 `main`，原有修改的 stash 备份保留。
+
+`ac80b820` 的 macOS ARM64 包已完成全套 5,214 项 Flutter 测试、打包、下载后 SHA256／DMG／身份／架构／bundle 签名校验，并已安装到本机。旧应用备份保存在 `dist/installed-backups/`，个人配置保持原位，应用由用户启动测试。双架构及 CI 后续结果统一见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。
 
 仓库已更名为 `Minggle/PortWeave`，`origin` 已更新，当前保持公开。Mac 沿用手动下载策略，**关于 → 下载测试版本**进入 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml)。下载 Actions artifact 需按 GitHub 要求登录并具有仓库读取权限；选择目标提交的成功运行。维护者可通过 **Run workflow** 选择分支手动构建。
 

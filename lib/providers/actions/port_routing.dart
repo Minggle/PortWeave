@@ -119,6 +119,24 @@ class PortRoutingAction extends _$PortRoutingAction {
     return [for (final node in nodes) node['name'] as String];
   }
 
+  Future<Map<String, dynamic>> readBindingBase(int id) async {
+    final binding = _config.bindings.where((item) => item.id == id).firstOrNull;
+    if (binding == null) {
+      throw const PortRoutingException(PortRoutingIssue.invalidBinding);
+    }
+    return _validatedDocument(
+      await appPath.getProfilePath(_source(binding.profileId).id.toString()),
+    );
+  }
+
+  Future<void> savePolicies(int id, List<PriorityPolicy> policies) async {
+    final binding = _config.bindings.where((item) => item.id == id).firstOrNull;
+    if (binding == null || binding.selection != PortSelection.aggregate) {
+      throw const PortRoutingException(PortRoutingIssue.invalidBinding);
+    }
+    await saveBinding(binding.copyWith(policies: policies));
+  }
+
   Future<Map<String, dynamic>> _validatedDocument(String path) async {
     final document = await compute(
       portSubscriptionDocument,
@@ -277,21 +295,22 @@ class PortRoutingAction extends _$PortRoutingAction {
       await checkPortAvailable(binding.port);
     }
     if (binding.enabled) {
+      final documents = <int, Map<String, dynamic>>{};
       for (final id in binding.sourceIds) {
-        final document = await _validatedDocument(
+        documents[id] = await _validatedDocument(
           await appPath.getProfilePath(id.toString()),
         );
-        if (binding.selection == PortSelection.original) {
-          await compute(
-            (args) => compilePortRouting(
-              bindings: [args.$1],
-              sourcePaths: {args.$1.profileId: ''},
-              sourceDocuments: {args.$1.profileId: args.$2},
-              testUrl: '',
-            ),
-            (binding, document),
-          );
-        }
+      }
+      if (binding.usesRules) {
+        await compute(
+          (args) => compilePortRouting(
+            bindings: [args.$1],
+            sourcePaths: {for (final id in args.$1.sourceIds) id: ''},
+            sourceDocuments: args.$2,
+            testUrl: args.$3,
+          ),
+          (binding, documents, ref.read(patchClashConfigProvider).testUrl),
+        );
       }
     }
     if (!ref.mounted || revision != _revision) {
@@ -454,8 +473,8 @@ class PortRoutingAction extends _$PortRoutingAction {
     if (_config.bindings.any(
       (binding) =>
           binding.enabled &&
-          binding.profileId == source.id &&
-          binding.selection == PortSelection.original,
+          binding.sourceIds.contains(source.id) &&
+          binding.usesRules,
     )) {
       return _commitPolicySource(
         source,
@@ -708,8 +727,7 @@ class PortRoutingAction extends _$PortRoutingAction {
         final group = proxies.proxies[binding.groupName];
         final node = group is Map ? group['now'] as String? : null;
         final blocked =
-            binding.selection != PortSelection.original &&
-            (node == null || node == 'REJECT');
+            !binding.usesRules && (node == null || node == 'REJECT');
         if (!isCurrent()) return;
         activity.check(
           binding.id,

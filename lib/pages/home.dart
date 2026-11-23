@@ -179,7 +179,7 @@ class _NavigationPadding extends StatelessWidget {
   }
 }
 
-class _NavigationPage extends StatelessWidget {
+class _NavigationPage extends ConsumerWidget {
   const _NavigationPage({
     super.key,
     required this.item,
@@ -192,7 +192,10 @@ class _NavigationPage extends StatelessWidget {
   final Widget view;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final portBinding = item.label == PageLabel.proxies
+        ? ref.watch(selectedPortBindingProvider)
+        : null;
     // The global key lives here, not on the view: the same view also opens as
     // a pushed page, which may overlap a pop of itself.
     final scopedView = PageFocusScope(
@@ -203,7 +206,9 @@ class _NavigationPage extends StatelessWidget {
       child: isMobile
           ? scopedView
           : Navigator(
-              key: ValueKey('${item.label.name}_navigator'),
+              key: ValueKey(
+                '${item.label.name}_${portBinding ?? 'root'}_navigator',
+              ),
               pages: [RootPage(child: scopedView)],
               onDidRemovePage: (_) {},
             ),

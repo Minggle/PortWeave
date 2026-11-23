@@ -1316,5 +1316,11 @@
   "priorityFilterHint": "Keywords are separated by | and ignore case. Leave inclusion blank to match all nodes. Nodes within this tier are selected by latency. Source updates follow each subscription’s update settings.",
   "priorityAll": "All nodes",
   "priorityKind": "Source type",
-  "priorityManaged": "This group follows its priority chain. Edit it in Policy priorities."
+  "priorityManaged": "This group follows its priority chain. Edit it in Policy priorities.",
+  "aggregateProxy": "Aggregate proxy",
+  "aggregateProxyDescription": "This port keeps the base profile’s routing rules. Set each group’s primary and backup priorities independently; other ports keep their own settings.",
+  "aggregateProxyGroups": "Strategy groups and priorities",
+  "aggregateProxyCopyPriorities": "Copy priorities from base profile",
+  "portProxyPageHint": "Point an application at this address to use this port’s configuration. Enabling dedicated mode starts all enabled ports and closes the normal mixed port.",
+  "priorityLegacy": "Legacy priorities for the normal mixed port"
 }

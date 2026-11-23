@@ -1,14 +1,16 @@
 # PortWeave（端流）Mac 开发计划与进度
 
-更新日期：2026-11-23。当前升级基线：`upgrade/v0.9.4`，`486b5c9b`；源码版本 `0.9.4+2026110401`，Flutter `3.50.0`。
+更新日期：2026-11-23。当前主工作区为仓库根目录 `.`，开发分支 `main`，交付构建提交 `ac80b820`；升级起点为 `486b5c9b`。源码版本 `0.9.4+2026110401`，Flutter `3.50.0`。
 
 ## 当前进度
 
-0.9.4 两项兼容修复与本地验证已完成：脚本模式旧规则在数据库迁移和旧备份恢复后继续禁用；脚本出口随订阅／文件配置更新时间变化而失效重算，并覆盖旧计算仍在等待时发生刷新的竞态。依赖解析、代码生成、静态分析、全套 5,214 项 Flutter 测试及 PortRouting／PriorityPolicy Go wire 测试通过。最新 ARM64／Intel 包构建、下载校验、安装和真实网络验收仍待完成；历史包、旧 CI 及安全模式测试不作为本轮交付验收。
+0.9.4 两项兼容修复与本地验证已完成：脚本模式旧规则在数据库迁移和旧备份恢复后继续禁用；脚本出口随订阅／文件配置更新时间变化而失效重算，并覆盖旧计算仍在等待时发生刷新的竞态。依赖解析、代码生成、静态分析、全套 5,214 项 Flutter 测试及 PortRouting／PriorityPolicy Go wire 测试通过。
+
+`ac80b820` 的 ARM64 包已完成全套测试、打包、下载后 SHA256／DMG／身份／ARM64 架构／bundle 签名检查，并安装为本机 `PortWeave.app` 0.9.4。旧 0.9.3 应用备份位于 `dist/installed-backups/PortWeave-0.9.3.app`，未启动普通模式，真实网络由用户测试。CI 跟进提交 `a0a35b73` 只修复历史标签获取和 Helper 测试隔离，不改变已安装包的应用代码。
 
 2026-11-23 的 GitHub API 查询返回 `private:false`，仓库当前为公开状态。早期私有化记录保留在 M7 历史段落中。Mac 继续通过 Actions 手动下载，artifact 按 GitHub 要求登录并具有读取权限；仓库公开不改变应用的手动更新策略。
 
-远程已成功更名为 `Minggle/PortWeave`，`origin` 已更新为 `https://github.com/Minggle/PortWeave.git`。最终工作将整合回原检出目录，以 `main` 为唯一开发分支，再删除临时升级工作区；这些整合操作尚未完成。内部 Bundle ID `io.github.minggle.portweave` 保持不变。
+远程已成功更名为 `Minggle/PortWeave`，`origin` 已更新为 `https://github.com/Minggle/PortWeave.git`。工作已整合回原主工作区，`ac80b820` 已提交并推送到 `main`；临时升级工作区已删除，本地及 origin 的开发分支仅保留 `main`。原有修改的 stash 备份保留，未应用或删除。内部 Bundle ID `io.github.minggle.portweave` 保持不变。
 
 ## 历史开发基线（2026-11-10）
 
@@ -40,7 +42,7 @@ Mac 已独立命名为 PortWeave（端流），主代理默认 7891；本页记�
 | M7 | 私有仓库更新与个人分发（历史） | 当时仓库为 Private；Mac 手动下载入口需登录；不自动请求匿名 Release API | 当时已完成；4,917 项测试、双架构构建/包校验、ARM64 安全启动通过；当前仓库已公开 |
 | M8 | 多订阅聚合与原策略绑定 | 原规则空间隔离、关键词多选来源、保存失败保留表单、REALITY short-id 原文保留 | 4,928 项 Flutter 测试、Core 回环、真实配置解析及两架构构建通过 |
 | M9 | 普通配置策略优先级 | 保留底稿分流规则；自建主用与多个动态订阅备用可排序；订阅更新自动重算候选 | 已完成；4,943 项测试、双架构构建/包校验及 ARM64 安全启动通过 |
-| M10 | 0.9.4 升级与整合（2026-11-23） | Flutter 3.50.0；迁移和脚本出口修复；PortWeave 文档／仓库入口；工作整合到 main；最新包验收 | 两项修复、本地 5,214 项 Flutter 测试和 Go wire 通过；远程更名、origin 与 workflows 更新完成；合并及新包构建／安装待完成 |
+| M10 | 0.9.4 升级与整合（2026-11-23） | Flutter 3.50.0；迁移和脚本出口修复；PortWeave 文档／仓库入口；工作整合到 main；最新包验收 | 已完成；ARM64 安装，a0a35b73 通用 CI、Windows 和 Mac 双架构构建通过 |
 
 M0—M9 保留此前自动化与打包验收记录；其中真实配置解析不等于真实公网流量验收，安全模式启动不等于用户安装验收。M10 单独记录本轮未完成项。历史出现的 bundle 签名校验只检查当时包的完整性，不代表 Developer ID 签名或 Apple 公证。
 
@@ -165,24 +167,41 @@ M9 应用提交为 `26bc633`，[双架构 CI](https://github.com/Minggle/PortWea
 - 脚本模式旧附加规则在数据库迁移及旧备份恢复后保持禁用，避免升级后意外叠加到脚本结果。
 - 脚本出口 provider 观察订阅／文件配置的更新时间，刷新后重新计算出口及 MATCH 目标；旧计算尚在等待时发生刷新，旧结果不会覆盖新状态。
 
-本地验证：`flutter pub get`、`dart run build_runner build --delete-conflicting-outputs`、`flutter analyze --no-fatal-infos` 通过；`dart run tool/test.dart` 调用 Flutter 执行的全套 **5,214 项测试全部通过**；Go `TestPortRoutingWire` 与 `TestPriorityPolicyWire` 通过。此记录只说明本地代码验证，不包含最新包构建、安装或合并结果。
+本地验证：`flutter pub get`、`dart run build_runner build --delete-conflicting-outputs`、`flutter analyze --no-fatal-infos` 通过；`dart run tool/test.dart` 调用 Flutter 执行的全套 **5,214 项测试全部通过**；Go `TestPortRoutingWire` 与 `TestPriorityPolicyWire` 通过。构建及 CI 后续状态单独记录如下。
 
-本轮最终开发分支为 `main`，合并及临时工作区清理尚未完成。远程已更名为 `Minggle/PortWeave`，`origin` 同步更新，仓库保持公开（`private:false`）。文档和下载入口使用新地址，内部标识 `io.github.minggle.portweave` 不改。
+工作已合并回原主工作区并以 `ac80b820` 推送 `main`，临时升级工作区已删除。本地与 origin 开发分支清理后仅保留 `main`，原有修改仍保留在 stash 备份中。远程已更名为 `Minggle/PortWeave`，`origin` 同步更新，仓库保持公开（`private:false`）。文档和下载入口使用新地址，内部标识 `io.github.minggle.portweave` 不改。
 
-workflows 已更新为 `PortWeave - macOS`／`PortWeave - Windows`，支持 `main` 推送、`v*` 标签和手动触发。macOS 手动输入 `safe_mode` 默认 `false`，启用后额外构建 ARM64 安全模式包。每个平台只保留最新 run 的 Actions artifact，保存一天；上传预算合计 450 MB，其中 macOS ARM64 为 250 MB（含可选安全模式包），macOS Intel、Windows 各 100 MB。workflow 配置完成不代表新包构建已成功。
+workflows 已更新为 `PortWeave - macOS`／`PortWeave - Windows`，支持 `main` 推送、`v*` 标签和手动触发。macOS 手动输入 `safe_mode` 默认 `false`，启用后额外构建 ARM64 安全模式包。每个平台只保留最新 run 的 Actions artifact，保存一天；上传预算合计 450 MB，其中 macOS ARM64 为 250 MB（含可选安全模式包），macOS Intel、Windows 各 100 MB。各 job 及产物验证状态分别记录，不将单个 job 成功视作整套 workflow 通过。
+
+### 今日 CI 与产物状态（ac80b820）
+
+| 范围 | 已确认结果 | 当前状态 |
+| --- | --- | --- |
+| macOS ARM64 | job 成功，全套 5,214 项 Flutter 测试通过，打包产物 63.3 MB 已上传 | 下载后校验完成，已安装供用户测试 |
+| macOS Intel | Release 与打包完成 | `a0a35b73` 双架构 workflow 通过 |
+| 通用 Dart changelog 检查 | 初次 CI 缺少上游历史 tag | `a0a35b73` 在 CI 补取缺失上游标签；通用 CI 全部通过 |
+| Windows 模拟 Helper 测试 | 初次模拟客户端读取真实 Registry，触发 Rust 未初始化 | `a0a35b73` 固定模拟服务地址；Windows 测试与 Release 打包通过 |
+
+以上失败修复后远端重跑已通过；当前安装包的应用代码不受这两项 CI 修复影响。`a0a35b73` 的三份最新 artifact 总计约 194.8 MB，低于 500 MB 配额。
+
+### 本轮验收清单
 
 源码核对：外部控制接口默认关闭，开启后仅监听 `127.0.0.1:9091`，密钥为空时自动生成。macOS 工程的最低部署目标为 `12.0`，分 Apple Silicon／Intel 构建；该配置不等于全部系统版本与设备均已实测。
 
 - [x] 两项修复及数据库／备份／脚本出口回归通过，包含订阅、文件与 pending 竞态场景。
 - [x] 依赖解析、代码生成、静态分析通过，全套 Flutter 测试 5,214 项通过，PortRouting／PriorityPolicy Go wire 通过。
-- [ ] 整合回原检出目录，以 `main` 为唯一开发分支；删除临时升级工作区。
+- [x] 整合回原主工作区并推送 `main`；删除临时升级工作区，清理本地及 origin 其他开发分支，保留原有 stash 备份。
 - [x] 远程更名为 `Minggle/PortWeave`，更新 `origin`，仓库保持公开。
 - [x] 更新 macOS／Windows workflow 名称、触发条件、安全模式选项与 artifact 保留／容量规则。
 - [ ] 集成后验证应用下载入口与 Actions 执行结果。
-- [ ] 最新 ARM64、Intel Release 编译、DMG 及 SHA256 校验。
-- [ ] 下载新包并核对应用身份、二进制架构、图标和 bundle 签名。
+- [x] `ac80b820` ARM64 job 完成全套 5,214 项 Flutter 测试、Release 打包及 63.3 MB 产物上传。
+- [x] Intel job 完成，Release 和 DMG 构建通过。
+- [x] 通用 Dart changelog 历史标签问题修复后通过 CI。
+- [x] Windows 模拟 Helper Registry／Rust 初始化问题修复后通过回归。
+- [x] ARM64 包完成 SHA256、DMG、应用身份、主要二进制架构及 bundle 签名校验，安装为本机 0.9.4。
+- [ ] Intel 成功产物下载后完成同等校验。
 - [ ] 安全模式启动，记录 PID，确认系统代理／DNS 不变且 Core 不开放 TCP 监听。
-- [ ] 用户安装最新包、真实订阅与双应用出口隔离、睡眠／网络切换及退出恢复验收。
+- [ ] 用户启动已安装的最新包，验收真实订阅、双应用出口隔离、睡眠／网络切换及退出恢复。
 - [ ] Developer ID 签名、Apple 公证与 Gatekeeper 首次安装验收。
 
 以下为开发验证命令；本轮已执行结果以上方记录为准，未勾选项不代表通过：
@@ -206,4 +225,12 @@ bash tool/package_macos.sh 0.9.4-ports.1 arm64
 
 Intel 在 Intel Mac 上构建，不设置 ARM64 专用变量，打包参数使用 `amd64`。Flutter 3.50 已默认在 Intel Mac 启用 Impeller，旧记录的 `FLTEnableImpeller=false` 不作为当前要求；SDK 相关约束见 [.agents/flutter-upgrade.md](.agents/flutter-upgrade.md)。版本后缀只是示例，不能据此推断已发布标签或产物。
 
-共享主机的 GUI 调试仅使用 `flutter run -d macos --dart-define-from-file=env.json --dart-define=SAFE_MODE=true`。安全模式不开放代理端口，真实流量及安装由用户在测试环境验证。最新包尚未构建和安装，本文没有将任何旧包验收登记为本轮完成。
+共享主机的 GUI 调试仅使用 `flutter run -d macos --dart-define-from-file=env.json --dart-define=SAFE_MODE=true`。安全模式不开放代理端口，真实流量由用户在测试环境验证。M10 ARM64 包已完成本机安装，未启动普通模式。
+
+## M11：独立端口页面与聚合代理
+
+桌面“代理”下按绑定显示子页面，普通代理商与聚合代理各自拥有监听端口。聚合端口保留底稿规则，业务组主用／备用链存储在 `PortBinding.policies`，每个端口按绑定 ID 隔离节点、组和子规则。同一订阅可以用于不同端口，而不同端口的优先级和手动组选项互不覆盖。切换子页面会退出上一端口的编辑路由。
+
+旧普通混合端口优先级入口保留在聚合总览内，可复制到聚合端口，复制后独立保存。普通混合端口与专用模式互斥；代理商端口与聚合端口同时运行。中英文 README 已补齐 `7891`、`18082`、`18084` 和控制端口 `9091` 的区别与切换步骤。
+
+本地验证：代码／七语言本地化生成、静态分析通过；全套测试通过仓库 runner 的单文件重跑规则完成，编辑器测试的共享 isolate 初始化冲突在独立运行后通过。新增编译、备份引用、来源刷新、侧栏和表单测试通过；桌面导航 30 项通过。Core 回环覆盖聚合独立监听、主备回退与恢复、代理商端口隔离。虚构数据的中文深色页面已渲染检查。最终构建和安装结果待随后补记。

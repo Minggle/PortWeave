@@ -1195,5 +1195,11 @@
   "priorityFilterHint": "Séparez les mots-clés par |, sans distinction de casse. Laisser vide inclut tous les nœuds. La latence départage les nœuds du même niveau. Les mises à jour suivent les paramètres de chaque abonnement.",
   "priorityAll": "Tous les nœuds",
   "priorityKind": "Type de source",
-  "priorityManaged": "Ce groupe suit sa chaîne de priorités. Modifiez-la dans Priorités des politiques."
+  "priorityManaged": "Ce groupe suit sa chaîne de priorités. Modifiez-la dans Priorités des politiques.",
+  "aggregateProxy": "Proxy agrégé",
+  "aggregateProxyDescription": "Ce port conserve les règles du profil de base. Définissez les priorités principales et de secours de chaque groupe sans affecter les autres ports.",
+  "aggregateProxyGroups": "Groupes et priorités",
+  "aggregateProxyCopyPriorities": "Copier les priorités du profil de base",
+  "portProxyPageHint": "Utilisez cette adresse comme proxy dans votre application. Le mode dédié démarre tous les ports activés et ferme le port mixte normal.",
+  "priorityLegacy": "Anciennes priorités du port mixte normal"
 }

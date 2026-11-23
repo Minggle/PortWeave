@@ -22,6 +22,11 @@ _PortBinding _$PortBindingFromJson(Map<String, dynamic> json) => _PortBinding(
       PortSelection.fixed,
   node: json['node'] as String? ?? '',
   filter: json['filter'] as String? ?? '',
+  policies:
+      (json['policies'] as List<dynamic>?)
+          ?.map((e) => PriorityPolicy.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$PortBindingToJson(_PortBinding instance) =>
@@ -35,12 +40,14 @@ Map<String, dynamic> _$PortBindingToJson(_PortBinding instance) =>
       'selection': _$PortSelectionEnumMap[instance.selection]!,
       'node': instance.node,
       'filter': instance.filter,
+      'policies': instance.policies,
     };
 
 const _$PortSelectionEnumMap = {
   PortSelection.original: 'original',
   PortSelection.fixed: 'fixed',
   PortSelection.region: 'region',
+  PortSelection.aggregate: 'aggregate',
 };
 
 _PortSubscriptionRefresh _$PortSubscriptionRefreshFromJson(

@@ -4169,4 +4169,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get priorityManaged =>
       'This group follows its priority chain. Edit it in Policy priorities.';
+
+  @override
+  String get aggregateProxy => 'Aggregate proxy';
+
+  @override
+  String get aggregateProxyDescription =>
+      'This port keeps the base profile’s routing rules. Set each group’s primary and backup priorities independently; other ports keep their own settings.';
+
+  @override
+  String get aggregateProxyGroups => 'Strategy groups and priorities';
+
+  @override
+  String get aggregateProxyCopyPriorities =>
+      'Copy priorities from base profile';
+
+  @override
+  String get portProxyPageHint =>
+      'Point an application at this address to use this port’s configuration. Enabling dedicated mode starts all enabled ports and closes the normal mixed port.';
+
+  @override
+  String get priorityLegacy => 'Legacy priorities for the normal mixed port';
 }
