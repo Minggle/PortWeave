@@ -632,6 +632,9 @@ Future<MigrationData> migrateLegacyConfig({
           final id = idMap.updateCacheValue(addRule['id'], () => snowflake.id);
           final value = addRule['value'] ?? '';
           rules.add(Rule.parse(value, id: id).copyWith(profileId: profileId));
+          if (isScript) {
+            disabledRules.add(DisabledRule(profileId: profileId, ruleId: id));
+          }
         }
         final disabledRuleIds = standardOverwrite['disabledRuleIds'] as List?;
         if (disabledRuleIds != null && !isScript) {

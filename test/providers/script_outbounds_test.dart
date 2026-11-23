@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -115,6 +116,114 @@ void main() {
         ),
       ),
     );
+  });
+
+  for (final type in [ProfileType.url, ProfileType.file]) {
+    test('refreshes scripted exits when a $type profile changes', () async {
+      var group = 'Before';
+      when(() => core.readConfig(any())).thenAnswer(
+        (_) async => {
+          'proxy-groups': [
+            {
+              'name': group,
+              'type': 'select',
+              'proxies': ['DIRECT'],
+            },
+          ],
+          'rule': ['MATCH,$group'],
+        },
+      );
+      scriptEvaluator =
+          ({required String script, required String config}) async => config;
+      final profile = Profile.normal(label: 'sub').copyWith(
+        type: type,
+        scriptId: script.id,
+        lastUpdateDate: DateTime(2026, 11, 22),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWith(() => TestProfiles([profile])),
+          scriptsProvider.overrideWith(() => TestScripts([script])),
+          coreHandlerProvider.overrideWithValue(CoreController.scoped(core)),
+        ],
+      );
+      addTearDown(container.dispose);
+      final outbounds = scriptOutboundsProvider(profile.id);
+      final fallback = profileMatchTargetProvider(profile.id);
+      container.listen(outbounds, (_, _) {});
+      container.listen(fallback, (_, _) {});
+      expect(await container.read(fallback.future), 'Before');
+
+      group = 'After';
+      container
+          .read(profilesProvider.notifier)
+          .put(profile.copyWith(lastUpdateDate: DateTime(2026, 11, 23)));
+
+      final config = await container.read(outbounds.future);
+      expect(config!.proxyGroups.map((group) => group.name), ['After']);
+      expect(await container.read(fallback.future), 'After');
+      verify(() => core.readConfig(any())).called(2);
+    });
+  }
+
+  test('a refresh supersedes a pending scripted exit calculation', () async {
+    final firstRead = Completer<Map<String, dynamic>>();
+    final started = Completer<void>();
+    var reads = 0;
+    when(() => core.readConfig(any())).thenAnswer((_) {
+      if (++reads == 1) {
+        started.complete();
+        return firstRead.future;
+      }
+      return Future.value({
+        'proxy-groups': [
+          {
+            'name': 'After',
+            'type': 'select',
+            'proxies': ['DIRECT'],
+          },
+        ],
+        'rule': ['MATCH,After'],
+      });
+    });
+    scriptEvaluator =
+        ({required String script, required String config}) async => config;
+    final profile = Profile.normal(label: 'sub').copyWith(scriptId: script.id);
+    final container = ProviderContainer(
+      overrides: [
+        profilesProvider.overrideWith(() => TestProfiles([profile])),
+        scriptsProvider.overrideWith(() => TestScripts([script])),
+        coreHandlerProvider.overrideWithValue(CoreController.scoped(core)),
+      ],
+    );
+    addTearDown(container.dispose);
+    final provider = scriptOutboundsProvider(profile.id);
+    final published = <String>[];
+    container.listen(provider, (_, next) {
+      if (next.value case final config?) {
+        published.addAll(config.proxyGroups.map((group) => group.name));
+      }
+    });
+    await started.future;
+    container
+        .read(profilesProvider.notifier)
+        .put(profile.copyWith(lastUpdateDate: DateTime(2026, 11, 23)));
+    firstRead.complete({
+      'proxy-groups': [
+        {
+          'name': 'Before',
+          'type': 'select',
+          'proxies': ['DIRECT'],
+        },
+      ],
+      'rule': ['MATCH,Before'],
+    });
+
+    final config = await container.read(provider.future);
+    expect(config!.proxyGroups.single.name, 'After');
+    await pumpEventQueue();
+    expect(published, isNot(contains('Before')));
+    expect(reads, 2);
   });
 
   test('a profile without a script runs none', () async {

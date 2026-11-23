@@ -580,7 +580,9 @@ void main() {
       'INSERT INTO rules (id, profile_id, rule_action, content, rule_target) '
       "VALUES (10, NULL, 'DOMAIN', 'global.com', 'DIRECT'), "
       "(11, NULL, 'DOMAIN', 'other.com', 'DIRECT'), "
-      "(20, 1, 'DOMAIN', 'own.com', 'REJECT')",
+      "(20, 1, 'DOMAIN', 'own.com', 'DIRECT'), "
+      "(21, 2, 'DOMAIN', 'standard.com', 'REJECT'), "
+      "(22, 3, 'DOMAIN', 'gone.com', 'DIRECT')",
     );
     raw.execute(
       'INSERT INTO disabled_rules (profile_id, rule_id) VALUES (1, 11)',
@@ -604,15 +606,30 @@ void main() {
       },
       {1: 'script', 2: 'standard', 3: 'standard'},
     );
+    expect(await database.rulesDao.queryAddedRules(1).get(), isEmpty);
     expect(
-      (await database.rulesDao.queryAddedRules(1).get()).map((rule) => rule.id),
+      await database.rulesDao.queryDisabledRuleIds(1).get(),
+      unorderedEquals([10, 11, 20]),
+    );
+    expect(
+      (await database.rulesDao.queryProfileRules(1).get()).map(
+        (rule) => rule.id,
+      ),
       [20],
     );
     expect(
       (await database.rulesDao.queryAddedRules(2).get()).map((rule) => rule.id),
-      [10, 11],
+      [21, 10, 11],
     );
     expect(await database.rulesDao.queryAddedRules(3).get(), isEmpty);
+    await database.rulesDao.putRule(
+      Rule.parse('DOMAIN,new.com,REJECT', id: 23),
+      profileId: 1,
+    );
+    expect(
+      (await database.rulesDao.queryAddedRules(1).get()).map((rule) => rule.id),
+      [23],
+    );
   });
 
   test('the v17 upgrade keeps only the app-level custom proxies', () async {

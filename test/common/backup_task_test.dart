@@ -376,7 +376,7 @@ void main() {
       expect(data.profiles.single.scriptId, data.scripts.single.id);
     });
 
-    test('keeps the global rules out of a script overwrite', () async {
+    test('keeps old added rules out of a script overwrite', () async {
       writeFile(join(source.path, 'profiles', 'p1.yaml'), '');
 
       final data = await migrateLegacyConfig(
@@ -404,10 +404,14 @@ void main() {
         targetPath: target.path,
       );
 
-      final global = data.rules.singleWhere((rule) => rule.profileId == null);
-      expect(data.disabledRules, [
-        DisabledRule(profileId: data.profiles.single.id, ruleId: global.id),
-      ]);
+      expect(data.rules, hasLength(2));
+      expect(
+        data.disabledRules,
+        unorderedEquals([
+          for (final rule in data.rules)
+            DisabledRule(profileId: data.profiles.single.id, ruleId: rule.id),
+        ]),
+      );
     });
 
     test('drops the script a standard overwrite left unused', () async {

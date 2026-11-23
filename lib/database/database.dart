@@ -195,7 +195,8 @@ class Database extends _$Database {
     await customStatement(
       'INSERT OR IGNORE INTO disabled_rules (profile_id, rule_id) '
       'SELECT profiles.id, rules.id FROM profiles, rules '
-      "WHERE rules.profile_id IS NULL AND profiles.extend_type = 'script'",
+      'WHERE (rules.profile_id IS NULL OR rules.profile_id = profiles.id) '
+      "AND profiles.extend_type = 'script'",
     );
     await customStatement(
       'UPDATE profiles SET script_id = NULL '
