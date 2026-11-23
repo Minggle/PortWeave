@@ -236,3 +236,9 @@ Intel 在 Intel Mac 上构建，不设置 ARM64 专用变量，打包参数使�
 本地验证：代码／七语言本地化生成、静态分析通过；全套测试通过仓库 runner 的单文件重跑规则完成，编辑器测试的共享 isolate 初始化冲突在独立运行后通过。新增编译、备份引用、来源刷新、侧栏和表单测试通过；桌面导航 30 项通过。Core 回环覆盖聚合独立监听、主备回退与恢复、代理商端口隔离。虚构数据的中文深色页面已渲染检查。最终构建和安装结果待随后补记。
 
 应用提交 `4c5a4272` 的通用跨平台 CI 和 Windows Release 构建通过。macOS ARM64 job 因 hosted runner 容量不足，排队后未获 runner 而取消；ARM64 镜像改为 `macos-26`，已核对官方镜像包含 Xcode 26.3/26.2，Intel 保持 `macos-15-intel`。该跟进不改变应用代码。
+
+最终测试跟进提交 `b33f5804` 为 Core 回环断言等待首轮健康检查，连续 20 次通过；应用代码仍为 `4c5a4272`。该提交的[通用 CI](https://github.com/Minggle/PortWeave/actions/runs/45200552354)及 [Windows 构建](https://github.com/Minggle/PortWeave/actions/runs/45200551968)通过。[Mac 构建](https://github.com/Minggle/PortWeave/actions/runs/45200551951)的 ARM64 已通过完整测试、Release、DMG 打包和上传；Intel 首次在 Rust 下载时 DNS 失败，已单独重试。此前 `d4369032` 的 Mac 双架构构建均成功，应用代码一致。
+
+新增功能专项 59 项、导航回归 30 项通过。实际 Dart 编译出的虚构聚合配置交给同版本 Core 解析成功，包含两个独立监听。中文深色截图和验证日志保存在 `dist/portweave-4c5a4272/validation/`。
+
+最新 ARM64 包及 SHA256 位于 `dist/portweave-b33f5804/arm64/`，已通过下载后校验、DMG 完整性、Bundle ID/协议、GUI/Core/Flutter/App/Rust 的 ARM64 架构及 bundle 签名检查；可安装的 app 准备在 `dist/portweave-b33f5804/PortWeave.app`。用户正在运行此前安装的 PortWeave，因此没有替换或结束该进程；需用户退出后再安装此聚合代理版本。普通模式启动和真实网络验收由用户完成。
