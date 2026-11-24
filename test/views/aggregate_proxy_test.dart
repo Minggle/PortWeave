@@ -321,7 +321,7 @@ void main() {
         ],
       );
       expect(find.text('Video'), findsOneWidget);
-      expect(find.text('JP Node · Base'), findsOneWidget);
+      expect(find.text('Base · JP Node'), findsOneWidget);
       expect(find.textContaining('[priority:'), findsNothing);
       expect(find.textContaining('[port:'), findsNothing);
       expect(tester.takeException(), isNull);

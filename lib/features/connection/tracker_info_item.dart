@@ -1,7 +1,8 @@
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
-import 'package:fl_clash/providers/config.dart';
+import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/ui/icons/icons.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +20,64 @@ String _endpointText(String ip, String port) {
     return '$ip:$port';
   }
   return ip;
+}
+
+bool _needsProfileLabels(
+  Iterable<String> chains,
+  Map<int, PortBinding> bindingsById,
+) {
+  for (final raw in chains) {
+    final parsed = parsePortDisplayName(raw);
+    if (parsed.sourceProfileId != null) return true;
+    final binding = parsed.bindingId != null
+        ? bindingsById[parsed.bindingId]
+        : null;
+    if (binding != null && binding.selection == PortSelection.aggregate) {
+      return true;
+    }
+  }
+  return false;
+}
+
+String watchTrackerChainLabel(WidgetRef ref, String raw) {
+  return watchTrackerChainLabels(ref, [raw])(raw);
+}
+
+String Function(String raw) watchTrackerChainLabels(
+  WidgetRef ref,
+  Iterable<String> chains,
+) {
+  final bindingsById = ref.watch(
+    portRoutingSettingProvider.select(
+      (state) => {for (final b in state.bindings) b.id: b},
+    ),
+  );
+  final profileLabels = _needsProfileLabels(chains, bindingsById)
+      ? ref.watch(
+          profilesProvider.select(
+            (profiles) => {for (final p in profiles) p.id: p.realLabel},
+          ),
+        )
+      : const <int, String>{};
+  return (raw) => formatPortChainLabel(
+    raw,
+    profileLabels: profileLabels,
+    bindingsById: bindingsById,
+  );
+}
+
+String readTrackerChainLabel(WidgetRef ref, String raw) {
+  final bindingsById = {
+    for (final b in ref.read(portRoutingSettingProvider).bindings) b.id: b,
+  };
+  final profileLabels = _needsProfileLabels([raw], bindingsById)
+      ? {for (final p in ref.read(profilesProvider)) p.id: p.realLabel}
+      : const <int, String>{};
+  return formatPortChainLabel(
+    raw,
+    profileLabels: profileLabels,
+    bindingsById: bindingsById,
+  );
 }
 
 void showTrackerInfoDetail(
@@ -154,7 +213,7 @@ class TrackerInfoItem extends StatelessWidget {
   }
 }
 
-class _TrackerInfoBody extends StatelessWidget {
+class _TrackerInfoBody extends ConsumerWidget {
   final TrackerInfo trackerInfo;
 
   const _TrackerInfoBody({required this.trackerInfo});
@@ -202,7 +261,8 @@ class _TrackerInfoBody extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chainLabelOf = watchTrackerChainLabels(ref, trackerInfo.chains);
     final colorScheme = context.colorScheme;
     final styles = RecordTextStyles.of(context);
     final metadata = trackerInfo.metadata;
@@ -230,7 +290,7 @@ class _TrackerInfoBody extends StatelessWidget {
                   if (index > 0 || rule.isNotEmpty) const RecordArrow(),
                   Flexible(
                     child: TonalChip(
-                      label: chain,
+                      label: chainLabelOf(chain),
                       color: context.raisedSurfaceLevel.colorOf(colorScheme),
                       foregroundColor: colorScheme.onSurfaceVariant,
                       onPressed: () => RecordFilterScope.add(
@@ -322,7 +382,9 @@ class TrackerInfoDetailView extends ConsumerWidget {
 
   const TrackerInfoDetailView({super.key, required this.trackerInfo});
 
-  Widget _buildChains(BuildContext context) {
+  Widget _buildChains(BuildContext context, WidgetRef ref) {
+    final chainLabel = watchTrackerChainLabels(ref, trackerInfo.chains);
+
     return DetailRow(
       title: context.appLocalizations.proxyChains,
       value: Wrap(
@@ -337,7 +399,7 @@ class TrackerInfoDetailView extends ConsumerWidget {
               spacing: 6,
               children: [
                 if (index > 0) const RecordArrow(),
-                Flexible(child: MetaChip(label: chain)),
+                Flexible(child: MetaChip(label: chainLabel(chain))),
               ],
             ),
         ],
@@ -352,7 +414,7 @@ class TrackerInfoDetailView extends ConsumerWidget {
     ];
   }
 
-  Widget _buildOverview(BuildContext context) {
+  Widget _buildOverview(BuildContext context, WidgetRef ref) {
     final appLocalizations = context.appLocalizations;
     final metadata = trackerInfo.metadata;
     return ListView(
@@ -400,7 +462,7 @@ class TrackerInfoDetailView extends ConsumerWidget {
               (appLocalizations.specialRules, metadata.specialRules),
               (appLocalizations.dnsMode, metadata.dnsMode?.name ?? ''),
             ]),
-            _buildChains(context),
+            _buildChains(context, ref),
           ],
         ),
         if (rsFeature) _MitmHostSection(metadata: metadata),
@@ -420,7 +482,10 @@ class TrackerInfoDetailView extends ConsumerWidget {
         );
     return DetailTabs(
       tabs: [
-        (appLocalizations.overview, _buildOverview),
+        (
+          appLocalizations.overview,
+          (tabContext) => _buildOverview(tabContext, ref),
+        ),
         if (capturing)
           (
             appLocalizations.httpRequests,

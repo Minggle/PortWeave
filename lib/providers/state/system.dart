@@ -58,6 +58,28 @@ setupPatch(Ref ref) {
   );
 }
 
+List<Group> _trayGroups(Ref ref) {
+  if (!ref.watch(portRoutingActiveProvider)) {
+    return ref.watch(currentGroupsStateProvider).value;
+  }
+  final defaultBinding = ref.watch(portRoutingDefaultBindingProvider);
+  if (defaultBinding == null) {
+    return const [];
+  }
+  if (defaultBinding.usesRules) {
+    return ref
+        .watch(currentGroupsStateProvider)
+        .value
+        .where((group) => group.name.startsWith(defaultBinding.policyPrefix))
+        .toList();
+  }
+  final allGroups = ref.watch(groupsProvider);
+  return [
+    for (final group in allGroups)
+      if (group.name == defaultBinding.groupName) group,
+  ];
+}
+
 @riverpod
 TrayState trayState(Ref ref) {
   final isStart = ref.watch(runTimeProvider.select((state) => state != null));
@@ -82,7 +104,7 @@ TrayState trayState(Ref ref) {
       ),
     ),
   );
-  final groups = ref.watch(currentGroupsStateProvider).value;
+  final groups = _trayGroups(ref);
   final selectedMap = ref.watch(selectedMapProvider);
   final safeMode = ref.watch(safeModeProvider);
   final suspended = ref.watch(suspendProvider);
@@ -123,7 +145,7 @@ Map<String, Map<String, int>> trayDelays(Ref ref) {
   if (delayMap.isEmpty) {
     return const {};
   }
-  final groups = ref.watch(currentGroupsStateProvider).value;
+  final groups = _trayGroups(ref);
   final allGroups = ref.watch(groupsProvider);
   final selectedMap = ref.watch(selectedMapProvider);
   final defaultTestUrl = ref.watch(

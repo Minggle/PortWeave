@@ -47,7 +47,16 @@ RecordFilterController<TrackerInfo> trackerInfoFilterController(
   String pageId,
 ) {
   return RecordFilterController(
-    facets: trackerInfoFacets,
+    facets: [
+      for (final facet in trackerInfoFacets)
+        facet.kind == RecordFacetKind.proxy
+            ? RecordFacet(
+                RecordFacetKind.proxy,
+                facet.valuesOf,
+                labelOf: (raw) => readTrackerChainLabel(ref, raw),
+              )
+            : facet,
+    ],
     groupers: trackerInfoGroupers,
     grouping: savedRecordGrouping(ref, pageId),
     onGroupingChanged: (grouping) => saveRecordGrouping(ref, pageId, grouping),
@@ -268,6 +277,11 @@ class _TrackerInfoGroupedListState
       estimatedItemExtent: table?.rowHeight ?? recordListEstimatedExtent,
       leadingOf: showsIcons ? (group) => _leadingOf(group.key) : null,
       trailingOf: isLive ? (group) => _buildSpeed(context, group.items) : null,
+      groupLabelOf: grouping == RecordGrouping.exit
+          ? watchTrackerChainLabels(ref, [
+              for (final group in widget.groups) group.key,
+            ])
+          : null,
       itemBuilder: (_, trackerInfo, index) {
         final striped = index.isOdd;
         return MemoBuilder(

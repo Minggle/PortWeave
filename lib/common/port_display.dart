@@ -147,5 +147,25 @@ String? portSourceLabel(
 }
 
 String formatDisplayWithSource(String name, String? source) {
-  return source == null || source.isEmpty ? name : '$name · $source';
+  return source == null || source.isEmpty ? name : '$source · $name';
+}
+
+String formatPortChainLabel(
+  String raw, {
+  Map<int, String> profileLabels = const {},
+  Map<int, PortBinding> bindingsById = const {},
+}) {
+  final parsed = parsePortDisplayName(raw);
+  final binding = parsed.bindingId != null
+      ? bindingsById[parsed.bindingId]
+      : null;
+  final source =
+      (parsed.sourceProfileId != null
+          ? profileLabels[parsed.sourceProfileId]
+          : null) ??
+      (binding != null && binding.selection == PortSelection.aggregate
+          ? profileLabels[binding.profileId]
+          : null) ??
+      binding?.name;
+  return formatDisplayWithSource(parsed.name, source);
 }

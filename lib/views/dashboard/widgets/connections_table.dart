@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/core/controller.dart';
 import 'package:fl_clash/core/method.dart';
 import 'package:fl_clash/enum/enum.dart';
@@ -677,16 +678,17 @@ class _Source extends StatelessWidget {
   }
 }
 
-class _Exit extends StatelessWidget {
+class _Exit extends ConsumerWidget {
   const _Exit(this.info);
 
   final TrackerInfo info;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final exit = info.chains.firstOrNull ?? '';
+    final display = exit.isEmpty ? '' : watchTrackerChainLabel(ref, exit);
     return EmojiText(
-      exit.isEmpty ? '—' : exit,
+      display.isEmpty ? '—' : display,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: isBuiltinOutbound(exit) ? _muted(context) : null,
@@ -700,7 +702,7 @@ String _ruleKey(TrackerInfo info) =>
     '${info.rule} ${info.rulePayload}'.toLowerCase();
 
 String _exitKey(TrackerInfo info) =>
-    (info.chains.firstOrNull ?? '').toLowerCase();
+    displayPortName(info.chains.firstOrNull ?? '').toLowerCase();
 
 List<RecordColumn<TrackerInfo>> _connectionColumns(
   BuildContext context,

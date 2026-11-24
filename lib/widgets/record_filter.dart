@@ -269,6 +269,7 @@ class RecordGroupedList<T> extends StatelessWidget {
   final Widget Function(BuildContext context, T item, int index) itemBuilder;
   final Widget? Function(RecordGroup<T> group)? leadingOf;
   final Widget? Function(RecordGroup<T> group)? trailingOf;
+  final String Function(String key)? groupLabelOf;
 
   const RecordGroupedList({
     super.key,
@@ -280,6 +281,7 @@ class RecordGroupedList<T> extends StatelessWidget {
     required this.itemBuilder,
     this.leadingOf,
     this.trailingOf,
+    this.groupLabelOf,
   });
 
   @override
@@ -299,7 +301,10 @@ class RecordGroupedList<T> extends StatelessWidget {
                 for (final group in groups)
                   CollapsibleGroup(
                     key: group.key,
-                    label: group.key.isEmpty ? other : group.key,
+                    label: switch (groupLabelOf?.call(group.key) ?? group.key) {
+                      '' => other,
+                      final label => label,
+                    },
                     itemCount: group.items.length,
                     leading: leadingOf?.call(group),
                     trailing: trailingOf?.call(group),

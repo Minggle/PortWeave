@@ -8,9 +8,11 @@ import 'package:fl_clash/features/features.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/plugins/app.dart';
 import 'package:fl_clash/providers/app.dart';
+import 'package:fl_clash/providers/config.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_app.dart';
@@ -547,4 +549,52 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
+
+  testWidgets(
+    'TrackerInfoItem strips internal prefixes and keeps raw filter value',
+    (tester) async {
+      const rawChain = '[port:378340364773232640] TW-Fixed-01';
+      final clicked = <RecordFilter>[];
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = const PortRoutingConfig(
+        bindings: [
+          PortBinding(
+            id: 378340364773232640,
+            name: 'Glados',
+            profileId: 1,
+            port: 18081,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: TestApp(
+            homeBuilder: (child) => HostScaffold(body: child),
+            child: RecordFilterScope(
+              onFilter: clicked.add,
+              child: TrackerInfoItem(
+                trackerInfo: _tracker(chains: const [rawChain]),
+                detailTitle: 'detail',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Glados · TW-Fixed-01'), findsOneWidget);
+      expect(find.textContaining('[port:'), findsNothing);
+
+      await tester.tap(find.text('Glados · TW-Fixed-01'));
+      await tester.pump();
+      expect(clicked, const [RecordFilter(RecordFacetKind.proxy, rawChain)]);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 }

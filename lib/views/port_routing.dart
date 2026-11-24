@@ -248,7 +248,17 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                   PortSelection.aggregate => l.aggregateProxy,
                 },
                 status,
-                if (check?.node != null && active) check!.node!,
+                if (check?.node case final node? when active)
+                  formatDisplayWithSource(
+                    displayPortName(node),
+                    portSourceLabel(
+                      node,
+                      profileLabels: {
+                        for (final p in profiles) p.id: p.realLabel,
+                      },
+                      bindingsById: {binding.id: binding},
+                    ),
+                  ),
                 if (profile?.lastUpdateDate != null)
                   '${l.update}: ${profile!.lastUpdateDate!.toLocal()}',
               ].join('\n'),

@@ -212,4 +212,82 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 2));
   });
+
+  testWidgets('the table strips internal prefixes from exit labels', (
+    tester,
+  ) async {
+    final core = _MockCore();
+    whenConnections<({List<TrackerInfo> next, int tcp})>(
+      core,
+      () async => [
+        TrackerInfo(
+          id: 'prefixed',
+          start: DateTime(2026, 4, 15, 10, 0),
+          metadata: const Metadata(
+            network: 'tcp',
+            host: 'example.com',
+            destinationPort: '443',
+            process: 'curl',
+          ),
+          chains: const ['[port:378340364773232640] TW-Fixed-01'],
+          rule: 'MATCH',
+          rulePayload: '',
+        ),
+      ],
+    );
+    final connections = ProviderContainer(
+      overrides: [
+        profilesProvider.overrideWith(TestProfiles.new),
+        coreHandlerProvider.overrideWithValue(CoreController.scoped(core)),
+        coreStatusProvider.overrideWithBuild((_, _) => CoreStatus.connected),
+      ],
+    );
+    addTearDown(connections.dispose);
+    connections
+        .read(portRoutingSettingProvider.notifier)
+        .value = const PortRoutingConfig(
+      bindings: [
+        PortBinding(
+          id: 378340364773232640,
+          name: 'Glados',
+          profileId: 1,
+          port: 18081,
+        ),
+      ],
+    );
+    globalState.container = connections;
+    const size = Size(1000, 700);
+    connections.read(viewSizeProvider.notifier).value = size;
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: connections,
+        child: const TestApp(
+          child: HostScaffold(
+            body: SizedBox(
+              width: 960,
+              height: 600,
+              child: DashboardDensityScope(
+                density: DashboardDensity.standard,
+                scale: 1,
+                child: ConnectionsTableCard(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Glados · TW-Fixed-01'), findsOneWidget);
+    expect(find.textContaining('[port:'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 2));
+  });
 }

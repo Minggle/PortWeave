@@ -486,7 +486,7 @@ void main() {
       await pumpCard(tester);
       expect(name('Agg Port'), findsOneWidget);
       expect(name('Media'), findsOneWidget);
-      expect(name('US 01 · Sub B'), findsOneWidget);
+      expect(name('Sub B · US 01'), findsOneWidget);
       expect(find.textContaining('[port:'), findsNothing);
       expect(find.textContaining('[priority:'), findsNothing);
 

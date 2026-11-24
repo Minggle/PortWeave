@@ -174,7 +174,7 @@ void main() {
       expect(resolved.source, '备用订阅');
       expect(
         formatDisplayWithSource(resolved.name, resolved.source),
-        '🤖 OpenAI 01 · 备用订阅',
+        '备用订阅 · 🤖 OpenAI 01',
       );
     });
 
@@ -262,7 +262,46 @@ void main() {
     test('formatDisplayWithSource omits empty or null source', () {
       expect(formatDisplayWithSource('🇺🇸 美国 01', null), '🇺🇸 美国 01');
       expect(formatDisplayWithSource('🇺🇸 美国 01', ''), '🇺🇸 美国 01');
-      expect(formatDisplayWithSource('🇺🇸 美国 01', '主订阅'), '🇺🇸 美国 01 · 主订阅');
+      expect(formatDisplayWithSource('🇺🇸 美国 01', '主订阅'), '主订阅 · 🇺🇸 美国 01');
     });
+
+    test(
+      'formatPortChainLabel formats source-first and falls back to binding name',
+      () {
+        expect(
+          formatPortChainLabel(
+            '[port:1] [priority:3] TW-Fixed-01',
+            profileLabels: profileLabels,
+            bindingsById: bindingsById,
+          ),
+          '备用订阅 · TW-Fixed-01',
+        );
+        expect(
+          formatPortChainLabel(
+            '[port:1] TW-Fixed-01',
+            profileLabels: profileLabels,
+            bindingsById: bindingsById,
+          ),
+          '主订阅 · TW-Fixed-01',
+        );
+        const glados = PortBinding(
+          id: 378340364773232640,
+          name: 'Glados',
+          profileId: 9,
+          port: 18081,
+        );
+        expect(
+          formatPortChainLabel(
+            '[port:378340364773232640] TW-Fixed-01',
+            bindingsById: {glados.id: glados},
+          ),
+          'Glados · TW-Fixed-01',
+        );
+        expect(
+          formatPortChainLabel('[port:378340364773232640] TW-Fixed-01'),
+          'TW-Fixed-01',
+        );
+      },
+    );
   });
 }

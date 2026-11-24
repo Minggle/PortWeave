@@ -1,10 +1,12 @@
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'tracker_info_item.dart';
 
@@ -59,7 +61,8 @@ List<RecordColumn<TrackerInfo>> trackerInfoColumns(
     RecordColumn(
       TableColumn('exit', appLocalizations.outboundExit, width: 120),
       cell: (_, info) => _ExitChip(exit: info.chains.firstOrNull ?? ''),
-      sortKey: (info) => (info.chains.firstOrNull ?? '').toLowerCase(),
+      sortKey: (info) =>
+          displayPortName(info.chains.firstOrNull ?? '').toLowerCase(),
     ),
     if (isLive) ...[
       _amountColumn(
@@ -183,19 +186,19 @@ class TrackerInfoTableRow extends StatelessWidget {
   }
 }
 
-class _ExitChip extends StatelessWidget {
+class _ExitChip extends ConsumerWidget {
   final String exit;
 
   const _ExitChip({required this.exit});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (exit.isEmpty) {
       return const RecordCellText('');
     }
     final colorScheme = context.colorScheme;
     return TonalChip(
-      label: exit,
+      label: watchTrackerChainLabel(ref, exit),
       color: context.raisedSurfaceLevel.colorOf(colorScheme),
       foregroundColor: colorScheme.onSurfaceVariant,
       onPressed: () => RecordFilterScope.add(

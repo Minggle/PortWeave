@@ -7,9 +7,7 @@ import 'package:fl_clash/common/l10n_labels.dart';
 import 'package:fl_clash/common/tray.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
-import 'package:fl_clash/providers/action.dart';
-import 'package:fl_clash/providers/config.dart';
-import 'package:fl_clash/providers/state.dart';
+import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -463,6 +461,78 @@ void main() {
         _item(showCall(), currentAppLocalizations.systemProxy)['enabled'],
         isFalse,
       );
+    },
+  );
+
+  test(
+    'multi-port mode scopes tray groups to default outbound and strips prefixes',
+    () async {
+      const defaultBinding = PortBinding(
+        id: 378340364773232640,
+        name: 'Glados',
+        profileId: 11,
+        port: 18081,
+        selection: PortSelection.aggregate,
+      );
+      const otherBinding = PortBinding(
+        id: 2,
+        name: 'Other',
+        profileId: 12,
+        port: 18082,
+        node: 'US',
+      );
+      const defaultGroup = Group(
+        name: '[port:378340364773232640] Proxy',
+        type: GroupType.Selector,
+        hidden: false,
+        all: [
+          Proxy(
+            name: '[port:378340364773232640] [priority:12] TW-Fixed-01',
+            type: 'Shadowsocks',
+          ),
+        ],
+      );
+      final otherGroup = Group(
+        name: otherBinding.groupName,
+        type: GroupType.Selector,
+        all: const [Proxy(name: 'US', type: 'Shadowsocks')],
+      );
+      container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWithValue(const [
+            Profile(
+              id: 11,
+              label: 'MainSub',
+              autoUpdateDuration: defaultUpdateDuration,
+            ),
+            Profile(
+              id: 12,
+              label: 'BackupSub',
+              autoUpdateDuration: defaultUpdateDuration,
+            ),
+          ]),
+        ],
+      );
+      container.read(currentProfileIdProvider.notifier).value = 99;
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = const PortRoutingConfig(
+        workspaceProfileId: 99,
+        defaultBindingId: 378340364773232640,
+        bindings: [defaultBinding, otherBinding],
+      );
+      container.read(groupsProvider.notifier).value = [
+        defaultGroup,
+        otherGroup,
+      ];
+
+      final scoped = container.read(trayStateProvider);
+      expect(scoped.groups.map((g) => g.name), [defaultGroup.name]);
+
+      await update(scoped);
+      final submenu = _item(showCall(), 'Proxy');
+      final childItems = submenu['items'] as List<Map<String, Object?>>;
+      expect(childItems.single['label'], 'BackupSub · TW-Fixed-01');
     },
   );
 }

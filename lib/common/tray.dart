@@ -9,6 +9,7 @@ import 'l10n_labels.dart';
 import 'app_ports.dart';
 import 'constant.dart';
 import 'keyboard.dart';
+import 'port_display.dart';
 import 'provider_reader.dart';
 import 'system.dart';
 import 'window.dart';
@@ -256,10 +257,52 @@ class AppTray implements TrayPort {
     }
     final delays = read(trayDelaysProvider);
     final proxiesAction = read(proxiesActionProvider.notifier);
+    final portRoutingActive = read(portRoutingActiveProvider);
+    final defaultBinding = portRoutingActive
+        ? read(portRoutingDefaultBindingProvider)
+        : null;
+    final bindings = read(portRoutingSettingProvider).bindings;
+    final bindingsById = {for (final b in bindings) b.id: b};
+    final validBindingIds = bindingsById.isEmpty
+        ? null
+        : bindingsById.keys.toSet();
+    final profiles = read(profilesProvider);
+    final profileLabels = {for (final p in profiles) p.id: p.realLabel};
+    final validProfileIds = profileLabels.isEmpty
+        ? null
+        : profileLabels.keys.toSet();
+
+    String groupLabelOf(Group group) {
+      if (defaultBinding != null && group.name == defaultBinding.groupName) {
+        return defaultBinding.name;
+      }
+      return displayPortName(
+        group.name,
+        validBindingIds: validBindingIds,
+        validProfileIds: validProfileIds,
+      );
+    }
+
+    String proxyLabelOf(String raw) {
+      final clean = displayPortName(
+        raw,
+        validBindingIds: validBindingIds,
+        validProfileIds: validProfileIds,
+      );
+      final source = portSourceLabel(
+        raw,
+        profileLabels: profileLabels,
+        bindingsById: bindingsById,
+      );
+      return formatDisplayWithSource(clean, source);
+    }
+
     return [
       for (final group in trayState.groups)
         _buildGroupSubmenu(
           group,
+          groupLabel: groupLabelOf(group),
+          proxyLabelOf: proxyLabelOf,
           selectedName: read(selectedProxyNameProvider(group.name)),
           delays: delays[group.name] ?? const {},
           onSelected: (proxyName) {
@@ -282,17 +325,19 @@ class AppTray implements TrayPort {
 
   TrayMenuSubmenu _buildGroupSubmenu(
     Group group, {
+    required String groupLabel,
+    required String Function(String raw) proxyLabelOf,
     required String? selectedName,
     required Map<String, int> delays,
     required void Function(String proxyName) onSelected,
   }) {
     return TrayMenuSubmenu(
-      label: group.name,
+      label: groupLabel,
       detail: _delayText(delays[selectedName]),
       items: [
         for (final proxy in group.all)
           TrayMenuCheckbox(
-            label: proxy.name,
+            label: proxyLabelOf(proxy.name),
             checked: selectedName == proxy.name,
             detail: _delayText(delays[proxy.name]),
             onSelected: () {

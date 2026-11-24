@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:flutter/widgets.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -264,7 +265,11 @@ final trackerInfoFacets = <RecordFacet<TrackerInfo>>[
     offered: true,
   ),
   RecordFacet(RecordFacetKind.app, (info) => [info.metadata.process]),
-  RecordFacet(RecordFacetKind.proxy, (info) => info.chains),
+  RecordFacet(
+    RecordFacetKind.proxy,
+    (info) => info.chains,
+    labelOf: displayPortName,
+  ),
 ];
 
 final trackerInfoGroupers = <RecordGrouper<TrackerInfo>>[
