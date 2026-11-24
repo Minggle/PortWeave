@@ -25,11 +25,11 @@ void main() {
       for (final arch in [ReleaseArch.amd64, ReleaseArch.arm64]) {
         expect(
           name(ReleaseOs.windows, arch, 'exe', form: ReleaseForm.setup),
-          'FlClash-dev-0.9.4-windows-${arch.name}-setup.exe',
+          'PortWeave-dev-0.9.4-windows-${arch.name}-setup.exe',
         );
         expect(
           name(ReleaseOs.windows, arch, 'zip', form: ReleaseForm.portable),
-          'FlClash-dev-0.9.4-windows-${arch.name}-portable.zip',
+          'PortWeave-dev-0.9.4-windows-${arch.name}-portable.zip',
         );
       }
     });
@@ -74,7 +74,7 @@ void main() {
           line: ReleaseLine.rs,
           version: releaseVersionOfTag('v0.9.4-pre.2'),
         ),
-        'FlClash-rs-0.9.4-pre.2-windows-amd64-setup.exe',
+        'PortWeave-rs-0.9.4-pre.2-windows-amd64-setup.exe',
       );
     });
 

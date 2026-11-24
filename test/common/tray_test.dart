@@ -7,18 +7,18 @@ void main() {
     final macOS = AppTray.forPlatform(isMacOS: true, isWindows: false);
     final linux = AppTray.forPlatform(isMacOS: false, isWindows: false);
 
-    test('windows loads ico files from the windows directory', () {
+    test('windows loads ico files from the PortWeave windows directory', () {
       expect(
         windows.getTrayIcon(isStart: false, tunEnable: false, safeMode: false),
-        'assets/images/tray/windows/status_1.ico',
+        'assets/images/portweave/tray/windows/status_1.ico',
       );
       expect(
         windows.getTrayIcon(isStart: true, tunEnable: false, safeMode: false),
-        'assets/images/tray/windows/status_2.ico',
+        'assets/images/portweave/tray/windows/status_2.ico',
       );
       expect(
         windows.getTrayIcon(isStart: true, tunEnable: true, safeMode: false),
-        'assets/images/tray/windows/status_3.ico',
+        'assets/images/portweave/tray/windows/status_3.ico',
       );
     });
 
@@ -85,7 +85,7 @@ void main() {
             tunEnable: tunEnable,
             safeMode: true,
           ),
-          'assets/images/tray/windows/status_4.ico',
+          'assets/images/portweave/tray/windows/status_4.ico',
         );
         expect(
           linux.getTrayIcon(

@@ -9,8 +9,10 @@ import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:flutter/widgets.dart';
 
-final appName = Platform.isMacOS ? 'PortWeave' : 'FlClash';
-final appIconAsset = Platform.isMacOS
+final appName = Platform.isMacOS || Platform.isWindows
+    ? 'PortWeave'
+    : 'FlClash';
+final appIconAsset = Platform.isMacOS || Platform.isWindows
     ? 'assets/images/portweave/icon.png'
     : 'assets/images/icon.png';
 const appHelperService = 'FlClashHelperService';

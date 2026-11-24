@@ -6,6 +6,7 @@ import 'constant.dart';
 import 'print.dart';
 
 const protocolSchemes = ['clash', 'clashmeta', 'flclash'];
+const windowsProtocolSchemes = ['portweave'];
 const importProtocolSchemes = [...protocolSchemes, 'portweave'];
 
 /// A user-level desktop entry that claims the schemes for the running binary,

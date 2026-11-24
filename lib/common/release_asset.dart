@@ -1,6 +1,6 @@
 // tool/package.dart imports this on the plain Dart VM: no Flutter imports.
 const releaseFilePrefix = 'FlClash';
-const macosReleaseFilePrefix = 'PortWeave';
+const portweaveReleaseFilePrefix = 'PortWeave';
 
 enum ReleaseLine { dev, rs }
 
@@ -47,7 +47,9 @@ String releaseAssetName({
   required String extension,
 }) {
   final parts = [
-    os == ReleaseOs.macos ? macosReleaseFilePrefix : releaseFilePrefix,
+    os == ReleaseOs.macos || os == ReleaseOs.windows
+        ? portweaveReleaseFilePrefix
+        : releaseFilePrefix,
     line.name,
     _checkedVersion(version),
     os.name,

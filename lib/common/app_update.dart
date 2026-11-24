@@ -21,9 +21,7 @@ bool get manualUpdateOnly => _manualUpdateOnly;
 @visibleForTesting
 set manualUpdateOnly(bool value) => _manualUpdateOnly = value;
 
-String get updatePageUrl => manualUpdateOnly
-    ? 'https://github.com/$repository/actions/workflows/ports-macos.yaml'
-    : 'https://github.com/$repository/releases/latest';
+String get updatePageUrl => 'https://github.com/$repository/releases/latest';
 
 sealed class UpdateDownload {
   const UpdateDownload(this.tag);
@@ -82,9 +80,20 @@ SelfUpdateAsset? selfUpdateAssetFor(Abi abi, {required bool windowsInstalled}) {
 }
 
 String updateAssetName(String tag, SelfUpdateAsset asset) {
+  final version = releaseVersionOfTag(tag);
+  if (asset.os == ReleaseOs.windows) {
+    final parts = [
+      portweaveReleaseFilePrefix,
+      version,
+      asset.os.name,
+      asset.arch.name,
+      ?asset.form?.name,
+    ];
+    return '${parts.join('-')}.${asset.extension}';
+  }
   return releaseAssetName(
     line: appReleaseLine,
-    version: releaseVersionOfTag(tag),
+    version: version,
     os: asset.os,
     arch: asset.arch,
     form: asset.form,
@@ -93,7 +102,7 @@ String updateAssetName(String tag, SelfUpdateAsset asset) {
 }
 
 String updateChecksumsName(String tag) {
-  return releaseChecksumsName(appReleaseLine, releaseVersionOfTag(tag));
+  return 'SHA256SUMS';
 }
 
 Uri releaseAssetUri(String tag, String name) {

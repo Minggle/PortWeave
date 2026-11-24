@@ -1,8 +1,8 @@
 script_template: inno_setup.iss
-app_id: 728B3532-C74B-4870-9068-BE70FE12A3E6
-app_name: FlClash
-publisher: chen08209
-publisher_url: https://github.com/chen08209/FlClash
-display_name: FlClash
-executable_name: FlClash.exe
+app_id: D5912BB4-C625-4742-9C46-097EE84CF18E
+app_name: PortWeave
+publisher: Minggle
+publisher_url: https://github.com/Minggle/PortWeave
+display_name: PortWeave
+executable_name: PortWeave.exe
 setup_icon_file: windows\runner\resources\app_icon.ico

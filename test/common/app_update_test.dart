@@ -10,23 +10,20 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../tool/src/package/version.dart';
 
 void main() {
-  test(
-    'manual builds link to downloads while other platforms retain releases',
-    () {
-      final original = manualUpdateOnly;
-      addTearDown(() => manualUpdateOnly = original);
-      manualUpdateOnly = true;
-      expect(
-        updatePageUrl,
-        'https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml',
-      );
-      manualUpdateOnly = false;
-      expect(
-        updatePageUrl,
-        'https://github.com/Minggle/PortWeave/releases/latest',
-      );
-    },
-  );
+  test('all platforms link to GitHub releases for update downloads', () {
+    final original = manualUpdateOnly;
+    addTearDown(() => manualUpdateOnly = original);
+    manualUpdateOnly = true;
+    expect(
+      updatePageUrl,
+      'https://github.com/Minggle/PortWeave/releases/latest',
+    );
+    manualUpdateOnly = false;
+    expect(
+      updatePageUrl,
+      'https://github.com/Minggle/PortWeave/releases/latest',
+    );
+  });
 
   String? nameOn(Abi abi, {required bool windowsInstalled}) {
     final asset = selfUpdateAssetFor(abi, windowsInstalled: windowsInstalled);
@@ -52,11 +49,11 @@ void main() {
     test('names the Windows installer only for an installed build', () {
       expect(
         nameOn(Abi.windowsX64, windowsInstalled: true),
-        'FlClash-dev-0.9.4-windows-amd64-setup.exe',
+        'PortWeave-0.9.4-windows-amd64-setup.exe',
       );
       expect(
         nameOn(Abi.windowsArm64, windowsInstalled: true),
-        'FlClash-dev-0.9.4-windows-arm64-setup.exe',
+        'PortWeave-0.9.4-windows-arm64-setup.exe',
       );
       expect(nameOn(Abi.windowsX64, windowsInstalled: false), isNull);
     });
@@ -83,10 +80,7 @@ void main() {
       updateAssetName('v0.9.4-pre.1+2', asset),
       'FlClash-dev-0.9.4-pre.1.2-android-arm64.apk',
     );
-    expect(
-      updateChecksumsName('v0.9.4-pre.1+2'),
-      'FlClash-dev-0.9.4-pre.1.2-SHA256SUMS',
-    );
+    expect(updateChecksumsName('v0.9.4-pre.1+2'), 'SHA256SUMS');
   });
 
   test('updates from the line tool/package.dart names this build', () {
@@ -103,6 +97,17 @@ void main() {
         extension: 'dmg',
       ),
       'PortWeave-dev-0.9.4-macos-arm64.dmg',
+    );
+    expect(
+      releaseAssetName(
+        line: appReleaseLine,
+        version: '0.9.4',
+        os: ReleaseOs.windows,
+        arch: ReleaseArch.amd64,
+        form: ReleaseForm.setup,
+        extension: 'exe',
+      ),
+      'PortWeave-dev-0.9.4-windows-amd64-setup.exe',
     );
   });
 

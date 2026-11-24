@@ -47,7 +47,7 @@ class AppTray implements TrayPort {
 
   String _trayIconDir(bool monochrome) {
     if (isWindows) {
-      return 'assets/images/tray/windows';
+      return 'assets/images/portweave/tray/windows';
     }
     if (isMacOS) {
       return monochrome

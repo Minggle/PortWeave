@@ -65,7 +65,7 @@ begin
   AppDir := AddBackslash(ExpandConstant('{app}'));
   StringChangeEx(AppDir, '''', '''''', True);
   Exec('powershell.exe',
-    '-NoProfile -NonInteractive -Command "Get-Process -Name FlClash,FlClashCore,FlClashHelperService -ErrorAction SilentlyContinue | ' +
+    '-NoProfile -NonInteractive -Command "Get-Process -Name PortWeave,FlClashCore,FlClashHelperService -ErrorAction SilentlyContinue | ' +
     'Where-Object { $_.Path -and $_.Path.StartsWith(''' + AppDir + ''', [StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
@@ -113,7 +113,7 @@ begin
     RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run', '{{DISPLAY_NAME}}');
   end;
 
-  Schemes := ['clash', 'clashmeta', 'flclash'];
+  Schemes := ['portweave'];
   for i := 0 to GetArrayLength(Schemes)-1 do
   begin
     if RegQueryStringValue(HKCU, 'Software\Classes\' + Schemes[i] + '\shell\open\command', '', Value) and PointsIntoApp(Value) then
@@ -151,10 +151,10 @@ end;
 // windows/runner/Runner.rc.
 procedure RemoveUserData;
 begin
-  DelTree(ExpandConstant('{userappdata}\com.follow\clash'), True, True, True);
-  DelTree(ExpandConstant('{localappdata}\com.follow\clash'), True, True, True);
-  RemoveDir(ExpandConstant('{userappdata}\com.follow'));
-  RemoveDir(ExpandConstant('{localappdata}\com.follow'));
+  DelTree(ExpandConstant('{userappdata}\io.github.minggle\PortWeave'), True, True, True);
+  DelTree(ExpandConstant('{localappdata}\io.github.minggle\PortWeave'), True, True, True);
+  RemoveDir(ExpandConstant('{userappdata}\io.github.minggle'));
+  RemoveDir(ExpandConstant('{localappdata}\io.github.minggle'));
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

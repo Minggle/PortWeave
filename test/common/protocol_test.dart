@@ -47,4 +47,15 @@ void main() {
       expect(plan.exec, r'"/opt/my \"apps\"/\$HOME/100%%/Fl\`Clash\\bin" %u');
     });
   });
+
+  test(
+    'Windows registers only portweave while import accepts all four schemes',
+    () {
+      expect(windowsProtocolSchemes, ['portweave']);
+      expect(
+        importProtocolSchemes,
+        containsAll(['clash', 'clashmeta', 'flclash', 'portweave']),
+      );
+    },
+  );
 }

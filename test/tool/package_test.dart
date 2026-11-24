@@ -186,8 +186,8 @@ hooks:
 
     expect(
       names(ReleaseOs.windows, ['exe', 'zip'], arch: ReleaseArch.arm64),
-      'FlClash-rs-0.9.4-pre.2-windows-arm64-setup.exe '
-      'FlClash-rs-0.9.4-pre.2-windows-arm64-portable.zip',
+      'PortWeave-rs-0.9.4-pre.2-windows-arm64-setup.exe '
+      'PortWeave-rs-0.9.4-pre.2-windows-arm64-portable.zip',
     );
     expect(
       names(ReleaseOs.linux, ['deb', 'rpm', 'appimage']),

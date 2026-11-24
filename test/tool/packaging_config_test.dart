@@ -68,4 +68,49 @@ void main() {
     expect(plist, isNot(contains('<string>clash</string>')));
     expect(plist, isNot(contains('<string>clashmeta</string>')));
   });
+
+  test('Windows packaging uses the independent PortWeave identity', () {
+    final cmake = File('windows/CMakeLists.txt').readAsStringSync();
+    final rc = File('windows/runner/Runner.rc').readAsStringSync();
+    final mainCpp = File('windows/runner/main.cpp').readAsStringSync();
+    final makeConfig =
+        loadYaml(
+              File('windows/packaging/exe/make_config.yaml').readAsStringSync(),
+            )
+            as YamlMap;
+    final inno = File(
+      'windows/packaging/exe/inno_setup.iss',
+    ).readAsStringSync();
+
+    expect(cmake, contains('project(PortWeave LANGUAGES CXX)'));
+    expect(cmake, contains('set(BINARY_NAME "PortWeave")'));
+    expect(rc, contains('VALUE "CompanyName", "io.github.minggle"'));
+    expect(rc, contains('VALUE "FileDescription", "PortWeave"'));
+    expect(rc, contains('VALUE "InternalName", "PortWeave"'));
+    expect(rc, contains('VALUE "OriginalFilename", "PortWeave.exe"'));
+    expect(rc, contains('VALUE "ProductName", "PortWeave"'));
+    expect(mainCpp, contains('window.Create(L"PortWeave"'));
+
+    final appId = makeConfig['app_id'] as String;
+    expect(
+      appId,
+      matches(
+        RegExp(
+          r'^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$',
+        ),
+      ),
+    );
+    expect(appId, isNot('728B3532-C74B-4870-9068-BE70FE12A3E6'));
+    expect(makeConfig['app_name'], 'PortWeave');
+    expect(makeConfig['display_name'], 'PortWeave');
+    expect(makeConfig['executable_name'], 'PortWeave.exe');
+    expect(makeConfig['publisher'], 'Minggle');
+    expect(makeConfig['publisher_url'], 'https://github.com/Minggle/PortWeave');
+
+    expect(inno, contains('PortWeave,FlClashCore,FlClashHelperService'));
+    expect(inno, contains("Schemes := ['portweave'];"));
+    expect(inno, contains(r'io.github.minggle\PortWeave'));
+    expect(inno, isNot(contains(r'com.follow\clash')));
+    expect(inno, isNot(contains("'flclash'")));
+  });
 }
