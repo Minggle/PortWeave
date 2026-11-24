@@ -79,13 +79,20 @@ void main() {
   Future<ProviderContainer> open(
     WidgetTester tester,
     Widget view,
-    _Ports action,
-  ) async {
-    tester.view.physicalSize = const Size(1400, 1000);
+    _Ports action, {
+    bool sidebarPorts = true,
+    List<PriorityPolicy> legacyPolicies = const [],
+    List<PortBinding>? bindings,
+    int? currentProfileId,
+    List<Group> groups = const [],
+    Size size = const Size(1400, 1000),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final container = ProviderContainer(
       overrides: [
+        sidebarPortRoutingSupportedProvider.overrideWithValue(sidebarPorts),
         navigationItemsStateProvider.overrideWithValue(
           NavigationItemsState(
             value: [
@@ -106,20 +113,27 @@ void main() {
           () => TestProfiles([Profile.normal(label: 'Base').copyWith(id: 11)]),
         ),
         portRoutingActionProvider.overrideWith(() => action),
+        if (groups.isNotEmpty)
+          groupsProvider.overrideWithBuild((_, _) => groups),
         ...buildConfigOverrides(
           Config(
             themeProps: defaultThemeProps,
+            currentProfileId: currentProfileId,
+            priorityPolicies: PriorityPolicies(policies: legacyPolicies),
             portRouting: PortRoutingConfig(
-              bindings: [
-                _binding,
-                _binding.copyWith(
-                  id: 8,
-                  name: 'Provider A',
-                  port: 18082,
-                  selection: PortSelection.original,
-                  policies: [],
-                ),
-              ],
+              workspaceProfileId: currentProfileId == 9 ? 9 : null,
+              bindings:
+                  bindings ??
+                  [
+                    _binding,
+                    _binding.copyWith(
+                      id: 8,
+                      name: 'Provider A',
+                      port: 18082,
+                      selection: PortSelection.original,
+                      policies: [],
+                    ),
+                  ],
             ),
           ),
         ),
@@ -128,7 +142,7 @@ void main() {
     addTearDown(container.dispose);
     globalState.container = container;
     container.listen(configProvider, (_, _) {});
-    container.read(viewSizeProvider.notifier).value = const Size(1400, 1000);
+    container.read(viewSizeProvider.notifier).value = size;
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
@@ -243,4 +257,144 @@ void main() {
     expect(find.text('Provider A · 18082'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'copy priorities is hidden when base has none and confirms before overwrite',
+    (tester) async {
+      await open(tester, const PortRoutingView(bindingId: 7), _Ports());
+      expect(find.text('Copy priorities from base profile'), findsNothing);
+
+      const legacy = [
+        PriorityPolicy(
+          profileId: 11,
+          group: 'LegacyGroup',
+          tiers: [PriorityTier(target: 'Self')],
+        ),
+      ];
+      final action = _Ports();
+      final container = await open(
+        tester,
+        const PortRoutingView(bindingId: 7),
+        action,
+        legacyPolicies: legacy,
+      );
+      expect(find.text('Copy priorities from base profile'), findsOneWidget);
+      await tester.tap(find.text('Copy priorities from base profile'));
+      await tester.pumpAndSettle();
+      expect(find.text('Replace'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(action.saves, 0);
+      expect(
+        container.read(portRoutingSettingProvider).bindings.first.policies,
+        _binding.policies,
+      );
+
+      await tester.tap(find.text('Copy priorities from base profile'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Replace'));
+      await tester.pumpAndSettle();
+      expect(action.saves, 1);
+      expect(
+        container.read(portRoutingSettingProvider).bindings.first.policies,
+        legacy,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'port group choices strip priority prefixes and render in a sliver section',
+    (tester) async {
+      await open(
+        tester,
+        const PortRoutingView(bindingId: 7),
+        _Ports(),
+        currentProfileId: 9,
+        groups: [
+          Group(
+            type: GroupType.Fallback,
+            name: '${_binding.policyPrefix}Video',
+            now: '${_binding.policyPrefix}[priority:22] JP Node',
+            all: const [],
+          ),
+        ],
+      );
+      expect(find.text('Video'), findsOneWidget);
+      expect(find.text('JP Node'), findsOneWidget);
+      expect(find.textContaining('[priority:'), findsNothing);
+      expect(find.textContaining('[port:'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'sidebar hides port items on unsupported platforms and guards out-of-range index',
+    (tester) async {
+      await open(
+        tester,
+        const AppSidebarContainer(child: SizedBox.expand()),
+        _Ports(),
+        sidebarPorts: false,
+      );
+      final sidebar = tester.widget<NavigationSidebar>(
+        find.byType(NavigationSidebar),
+      );
+      final labels = sidebar.destinations.map((item) => item.label).toList();
+      expect(labels, ['Dashboard', 'Proxies']);
+      expect(tester.takeException(), isNull);
+
+      final container = ProviderContainer(
+        overrides: [
+          sidebarPortRoutingSupportedProvider.overrideWithValue(true),
+          navigationStateProvider.overrideWithValue(
+            NavigationState(
+              locale: 'en',
+              pageLabel: PageLabel.dashboard,
+              viewMode: ViewMode.laptop,
+              currentIndex: 99,
+              navigationItems: [
+                NavigationItem(
+                  glyph: AppGlyphs.dashboard,
+                  label: PageLabel.dashboard,
+                  builder: (_) => const SizedBox(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      globalState.container = container;
+      container.read(viewSizeProvider.notifier).value = const Size(1400, 1000);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const TestApp(
+            locale: Locale('en'),
+            child: AppSidebarContainer(child: SizedBox.expand()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'mobile view ignores selected port binding when dedicated mode is off',
+    (tester) async {
+      final container = await open(
+        tester,
+        const ProxiesView(),
+        _Ports(),
+        size: const Size(500, 900),
+      );
+      container.read(selectedPortBindingProvider.notifier).select(7);
+      await tester.pumpAndSettle();
+      expect(find.byType(PortRoutingView), findsNothing);
+      expect(find.text('Proxies'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

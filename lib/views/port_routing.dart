@@ -100,6 +100,29 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
     );
   }
 
+  Future<void> _copyPriorities(
+    PortBinding detail,
+    List<PriorityPolicy> legacyPolicies,
+  ) async {
+    if (legacyPolicies.isEmpty) return;
+    if (detail.policies.isNotEmpty) {
+      final l = context.appLocalizations;
+      final confirmed = await dialogs.showMessage(
+        context: context,
+        title: l.aggregateProxyCopyPriorities,
+        message: TextSpan(text: l.aggregateProxyGroups),
+        confirmText: l.replace,
+        destructive: true,
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    await _run(
+      () => ref
+          .read(portRoutingActionProvider.notifier)
+          .savePolicies(detail.id, legacyPolicies),
+    );
+  }
+
   Future<void> _refreshOptions(int profileId) async {
     final setting = ref.read(portRoutingSettingProvider).refreshFor(profileId);
     final result = await showFormSheet<PortSubscriptionRefresh>(
@@ -235,6 +258,13 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
         )
         .toList();
     final detail = widget.bindingId == null ? null : bindings.firstOrNull;
+    final legacyPolicies = detail?.selection == PortSelection.aggregate
+        ? ref.watch(
+            priorityPolicySettingProvider.select(
+              (state) => state.forProfile(detail!.profileId),
+            ),
+          )
+        : const <PriorityPolicy>[];
     if (widget.bindingId != null && detail == null) {
       return Scaffold(
         title: l.portRoutingTitle,
@@ -271,116 +301,127 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
         ),
       ],
       body: Builder(
-        builder: (context) => PrismListView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            context.sectionsTopPadding,
-            16,
-            20 + context.bottomInset,
-          ),
-          itemCount: bindings.length + 2,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return generateSection(
-                items: [
-                  if (widget.aggregateOnly)
-                    ListItem(
-                      title: Text(l.aggregateProxy),
-                      subtitle: Text(l.aggregateProxyDescription),
-                    ),
-                  if (detail != null)
-                    ListItem(
-                      title: Text(detail.httpAddress),
-                      subtitle: Text(l.portProxyPageHint),
-                    ),
-                  ListItem(
-                    title: Text(l.portRoutingMode),
-                    subtitle: Text(
-                      safe ? l.portRoutingSafeMode : l.portRoutingDescription,
-                    ),
-                    trailing: Switch(
-                      value: active,
-                      onChanged: _busy
-                          ? null
-                          : (value) => _run(
-                              () => value
-                                  ? ref
-                                        .read(
-                                          portRoutingActionProvider.notifier,
-                                        )
-                                        .activate()
-                                  : ref
-                                        .read(
-                                          portRoutingActionProvider.notifier,
-                                        )
-                                        .deactivate(),
+        builder: (context) => CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                context.sectionsTopPadding,
+                16,
+                20 + context.bottomInset,
+              ),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: generateSection(
+                      items: [
+                        if (widget.aggregateOnly)
+                          ListItem(
+                            title: Text(l.aggregateProxy),
+                            subtitle: Text(l.aggregateProxyDescription),
+                          ),
+                        if (detail != null)
+                          ListItem(
+                            title: Text(detail.httpAddress),
+                            subtitle: Text(l.portProxyPageHint),
+                          ),
+                        ListItem(
+                          title: Text(l.portRoutingMode),
+                          subtitle: Text(
+                            safe
+                                ? l.portRoutingSafeMode
+                                : l.portRoutingDescription,
+                          ),
+                          trailing: Switch(
+                            value: active,
+                            onChanged: _busy
+                                ? null
+                                : (value) => _run(
+                                    () => value
+                                        ? ref
+                                              .read(
+                                                portRoutingActionProvider
+                                                    .notifier,
+                                              )
+                                              .activate()
+                                        : ref
+                                              .read(
+                                                portRoutingActionProvider
+                                                    .notifier,
+                                              )
+                                              .deactivate(),
+                                  ),
+                          ),
+                        ),
+                        if (detail?.selection == PortSelection.aggregate) ...[
+                          ListItem.open(
+                            title: Text(l.aggregateProxyGroups),
+                            subtitle: Text('${detail!.policies.length}'),
+                            widget: PriorityPolicyView(bindingId: detail.id),
+                          ),
+                          if (legacyPolicies.isNotEmpty)
+                            ListItem(
+                              title: Text(l.aggregateProxyCopyPriorities),
+                              onTap: _busy
+                                  ? null
+                                  : () =>
+                                        _copyPriorities(detail, legacyPolicies),
                             ),
+                        ],
+                        if (widget.aggregateOnly && widget.bindingId == null)
+                          ListItem.open(
+                            title: Text(l.priorityTitle),
+                            subtitle: Text(l.priorityLegacy),
+                            widget: const PriorityPolicyView(),
+                          ),
+                        if (_busy) const LinearProgressIndicator(),
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(_error!),
+                          ),
+                        for (final entry in runtime.errors.entries.where(
+                          (entry) =>
+                              detail == null ||
+                              detail.sourceIds.contains(entry.key),
+                        ))
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              _portRoutingError(
+                                l,
+                                PortRoutingException(entry.value),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  if (detail?.selection == PortSelection.aggregate) ...[
-                    ListItem.open(
-                      title: Text(l.aggregateProxyGroups),
-                      subtitle: Text('${detail!.policies.length}'),
-                      widget: PriorityPolicyView(bindingId: detail.id),
-                    ),
-                    ListItem(
-                      title: Text(l.aggregateProxyCopyPriorities),
-                      onTap: _busy
-                          ? null
-                          : () => _run(
-                              () => ref
-                                  .read(portRoutingActionProvider.notifier)
-                                  .savePolicies(
-                                    detail.id,
-                                    ref
-                                        .read(priorityPolicySettingProvider)
-                                        .forProfile(detail.profileId),
-                                  ),
-                            ),
-                    ),
-                  ],
                   if (detail != null &&
                       detail.usesRules &&
                       active &&
                       detail.enabled)
                     _PortGroupChoices(binding: detail),
-                  if (widget.aggregateOnly && widget.bindingId == null)
-                    ListItem.open(
-                      title: Text(l.priorityTitle),
-                      subtitle: Text(l.priorityLegacy),
-                      widget: const PriorityPolicyView(),
+                  SliverPrismList(
+                    itemCount: bindings.length,
+                    itemBuilder: (_, index) => generateSection(
+                      items: [_binding(bindings[index], active)],
                     ),
-                  if (_busy) const LinearProgressIndicator(),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(_error!),
-                    ),
-                  for (final entry in runtime.errors.entries.where(
-                    (entry) =>
-                        detail == null || detail.sourceIds.contains(entry.key),
-                  ))
-                    Padding(
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(
-                        _portRoutingError(l, PortRoutingException(entry.value)),
+                        bindings.isEmpty
+                            ? l.portRoutingEmpty
+                            : l.portRoutingCopyHint,
                       ),
                     ),
+                  ),
                 ],
-              );
-            }
-            if (index == bindings.length + 1) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  bindings.isEmpty ? l.portRoutingEmpty : l.portRoutingCopyHint,
-                ),
-              );
-            }
-            return generateSection(
-              items: [_binding(bindings[index - 1], active)],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -392,6 +433,15 @@ class _PortGroupChoices extends ConsumerWidget {
 
   final PortBinding binding;
 
+  static final _priorityPrefix = RegExp(r'^\[priority:[0-9]+\] ');
+
+  String _label(String name) {
+    final stripped = name.startsWith(binding.policyPrefix)
+        ? name.substring(binding.policyPrefix.length)
+        : name;
+    return stripped.replaceFirst(_priorityPrefix, '');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final groups = ref
@@ -400,30 +450,29 @@ class _PortGroupChoices extends ConsumerWidget {
           (group) =>
               group.name.startsWith(binding.policyPrefix) &&
               group.hidden != true,
-        );
+        )
+        .toList();
+    if (groups.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
     final selections = ref.watch(selectedMapProvider);
-    String label(String name) => name.startsWith(binding.policyPrefix)
-        ? name.substring(binding.policyPrefix.length)
-        : name;
-    return Column(
-      children: [
-        for (final group in groups)
-          if (group.type == GroupType.Selector && group.all.isNotEmpty)
-            ListItem<String>.options(
-              title: Text(label(group.name)),
+    return generateSliverSection(
+      items: groups,
+      itemBuilder: (group) =>
+          group.type == GroupType.Selector && group.all.isNotEmpty
+          ? ListItem<String>.options(
+              title: Text(_label(group.name)),
               value: group.getCurrentSelectedName(selections[group.name] ?? ''),
               options: group.all.map((proxy) => proxy.name).toList(),
-              textBuilder: label,
+              textBuilder: _label,
               onChanged: (value) => ref
                   .read(proxiesActionProvider.notifier)
                   .changeProxy(groupName: group.name, proxyName: value),
             )
-          else
-            ListItem(
-              title: Text(label(group.name)),
-              subtitle: Text(label(group.realNow)),
+          : ListItem(
+              title: Text(_label(group.name)),
+              subtitle: Text(_label(group.realNow)),
             ),
-      ],
     );
   }
 }
@@ -534,12 +583,12 @@ class _BindingFormState extends ConsumerState<_BindingForm> {
     selection: _selection,
     node: _node,
     filter: _filter.text.trim(),
-    policies: _selection != PortSelection.aggregate
-        ? const []
-        : widget.binding?.profileId == _profileIds.first &&
-              widget.binding?.selection == PortSelection.aggregate
+    policies:
+        _selection == PortSelection.aggregate &&
+            widget.binding?.profileId == _profileIds.first &&
+            widget.binding?.selection == PortSelection.aggregate
         ? widget.binding!.policies
-        : ref.read(priorityPolicySettingProvider).forProfile(_profileIds.first),
+        : const [],
   );
 
   Future<void> _save() async {

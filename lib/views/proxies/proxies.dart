@@ -154,8 +154,12 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.picker) {
-      final bindingId = ref.watch(selectedPortBindingProvider);
-      if (bindingId != null || ref.watch(portRoutingActiveProvider)) {
+      final active = ref.watch(portRoutingActiveProvider);
+      final isMobile = ref.watch(isMobileViewProvider);
+      final bindingId = isMobile && !active
+          ? null
+          : ref.watch(selectedPortBindingProvider);
+      if (bindingId != null || active) {
         return PortRoutingView(key: ValueKey(bindingId), bindingId: bindingId);
       }
     }

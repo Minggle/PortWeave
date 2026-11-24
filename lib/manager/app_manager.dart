@@ -141,6 +141,11 @@ class AppEnvManager extends ConsumerWidget {
   }
 }
 
+@visibleForTesting
+final sidebarPortRoutingSupportedProvider = Provider<bool>(
+  (_) => system.isWindows || system.isMacOS,
+);
+
 class _Sidebar extends ConsumerWidget {
   const _Sidebar({
     required this.items,
@@ -161,8 +166,13 @@ class _Sidebar extends ConsumerWidget {
       appSettingProvider.select((state) => state.sidebarExpanded),
     );
     final version = ref.watch(versionProvider);
-    final bindings = ref.watch(portRoutingSettingProvider).bindings;
-    final selectedBinding = ref.watch(selectedPortBindingProvider);
+    final showPorts = ref.watch(sidebarPortRoutingSupportedProvider);
+    final bindings = showPorts
+        ? ref.watch(portRoutingSettingProvider).bindings
+        : const <PortBinding>[];
+    final selectedBinding = showPorts
+        ? ref.watch(selectedPortBindingProvider)
+        : null;
     final entries = [
       for (final (index, item) in items.indexed) ...[
         (index: index, binding: null as PortBinding?),
@@ -170,12 +180,20 @@ class _Sidebar extends ConsumerWidget {
           for (final binding in bindings) (index: index, binding: binding),
       ],
     ];
-    final selected = entries.indexWhere(
-      (entry) =>
-          entry.index == currentIndex &&
-          (items[currentIndex].label != PageLabel.proxies ||
-              entry.binding?.id == selectedBinding),
-    );
+    final hasCurrent = currentIndex >= 0 && currentIndex < items.length;
+    final selected = hasCurrent
+        ? entries.indexWhere(
+            (entry) =>
+                entry.index == currentIndex &&
+                (items[currentIndex].label != PageLabel.proxies ||
+                    entry.binding?.id == selectedBinding),
+          )
+        : -1;
+    final selectedIndex = selected >= 0
+        ? selected
+        : entries.isEmpty
+        ? 0
+        : currentIndex.clamp(0, entries.length - 1);
     return NavigationSidebar(
       destinations: [
         for (final entry in entries)
@@ -188,11 +206,11 @@ class _Sidebar extends ConsumerWidget {
                 : '  ${entry.binding!.name} · ${entry.binding!.port}',
           ),
       ],
-      selectedIndex: selected < 0 ? currentIndex : selected,
+      selectedIndex: selectedIndex,
       expanded: canExpand && sidebarExpanded,
       onSelected: (index) {
         final entry = entries[index];
-        if (items[entry.index].label == PageLabel.proxies) {
+        if (showPorts && items[entry.index].label == PageLabel.proxies) {
           ref
               .read(selectedPortBindingProvider.notifier)
               .select(entry.binding?.id);

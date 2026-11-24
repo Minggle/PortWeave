@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/common/port_routing.dart';
+import 'package:fl_clash/common/priority_policy.dart';
 import 'package:fl_clash/core/controller.dart';
 import 'package:fl_clash/core/interface.dart';
 import 'package:fl_clash/enum/enum.dart';
@@ -796,4 +797,50 @@ void main() {
     await action.tick();
     expect(requests, 1);
   });
+
+  test(
+    'saveBinding validates aggregate policies even when the binding is disabled',
+    () async {
+      await original.writeAsString(
+        '$_old\nproxy-groups:\n  - {name: GroupA, type: select, proxies: [GroupB, US One]}\n  - {name: GroupB, type: select, proxies: [GroupA, US One]}\nrules: ["MATCH,GroupA"]',
+      );
+      const cyclic = PortBinding(
+        id: 2,
+        name: 'Disabled Agg',
+        profileId: 11,
+        port: 18089,
+        enabled: false,
+        selection: PortSelection.aggregate,
+        policies: [
+          PriorityPolicy(
+            profileId: 11,
+            group: 'GroupA',
+            tiers: [PriorityTier(target: 'GroupB')],
+          ),
+          PriorityPolicy(
+            profileId: 11,
+            group: 'GroupB',
+            tiers: [PriorityTier(target: 'GroupA')],
+          ),
+        ],
+      );
+      await expectLater(
+        action.saveBinding(cyclic),
+        throwsA(
+          isA<PriorityPolicyException>().having(
+            (error) => error.issue,
+            'issue',
+            PriorityPolicyIssue.cycle,
+          ),
+        ),
+      );
+      expect(
+        container
+            .read(portRoutingSettingProvider)
+            .bindings
+            .any((binding) => binding.id == cyclic.id),
+        isFalse,
+      );
+    },
+  );
 }

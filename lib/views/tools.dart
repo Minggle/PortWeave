@@ -18,6 +18,7 @@ import 'developer.dart';
 import 'disclaimer.dart';
 import 'theme.dart';
 import 'port_routing.dart';
+import 'priority_policy.dart';
 
 class ToolsView extends ConsumerStatefulWidget {
   final bool? isWindows;
@@ -65,22 +66,28 @@ class _ToolViewState extends ConsumerState<ToolsView> {
   }
 
   Widget _getSettingList() {
+    final supportsPortRouting =
+        (widget.isWindows ?? system.isWindows) ||
+        (widget.isMacOS ?? system.isMacOS);
     return generateSection(
       title: context.appLocalizations.settings,
       items: [
-        if ((widget.isWindows ?? system.isWindows) ||
-            (widget.isMacOS ?? system.isMacOS))
+        if (supportsPortRouting) ...[
           ListItem.open(
             leading: const GlyphIcon(AppGlyphs.proxies),
             title: Text(context.appLocalizations.aggregateProxy),
             widget: const PortRoutingView(aggregateOnly: true),
           ),
-        if ((widget.isWindows ?? system.isWindows) ||
-            (widget.isMacOS ?? system.isMacOS))
           ListItem.open(
             leading: const GlyphIcon(AppGlyphs.proxies),
             title: Text(context.appLocalizations.portRoutingTitle),
             widget: const PortRoutingView(),
+          ),
+        ] else
+          ListItem.open(
+            leading: const GlyphIcon(AppGlyphs.proxies),
+            title: Text(context.appLocalizations.priorityTitle),
+            widget: const PriorityPolicyView(),
           ),
         const _LocaleItem(),
         const _ThemeItem(),

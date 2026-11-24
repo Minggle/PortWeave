@@ -3,6 +3,7 @@ import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/state.dart';
 import 'package:fl_clash/views/port_routing.dart';
+import 'package:fl_clash/views/priority_policy.dart';
 import 'package:fl_clash/views/tools.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -176,9 +177,15 @@ void main() {
       );
       await tester.pumpAndSettle();
       final entry = find.text('Subscription ports');
+      final priorities = find.text('Policy priorities');
       if (platform == 'Linux') {
         expect(entry, findsNothing);
+        expect(priorities, findsOneWidget);
+        await tester.tap(priorities);
+        await tester.pumpAndSettle();
+        expect(find.byType(PriorityPolicyView), findsOneWidget);
       } else {
+        expect(priorities, findsNothing);
         expect(entry, findsOneWidget);
         await tester.tap(entry);
         await tester.pumpAndSettle();
@@ -322,4 +329,60 @@ void main() {
     expect(action.attempts, 2);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'new aggregate binding defaults to empty policies even with legacy policies',
+    (tester) async {
+      final action = _EditorAction();
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWith(
+            () => TestProfiles([
+              Profile.normal(label: 'Subscription A').copyWith(id: 11),
+            ]),
+          ),
+          portRoutingActionProvider.overrideWith(() => action),
+          priorityPolicySettingProvider.overrideWithBuild(
+            (_, _) => const PriorityPolicies(
+              policies: [
+                PriorityPolicy(
+                  profileId: 11,
+                  group: 'StaleGroup',
+                  tiers: [PriorityTier(target: 'MissingNode')],
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      globalState.container = container;
+      container.read(viewSizeProvider.notifier).value = const Size(1200, 1000);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const TestApp(
+            locale: Locale('en'),
+            child: PortRoutingView(aggregateOnly: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Add'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).first, 'Fresh Agg');
+      await tester.tap(find.text('Save').last);
+      await tester.pumpAndSettle();
+      final binding = container
+          .read(portRoutingSettingProvider)
+          .bindings
+          .single;
+      expect(binding.selection, PortSelection.aggregate);
+      expect(binding.policies, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

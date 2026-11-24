@@ -294,7 +294,10 @@ class PortRoutingAction extends _$PortRoutingAction {
         (!(_active && old?.enabled == true && old?.port == binding.port))) {
       await checkPortAvailable(binding.port);
     }
-    if (binding.enabled) {
+    final validatePolicies =
+        binding.selection == PortSelection.aggregate &&
+        binding.policies.isNotEmpty;
+    if (binding.enabled || validatePolicies) {
       final documents = <int, Map<String, dynamic>>{};
       for (final id in binding.sourceIds) {
         documents[id] = await _validatedDocument(
@@ -302,6 +305,9 @@ class PortRoutingAction extends _$PortRoutingAction {
         );
       }
       if (binding.usesRules) {
+        final candidate = binding.enabled
+            ? binding
+            : binding.copyWith(enabled: true);
         await compute(
           (args) => compilePortRouting(
             bindings: [args.$1],
@@ -309,7 +315,7 @@ class PortRoutingAction extends _$PortRoutingAction {
             sourceDocuments: args.$2,
             testUrl: args.$3,
           ),
-          (binding, documents, ref.read(patchClashConfigProvider).testUrl),
+          (candidate, documents, ref.read(patchClashConfigProvider).testUrl),
         );
       }
     }
