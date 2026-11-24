@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0 (2026-11-24)
+
+**Features**
+
+- **windows** Align Windows identity, icons, packaging, and updates with PortWeave 1.0.0 (6aeda80)
+- **ports** Configure independent aggregate proxy ports with per-port routing groups and backup priorities (4c5a427)
+- **macos** Subscription ports on macOS with live listener checks and separate Apple Silicon and Intel packages (c0370f0)
+- **ports** Add Windows subscription port management UI (ec9f789)
+- **ports** Run dedicated ports and refresh subscriptions in place (a5de4ed)
+- **ports** Add subscription port models and config compiler (acc1a30)
+
+**Bug Fixes**
+
+- **ports** Address port routing UI, validation, and platform gating issues (7f69b79)
+- **profiles** Preserve script routing during upgrades and refresh scripted exits after subscription updates (3c8e894)
+
 ## v0.9.4 (2026-11-19)
 
 **Features**

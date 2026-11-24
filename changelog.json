@@ -2,6 +2,64 @@
   "schemaVersion": 2,
   "versions": [
     {
+      "version": "1.0.0",
+      "tag": "v1.0.0",
+      "date": "2026-11-24",
+      "prerelease": false,
+      "groups": [
+        {
+          "type": "feat",
+          "entries": [
+            {
+              "id": "6aeda80",
+              "scope": "windows",
+              "text": "Align Windows identity, icons, packaging, and updates with PortWeave 1.0.0"
+            },
+            {
+              "id": "4c5a427",
+              "scope": "ports",
+              "text": "Configure independent aggregate proxy ports with per-port routing groups and backup priorities"
+            },
+            {
+              "id": "c0370f0",
+              "scope": "macos",
+              "text": "Subscription ports on macOS with live listener checks and separate Apple Silicon and Intel packages"
+            },
+            {
+              "id": "ec9f789",
+              "scope": "ports",
+              "text": "Add Windows subscription port management UI"
+            },
+            {
+              "id": "a5de4ed",
+              "scope": "ports",
+              "text": "Run dedicated ports and refresh subscriptions in place"
+            },
+            {
+              "id": "acc1a30",
+              "scope": "ports",
+              "text": "Add subscription port models and config compiler"
+            }
+          ]
+        },
+        {
+          "type": "fix",
+          "entries": [
+            {
+              "id": "7f69b79",
+              "scope": "ports",
+              "text": "Address port routing UI, validation, and platform gating issues"
+            },
+            {
+              "id": "3c8e894",
+              "scope": "profiles",
+              "text": "Preserve script routing during upgrades and refresh scripted exits after subscription updates"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.9.4",
       "tag": "v0.9.4",
       "date": "2026-11-19",
