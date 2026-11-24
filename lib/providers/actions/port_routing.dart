@@ -18,6 +18,9 @@ class PortRoutingAction extends _$PortRoutingAction {
   @visibleForTesting
   Future<Map<int, int>> readPortOwners() => desktopPortOwners();
 
+  @visibleForTesting
+  Future<bool> isCoreElevated(int pid) => isElevatedMacOSProcess(pid);
+
   CoreController get _core => ref.read(coreHandlerProvider);
   PortRoutingConfig get _config => ref.read(portRoutingSettingProvider);
   bool get _active => ref.read(portRoutingActiveProvider);
@@ -803,12 +806,15 @@ class PortRoutingAction extends _$PortRoutingAction {
       );
     }
     final Map<int, int> owners;
+    final bool coreElevated;
     final ProxiesData proxies;
     try {
       if (owner == null) {
         throw const PortRoutingException(PortRoutingIssue.coreUnavailable);
       }
       owners = await readPortOwners();
+      if (!isCurrent()) return;
+      coreElevated = await isCoreElevated(owner);
       if (!isCurrent()) return;
       proxies = await _core.getProxies();
     } catch (_) {
@@ -827,11 +833,12 @@ class PortRoutingAction extends _$PortRoutingAction {
     for (final binding in bindings) {
       if (!isCurrent()) return;
       try {
-        if (!owners.containsKey(binding.port)) {
+        if (owners.containsKey(binding.port)) {
+          if (owners[binding.port] != owner) {
+            throw const PortRoutingException(PortRoutingIssue.portOccupied);
+          }
+        } else if (!coreElevated || !_hasLoadedBinding(proxies, binding)) {
           throw const PortRoutingException(PortRoutingIssue.coreUnavailable);
-        }
-        if (owners[binding.port] != owner) {
-          throw const PortRoutingException(PortRoutingIssue.portOccupied);
         }
         await checkSocksHandshake(binding.port);
         final group = proxies.proxies[binding.groupName];
@@ -860,4 +867,9 @@ class PortRoutingAction extends _$PortRoutingAction {
       }
     }
   }
+
+  bool _hasLoadedBinding(ProxiesData proxies, PortBinding binding) =>
+      binding.usesRules
+      ? proxies.proxies.keys.any((key) => key.startsWith(binding.policyPrefix))
+      : proxies.proxies.containsKey(binding.groupName);
 }

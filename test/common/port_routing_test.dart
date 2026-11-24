@@ -422,4 +422,13 @@ n*:18081
     addTearDown(listener.cancel);
     await checkSocksHandshake(server.port);
   });
+
+  test(
+    'isElevatedMacOSProcess returns false for invalid or non-root pid',
+    () async {
+      expect(await isElevatedMacOSProcess(0), isFalse);
+      expect(await isElevatedMacOSProcess(-1), isFalse);
+      expect(await isElevatedMacOSProcess(pid), isFalse);
+    },
+  );
 }

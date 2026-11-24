@@ -34,6 +34,21 @@ Future<Map<int, int>> desktopPortOwners() async {
       : parseWindowsPortOwners(result.stdout.toString());
 }
 
+Future<bool> isElevatedMacOSProcess(int pid) async {
+  if (!Platform.isMacOS || pid <= 0) return false;
+  try {
+    final result = await Process.run('/bin/ps', [
+      '-o',
+      'uid=',
+      '-p',
+      '$pid',
+    ]).timeout(const Duration(seconds: 3));
+    return result.exitCode == 0 && result.stdout.toString().trim() == '0';
+  } on Exception {
+    return false;
+  }
+}
+
 Map<int, int> parseMacOSPortOwners(String output) {
   final owners = <int, int>{};
   final ambiguous = <int>{};

@@ -24,6 +24,7 @@ class _Core extends Mock implements CoreHandlerInterface {}
 
 class _ProbeAction extends PortRoutingAction {
   int? processId = 1234;
+  bool elevated = false;
   Future<Map<int, int>> Function() owners = () async => {};
 
   @override
@@ -31,6 +32,9 @@ class _ProbeAction extends PortRoutingAction {
 
   @override
   Future<Map<int, int>> readPortOwners() => owners();
+
+  @override
+  Future<bool> isCoreElevated(int pid) async => elevated;
 }
 
 class _Setup extends SetupAction {
@@ -861,6 +865,12 @@ void main() {
   test(
     'setDefaultBinding, setTakeoverSystem, reorderBindings, and host port conflict',
     () async {
+      final s2 = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final s3 = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final port2 = s2.port;
+      final port3 = s3.port;
+      await s2.close();
+      await s3.close();
       const b1 = PortBinding(
         id: 1,
         name: 'First',
@@ -868,11 +878,11 @@ void main() {
         port: 18081,
         node: 'US One',
       );
-      const b2 = PortBinding(
+      final b2 = PortBinding(
         id: 2,
         name: 'Second',
         profileId: 11,
-        port: 18082,
+        port: port2,
         node: 'US One',
       );
       await action.saveBinding(b1);
@@ -903,14 +913,14 @@ void main() {
       container.listen(patchClashConfigProvider, (_, _) {});
       container
           .read(patchClashConfigProvider.notifier)
-          .update((state) => state.copyWith(mixedPort: 18083));
+          .update((state) => state.copyWith(mixedPort: port3));
       await expectLater(
         action.saveBinding(
-          const PortBinding(
+          PortBinding(
             id: 3,
             name: 'Conflict',
             profileId: 11,
-            port: 18083,
+            port: port3,
             node: 'US One',
           ),
         ),
@@ -927,6 +937,162 @@ void main() {
           ),
         ),
       );
+    },
+  );
+
+  Future<ServerSocket> startMockSocksServer() async {
+    final socketServer = await ServerSocket.bind(
+      InternetAddress.loopbackIPv4,
+      0,
+    );
+    addTearDown(socketServer.close);
+    final sub = socketServer.listen((socket) {
+      socket.listen((_) async {
+        socket.add([5, 0]);
+        await socket.flush();
+        socket.destroy();
+      });
+    });
+    addTearDown(sub.cancel);
+    return socketServer;
+  }
+
+  test(
+    'elevated core verifies loaded rule and fixed bindings via SOCKS handshake when lsof omits root sockets',
+    () async {
+      final serverOne = await startMockSocksServer();
+      final serverTwo = await startMockSocksServer();
+      const aggregate = PortBinding(
+        id: 1,
+        name: 'Aggregate',
+        profileId: 11,
+        port: 18081,
+        selection: PortSelection.aggregate,
+      );
+      const fixed = PortBinding(
+        id: 2,
+        name: 'Fixed',
+        profileId: 11,
+        port: 18082,
+        node: 'US One',
+      );
+      final aggBound = aggregate.copyWith(port: serverOne.port);
+      final fixedBound = fixed.copyWith(port: serverTwo.port);
+      container.read(portRoutingSettingProvider.notifier).value = container
+          .read(portRoutingSettingProvider)
+          .copyWith(bindings: [aggBound, fixedBound]);
+      when(() => core.getProxies()).thenAnswer(
+        (_) async => ProxiesData(
+          all: ['${aggBound.policyPrefix}Proxy', fixedBound.groupName],
+          proxies: {
+            '${aggBound.policyPrefix}Proxy': {
+              'name': '${aggBound.policyPrefix}Proxy',
+              'type': 'Selector',
+              'all': ['US One'],
+              'now': 'US One',
+            },
+            fixedBound.groupName: {
+              'name': fixedBound.groupName,
+              'type': 'Selector',
+              'all': ['[ports:11] US One'],
+              'now': '[ports:11] US One',
+            },
+          },
+        ),
+      );
+      startChecks();
+      action.elevated = true;
+      action.owners = () async => {};
+      await action.checkAll();
+      final ports = container.read(portRoutingActivityProvider).ports;
+      expect(ports[1]!.phase, PortBindingPhase.listening);
+      expect(ports[2]!.phase, PortBindingPhase.listening);
+      expect(ports[2]!.node, 'US One');
+    },
+  );
+
+  test(
+    'elevated core reports coreUnavailable when binding is missing from core proxies',
+    () async {
+      final socketServer = await startMockSocksServer();
+      final before = container.read(portRoutingSettingProvider);
+      final binding = before.bindings.single.copyWith(port: socketServer.port);
+      container.read(portRoutingSettingProvider.notifier).value = before
+          .copyWith(bindings: [binding]);
+      when(
+        () => core.getProxies(),
+      ).thenAnswer((_) async => const ProxiesData(all: [], proxies: {}));
+      startChecks();
+      action.elevated = true;
+      action.owners = () async => {};
+      await action.checkAll();
+      final check = container.read(portRoutingActivityProvider).ports[1]!;
+      expect(check.phase, PortBindingPhase.failed);
+      expect(check.issue, PortRoutingIssue.coreUnavailable);
+    },
+  );
+
+  test(
+    'elevated core still reports portOccupied when another visible process owns the port',
+    () async {
+      final before = container.read(portRoutingSettingProvider);
+      final binding = before.bindings.single;
+      when(() => core.getProxies()).thenAnswer(
+        (_) async => ProxiesData(
+          all: [binding.groupName],
+          proxies: {
+            binding.groupName: {
+              'name': binding.groupName,
+              'type': 'Selector',
+              'all': ['US One'],
+              'now': 'US One',
+            },
+          },
+        ),
+      );
+      startChecks();
+      action.elevated = true;
+      action.owners = () async => {binding.port: 5678};
+      await action.checkAll();
+      final check = container.read(portRoutingActivityProvider).ports[1]!;
+      expect(check.phase, PortBindingPhase.failed);
+      expect(check.issue, PortRoutingIssue.portOccupied);
+    },
+  );
+
+  test(
+    'elevated core reports coreUnavailable when SOCKS handshake fails on closed port',
+    () async {
+      final closedServer = await ServerSocket.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      final closedPort = closedServer.port;
+      await closedServer.close();
+      final before = container.read(portRoutingSettingProvider);
+      final binding = before.bindings.single.copyWith(port: closedPort);
+      container.read(portRoutingSettingProvider.notifier).value = before
+          .copyWith(bindings: [binding]);
+      when(() => core.getProxies()).thenAnswer(
+        (_) async => ProxiesData(
+          all: [binding.groupName],
+          proxies: {
+            binding.groupName: {
+              'name': binding.groupName,
+              'type': 'Selector',
+              'all': ['US One'],
+              'now': 'US One',
+            },
+          },
+        ),
+      );
+      startChecks();
+      action.elevated = true;
+      action.owners = () async => {};
+      await action.checkAll();
+      final check = container.read(portRoutingActivityProvider).ports[1]!;
+      expect(check.phase, PortBindingPhase.failed);
+      expect(check.issue, PortRoutingIssue.coreUnavailable);
     },
   );
 }
