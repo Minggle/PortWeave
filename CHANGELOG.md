@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.1 (2026-11-24)
+
+**Features**
+
+- **port-routing** Add dashboard port switcher, clean display names, and reorder UI (3f0f053)
+- **port** Add centralized port display-name and source formatting (1d5e336)
+- **port-routing** Support system proxy and TUN coexistence (8324742)
+
+**Bug Fixes**
+
+- **ui** Clean internal port prefixes and use source-first labels (1517af5)
+
 ## v1.0.0 (2026-11-24)
 
 **Features**

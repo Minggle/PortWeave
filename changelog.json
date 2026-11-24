@@ -2,6 +2,44 @@
   "schemaVersion": 2,
   "versions": [
     {
+      "version": "1.0.1",
+      "tag": "v1.0.1",
+      "date": "2026-11-24",
+      "prerelease": false,
+      "groups": [
+        {
+          "type": "feat",
+          "entries": [
+            {
+              "id": "3f0f053",
+              "scope": "port-routing",
+              "text": "Add dashboard port switcher, clean display names, and reorder UI"
+            },
+            {
+              "id": "1d5e336",
+              "scope": "port",
+              "text": "Add centralized port display-name and source formatting"
+            },
+            {
+              "id": "8324742",
+              "scope": "port-routing",
+              "text": "Support system proxy and TUN coexistence"
+            }
+          ]
+        },
+        {
+          "type": "fix",
+          "entries": [
+            {
+              "id": "1517af5",
+              "scope": "ui",
+              "text": "Clean internal port prefixes and use source-first labels"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "1.0.0",
       "tag": "v1.0.0",
       "date": "2026-11-24",
