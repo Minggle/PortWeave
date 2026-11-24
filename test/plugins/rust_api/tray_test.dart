@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as path;
 import 'package:rust_api/tray.dart';
 
 import '../../helpers/fake_tray_host.dart';
@@ -341,7 +342,12 @@ void main() {
 
       expect(
         host.lastShown!.image.path,
-        endsWith('flutter_assets/assets/images/tray/unix/3.0x/status_1.png'),
+        endsWith(
+          path.join(
+            'flutter_assets',
+            'assets/images/tray/unix/3.0x/status_1.png',
+          ),
+        ),
       );
     });
 
@@ -352,7 +358,9 @@ void main() {
 
       expect(
         host.lastShown!.image.path,
-        endsWith('flutter_assets/assets/images/tray/unix/status_1.png'),
+        endsWith(
+          path.join('flutter_assets', 'assets/images/tray/unix/status_1.png'),
+        ),
       );
     });
 
