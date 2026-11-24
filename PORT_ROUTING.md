@@ -58,15 +58,19 @@ Go 测试在独立子进程与临时目录运行，只使用回环端口和本�
 
 本机 GUI 调试必须使用 `flutter run --dart-define-from-file=env.json --dart-define=SAFE_MODE=true`。安全模式不会开放这些端口，真实流量测试应使用上述隔离测试或单独的测试环境。只结束自行启动并记录 PID 的测试进程。
 
-## macOS 开发与构建
+## macOS 与 Windows 开发与构建
 
-最低部署目标为 macOS 12.0，Apple Silicon（`arm64`）和 Intel（`amd64`）分别构建。实际验证范围见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。
+macOS 最低部署目标为 macOS 12.0，Apple Silicon（`arm64`）和 Intel（`amd64`）分别构建；Windows 面向 x64（`amd64`）同时输出便携 ZIP 与 Inno Setup 安装包。实际验证范围见 [Mac 开发记录](MACOS_DEVELOPMENT.md)与[发布状态](RELEASE_PORTS.md)。
 
-Mac 应用现名 **PortWeave（端流）**，使用独立图标、Bundle ID `io.github.minggle.portweave` 和 `portweave://` 协议，可与 FlClash 同时安装。配置、缓存与登录项独立，初次使用需导入订阅或备份。两者同时运行时，仍需避免抢占系统代理/TUN 和相同监听端口；建议 PortWeave 使用专用多端口模式。
+两端应用均名 **PortWeave（端流）**，可与 FlClash 并存安装：
+- **macOS**：`PortWeave.app`，独立图标、Bundle ID `io.github.minggle.portweave`（Debug 为 `.debug`）与 `portweave://` 协议。
+- **Windows**：`PortWeave.exe`，独立图标、`CompanyName=io.github.minggle` / `ProductName=PortWeave`（数据目录 `%APPDATA%\io.github.minggle\PortWeave` 与 `%LOCALAPPDATA%\io.github.minggle\PortWeave`）、独立 Inno Setup `AppId` 与 `portweave://` 协议。
 
-测试版普通混合代理默认端口为 **7891**。外部控制接口默认关闭，开启后监听 `127.0.0.1:9091`，未设置密钥时自动生成。新建订阅端口从 **18082** 开始跳过已有绑定的端口；其他进程占用仍需通过监听检查确认。DNS 默认不开放监听，编辑器示例使用 **1054**。导入备份会保留其中明确设置的代理端口；网络设置里的“重置”可恢复 7891。
+两者同时与 FlClash 运行时，仍需避免抢占系统代理/TUN 和相同监听端口；建议 PortWeave 使用专用多端口模式。
 
-需要完整 Xcode（仅 Command Line Tools 不够）、Flutter 3.50.0、Go 1.27 和 Rust。以下命令在对应架构的 Mac 上执行，`ARCHS` 由现有 Release 配置选取本机架构：
+普通混合代理默认端口为 **7891**。外部控制接口默认关闭，开启后监听 `127.0.0.1:9091`，未设置密钥时自动生成。新建订阅端口从 **18082** 开始跳过已有绑定的端口；其他进程占用仍需通过监听检查确认。DNS 默认不开放监听，编辑器示例使用 **1054**。导入备份会保留其中明确设置的代理端口；网络设置里的“重置”可恢复 7891。
+
+需要完整 Xcode（macOS，仅 Command Line Tools 不够）或 Visual Studio + Inno Setup 6（Windows）、Flutter 3.50.0、Go 1.27 和 Rust。macOS 本地打包示例：
 
 ```bash
 flutter pub get
@@ -75,23 +79,28 @@ flutter test test/common/port_routing_test.dart test/providers/port_routing_acti
 flutter test test/common/priority_policy_test.dart test/providers/priority_policy_action_test.dart test/views/priority_policy_test.dart
 flutter test test/database/migration_v1_to_v2_test.dart test/common/backup_task_test.dart test/providers/script_outbounds_test.dart test/providers/setup_state_test.dart
 CGO_ENABLED=0 go test -C core . -run '^Test(PortRouting|PriorityPolicy)Wire$' -count=1
-FLUTTER_MACOS_ARM64_ONLY=true flutter build macos --release --build-name=0.9.4 --dart-define=APP_ENV=pre
-bash tool/package_macos.sh 0.9.4-ports.1 arm64
+FLUTTER_MACOS_ARM64_ONLY=true flutter build macos --release --build-name=1.0.0 --dart-define=APP_ENV=stable
+bash tool/package_macos.sh 1.0.0 arm64
 ```
 
-ARM64 构建设置 `FLUTTER_MACOS_ARM64_ONLY=true`，Intel 构建打包参数改为 `amd64`（无需再设置 `FLTEnableImpeller`，Flutter 3.50 已默认在 Intel Mac 启用 Impeller，如遇渲染异常再按 `.agents/flutter-upgrade.md` 临时关闭）；此配置与上游发布矩阵一致。脚本检查应用身份、协议、图标、App/Core 的架构及 bundle 签名，生成 `dist/PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。版本参数是产物标签，应用的数字版本由 `flutter build --build-name` 设置；CI 自动从 Git 标签取值。
+Windows 本地打包示例（需已安装 Inno Setup 6）：
 
-通过 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) 的 **Run workflow** 选择分支，手动构建两种架构的 artifact。macOS／Windows workflows 均支持 `main` 推送、`v*` 标签和手动触发。Mac 的 `safe_mode` 手动选项默认 `false`，仅在手动开启时额外构建 ARM64 安全模式调试包。版本标签的 Release 上传与普通 artifact 分开，分支／手动构建不会创建 Release。Mac 校验文件使用独立名称，避免覆盖 Windows 的 `SHA256SUMS`。本文的 `0.9.4-ports.1` 仅为打包示例，不代表已有该标签或安装包。
+```powershell
+flutter build windows --release --build-name=1.0.0 --dart-define=APP_ENV=stable
+pwsh -File tool/package_windows.ps1 -Version 1.0.0 -Arch amd64
+```
 
-每个平台仅保留最新 run 的 artifact，一天后到期。上传文件总预算为 450 MB：macOS ARM64 250 MB（包含可选安全模式包）、macOS Intel 100 MB、Windows 100 MB，超出相应预算会阻止上传。这些规则针对端口 workflows 的 Actions artifact，Release 附件另行保留。
+ARM64 构建设置 `FLUTTER_MACOS_ARM64_ONLY=true`，Intel 构建打包参数改为 `amd64`。`tool/package_macos.sh` 检查应用身份、协议、图标、App/Core 架构及 bundle 签名，生成 `dist/PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`；`tool/package_windows.ps1` 检查 `PortWeave.exe` 身份及 Core/Helper 二进制，生成 `dist/PortWeave-<版本>-windows-amd64.zip`、`dist/PortWeave-<版本>-windows-amd64-setup.exe` 和 `SHA256SUMS-windows-amd64`。
 
-仓库当前公开，下载 Actions artifact 仍需按 GitHub 要求登录并具有读取权限。Mac 关于页的“下载测试版本”进入构建列表，选择目标提交的成功运行，在 Artifacts 中按架构下载并手动安装；启动时不查询 Releases。此手动更新策略不随仓库公开状态自动改变。
+分支开发构建由 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) 和 [PortWeave - Windows](https://github.com/Minggle/PortWeave/actions/workflows/ports-windows.yaml) 在 `main` 推送和手动 **Run workflow** 时运行（Mac 的 `safe_mode` 手动选项默认 `false`，开启时额外构建 ARM64 安全模式调试包）。每个平台仅保留最新 run 的 artifact，一天后到期。上传文件预算：macOS ARM64 250 MB（含可选安全模式包）、macOS Intel 100 MB、Windows 200 MB（同时包含便携 ZIP 与 Inno Setup EXE），超出预算会阻止上传。这些规则针对分支 workflows 的 Actions artifact，GitHub Release 附件另行保留。
 
-DMG 内含应用和 Applications 快捷方式。更新时退出已安装的 PortWeave，将新应用拖入 Applications，再由用户启动。当前流程沿用临时签名，尚未接入 Developer ID 签名或 Apple 公证；正式分发前需要补齐凭据和 Gatekeeper 安装验收。Mac 更新通过 Actions 构建列表手动下载，不提供应用内自动替换。预发行版本不会由 `releases/latest` 返回。
+正式与预发行版本统一由 `.github/workflows/release.yaml`（`PortWeave - Release`）在推送 `v*` 标签或手动触发时并行构建 macOS (`arm64` / `amd64`) 和 Windows (`amd64`)，合并校验全部平台产物生成统一 `SHA256SUMS` 后原子发布到 [GitHub Releases](https://github.com/Minggle/PortWeave/releases/latest)。
+
+DMG 内含应用和 Applications 快捷方式；更新时退出已安装的 PortWeave，将新应用拖入 Applications，再由用户启动。macOS 当前沿用临时签名，尚未接入 Developer ID 签名或 Apple 公证。
 
 ## 仓库与发布
 
-仓库及下载来源为 `Minggle/PortWeave`。独立的 `PortWeave - Windows` workflow 保留手动 ZIP 构建路径，Windows 包名和可执行文件仍使用 `FlClash`。端口专用 workflows 的标签发布路径生成校验文件，带 `-` 的版本标签标为预发行，纯数字版本标签标为正式版；具体是否可下载需确认对应运行成功。GitHub 的 `releases/latest` 不包含预发行版本，测试包与 ZIP 便携版使用手动下载。
+仓库及下载来源为 `Minggle/PortWeave`，正式发布位于 [GitHub Releases](https://github.com/Minggle/PortWeave/releases/latest)。`PortWeave - Release` workflow 在推送 `v*` 标签时构建并发布 `PortWeave-<版本>-macos-arm64.dmg`、`PortWeave-<版本>-macos-amd64.dmg`、`PortWeave-<版本>-windows-amd64.zip`、`PortWeave-<版本>-windows-amd64-setup.exe` 以及统一 `SHA256SUMS`：带 `-` 的版本标签标为预发行，纯数字 semver 标签（如 `v1.0.0`）自动标为 Latest 正式版。
 
 合并上游稳定版本后重新生成代码，并优先运行多端口功能测试、配置/备份/HTTP 回归和桌面 Core 测试。不要在正式构建中关闭 `pubspec.yaml` 的原生 `build_assets` hooks。
 

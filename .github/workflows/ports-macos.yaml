@@ -10,10 +10,8 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
 
-# One run owns this platform's artifacts through release publication, across all refs.
+# One run owns this platform's branch artifacts across refs.
 concurrency:
   group: portweave-ports-macos
   cancel-in-progress: false
@@ -103,17 +101,11 @@ jobs:
           FLUTTER_MACOS_ARM64_ONLY: ${{ matrix.arch == 'arm64' }}
         run: |
           version=$(sed -n 's/^version: *\([^+[:space:]]*\).*/\1/p' pubspec.yaml)
-          app_env=pre
-          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            version=${GITHUB_REF_NAME#v}
-            version=${version//+/.}
-            if [[ "$version" != *-* ]]; then app_env=stable; fi
-          fi
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
             echo 'Expected a release version' >&2
             exit 1
           fi
-          flutter build macos --release --build-name="${version%%-*}" --dart-define=APP_ENV="$app_env"
+          flutter build macos --release --build-name="${version%%-*}" --dart-define=APP_ENV=pre
           bash tool/package_macos.sh "$version" "$PACKAGE_ARCH"
       - name: Build safe mode smoke app
         if: github.event_name == 'workflow_dispatch' && inputs.safe_mode && github.ref_type != 'tag' && matrix.arch == 'arm64'
@@ -150,28 +142,9 @@ jobs:
           compression-level: 0
           overwrite: true
 
-  release:
-    if: github.repository == 'Minggle/PortWeave' && github.ref_type == 'tag'
-    needs: macos
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: subscription-ports-macos-*
-          merge-multiple: true
-          path: dist
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-          fail_on_unmatched_files: true
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
-
   cleanup-artifacts:
     if: always() && github.repository == 'Minggle/PortWeave'
-    needs: [prepare-artifacts, macos, release]
+    needs: [prepare-artifacts, macos]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

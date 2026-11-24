@@ -4,17 +4,17 @@
 
 # PortWeave · 端流
 
-面向 macOS 的代理客户端，让不同应用通过独立本地端口使用不同订阅。
+面向 macOS 与 Windows 的代理客户端，让不同应用通过独立本地端口使用不同订阅。
 
 [English](README.md) · **简体中文**
 
-[代码仓库](https://github.com/Minggle/PortWeave) · [测试构建](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) · [使用与开发说明](PORT_ROUTING.md) · [构建进度](MACOS_DEVELOPMENT.md)
+[代码仓库](https://github.com/Minggle/PortWeave) · [正式发布下载](https://github.com/Minggle/PortWeave/releases/latest) · [使用与开发说明](PORT_ROUTING.md) · [发布状态](RELEASE_PORTS.md)
 
 </div>
 
 PortWeave 可以同时运行代理商端口和聚合端口：应用指向哪个本地端口，就使用哪个页面的配置。聚合代理拥有自己的监听端口、分流规则和策略组主备顺序，修改它不会改变代理商端口的策略。
 
-**开发版本：0.9.4 · Flutter 3.50.0**（2026-11-23）。构建、安装和真实网络验收记录见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。
+**发布版本线：1.0.0 · Flutter 3.50.0**。构建与验证记录见[发布状态](RELEASE_PORTS.md)和 [Mac 开发记录](MACOS_DEVELOPMENT.md)。
 
 ## 选择分流方式
 
@@ -79,9 +79,9 @@ PortWeave 可以同时运行代理商端口和聚合端口：应用指向哪个�
 
 如需验证某个端口，可在启用相应配置后执行 `curl --proxy http://127.0.0.1:18084 https://example.com`，或将地址换成 `socks5h://127.0.0.1:18082`。这里的端口只是示例，必须与对应页面一致。
 
-## 独立 macOS 应用与默认端口
+## 独立 macOS / Windows 应用与默认端口
 
-macOS 应用为 **`PortWeave.app`**，具有独立图标、数据、偏好、缓存和登录项。构建目标为 macOS 12 及以上，覆盖 Apple Silicon（`arm64`）和 Intel（`amd64`）；实际验收状态见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。可与 FlClash 同时安装，初次使用需自行导入订阅或备份。
+PortWeave 在 **macOS**（`PortWeave.app`，支持 macOS 12 及以上 Apple Silicon `arm64` 与 Intel `amd64`）与 **Windows**（`PortWeave.exe`，提供 x64 安装包与便携 ZIP）均以独立身份打包，具有各自独立的图标、数据目录、偏好设置、URL 协议（`portweave://`）和开机自启项，可与 FlClash 并存安装而不相互覆盖。初次使用需自行导入订阅或备份。
 
 | 设置 | 默认值 |
 | --- | --- |
@@ -89,27 +89,41 @@ macOS 应用为 **`PortWeave.app`**，具有独立图标、数据、偏好、缓
 | 外部控制接口 | 默认关闭；开启后监听 `127.0.0.1:9091`，未设置密钥时自动生成 |
 | 新建订阅绑定 | 从 `18082` 开始，跳过已有绑定占用的端口 |
 | DNS 监听 | 默认关闭；编辑器示例使用 `1054` |
-| Release / Profile Bundle ID | `io.github.minggle.portweave` |
-| Debug Bundle ID | `io.github.minggle.portweave.debug` |
+| macOS Release / Profile Bundle ID | `io.github.minggle.portweave`（Debug 使用 `.debug` 后缀） |
+| Windows 数据目录 | `%APPDATA%\io.github.minggle\PortWeave` 与 `%LOCALAPPDATA%\io.github.minggle\PortWeave` |
+| Windows 安装包与主程序 | 独立 Inno Setup `AppId` 与 `PortWeave.exe`（与 FlClash 并存隔离） |
 | 注册的 URL 协议 | `portweave://` |
 
 导入备份时保留其中明确设置的端口；网络端口表单的“重置”可恢复 `7891`。系统代理、TUN 与监听端口仍是主机共享资源，与其他客户端同时运行时应使用专用多端口模式并避开端口冲突。
 
-源码仍保留其他平台，包括早期 Windows 多订阅端口构建；当前 PortWeave 产品与交付说明以 macOS 为中心，旧 Windows 包见[发布历史](RELEASE_PORTS.md)。
-
 ## 下载与更新
 
-打开 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml)。仓库为公开状态，下载 Actions artifact 需按 GitHub 要求登录，并具有仓库读取权限。维护者可通过 **Run workflow** 选择分支手动构建。
+请前往 [GitHub Releases](https://github.com/Minggle/PortWeave/releases/latest) 下载最新版本。每次发布同时提供 macOS 与 Windows 产物及统一的 `SHA256SUMS` 校验文件：
 
-选择目标提交对应的成功运行，在 Artifacts 中下载匹配架构的产物。构建流程输出 `PortWeave-<版本>-macos-<架构>.dmg` 和 `SHA256SUMS-macos-<架构>`。解压 artifact 后，在同一目录校验对应文件，例如：
+| 平台 | 产物文件名 | 说明 |
+| --- | --- | --- |
+| macOS（Apple Silicon） | `PortWeave-<版本>-macos-arm64.dmg` | 打开 DMG 后将 `PortWeave.app` 拖入 Applications |
+| macOS（Intel） | `PortWeave-<版本>-macos-amd64.dmg` | 打开 DMG 后将 `PortWeave.app` 拖入 Applications |
+| Windows（x64 安装包） | `PortWeave-<版本>-windows-amd64-setup.exe` | Inno Setup 安装程序，与 FlClash 并存隔离 |
+| Windows（x64 便携版） | `PortWeave-<版本>-windows-amd64.zip` | 完整解压后运行 `PortWeave.exe` |
+| 校验文件 | `SHA256SUMS` | 覆盖全部 4 个发布产物 |
+
+安装前请核对 `SHA256SUMS`：
 
 ```bash
-shasum -a 256 -c SHA256SUMS-macos-arm64
+# macOS
+shasum -a 256 -c SHA256SUMS --ignore-missing
 ```
 
-Artifacts 一天后到期，每个平台仅保留最新运行的产物，请及时下载需要的文件。
+```powershell
+# Windows（PowerShell）
+Get-FileHash .\PortWeave-<版本>-windows-amd64-setup.exe -Algorithm SHA256
+Get-FileHash .\PortWeave-<版本>-windows-amd64.zip -Algorithm SHA256
+```
 
-退出已安装的 PortWeave，打开 DMG，将 `PortWeave.app` 拖入 Applications，再由用户启动。**关于 → 下载测试版本**也会打开构建列表。更新采用手动下载、手动安装，macOS 启动时不查询 Releases，也不自动替换应用。当前提供开发构建，Developer ID 签名与 Apple 公证尚未完成。
+- **macOS**：退出已安装的 PortWeave，打开 DMG，将 `PortWeave.app` 拖入 Applications，再由用户启动。采用手动下载安装，Developer ID 签名与 Apple 公证尚未完成。
+- **Windows**：运行 `-setup.exe` 安装或覆盖升级；便携版需完整解压 `.zip`（保留 `PortWeave.exe`、`FlClashCore.exe`、`FlClashHelperService.exe`、DLL 及 `data/` 目录）。
+- **CI 测试构建**：`main` 分支的开发构建也会上传至 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) 与 [PortWeave - Windows](https://github.com/Minggle/PortWeave/actions/workflows/ports-windows.yaml)（下载 Actions artifact 需登录 GitHub，保留 1 天）。
 
 ## 当前限制
 

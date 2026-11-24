@@ -1,0 +1,226 @@
+name: PortWeave - Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (e.g. v1.0.0) to publish from this ref
+        type: string
+        required: false
+
+concurrency:
+  group: portweave-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: github.repository == 'Minggle/PortWeave'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      build_name: ${{ steps.meta.outputs.build_name }}
+      app_env: ${{ steps.meta.outputs.app_env }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve release metadata
+        id: meta
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            tag="$GITHUB_REF_NAME"
+          elif [[ -n "$INPUT_TAG" ]]; then
+            tag="$INPUT_TAG"
+          else
+            pubspec_version=$(sed -n 's/^version: *\([^+[:space:]]*\).*/\1/p' pubspec.yaml)
+            tag="v$pubspec_version"
+          fi
+          if [[ "$tag" != v* ]]; then
+            echo "Expected release tag starting with 'v', got: $tag" >&2
+            exit 1
+          fi
+          version=${tag#v}
+          version=${version//+/.}
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "Invalid release version derived from tag '$tag': $version" >&2
+            exit 1
+          fi
+          build_name=${version%%-*}
+          app_env=stable
+          prerelease=false
+          if [[ "$version" == *-* ]]; then
+            app_env=pre
+            prerelease=true
+          fi
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "build_name=$build_name"
+            echo "app_env=$app_env"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+  macos:
+    if: github.repository == 'Minggle/PortWeave'
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            arch: arm64
+          - os: macos-15-intel
+            arch: amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: |
+            core/go.sum
+            plugins/setup/setup_hooks/lib/src/go_builder.dart
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-macos-${{ matrix.arch }}
+          workspaces: plugins/rust_api/rust
+          cache-directories: .dart_tool/hooks_runner
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.0'
+          channel: stable
+          cache: true
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.3.app || sudo xcode-select -s /Applications/Xcode_26.2.app
+          xcodebuild -version
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build and package
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD_NAME: ${{ needs.prepare.outputs.build_name }}
+          APP_ENV: ${{ needs.prepare.outputs.app_env }}
+          PACKAGE_ARCH: ${{ matrix.arch }}
+          FLUTTER_MACOS_ARM64_ONLY: ${{ matrix.arch == 'arm64' }}
+        run: |
+          flutter build macos --release --build-name="$BUILD_NAME" --dart-define=APP_ENV="$APP_ENV"
+          bash tool/package_macos.sh "$VERSION" "$PACKAGE_ARCH"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
+
+  windows:
+    if: github.repository == 'Minggle/PortWeave'
+    needs: prepare
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: |
+            core/go.sum
+            plugins/setup/setup_hooks/lib/src/go_builder.dart
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-windows-amd64
+          workspaces: |
+            services/helper
+            plugins/rust_api/rust
+          cache-directories: .dart_tool/hooks_runner
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.0'
+          channel: stable
+          cache: true
+      - name: Enable git long paths
+        run: git config --global core.longpaths true
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          flutter pub get
+          exit $LASTEXITCODE
+      - name: Build and package
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD_NAME: ${{ needs.prepare.outputs.build_name }}
+          APP_ENV: ${{ needs.prepare.outputs.app_env }}
+        run: |
+          flutter build windows --release --build-name=$env:BUILD_NAME --dart-define=APP_ENV=$env:APP_ENV
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pwsh -File tool/package_windows.ps1 -Version $env:VERSION -Arch amd64
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows-amd64
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
+
+  release:
+    if: github.repository == 'Minggle/PortWeave'
+    needs: [prepare, macos, windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+      - name: Build and verify unified SHA256SUMS
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd dist
+          for sumfile in SHA256SUMS-macos-arm64 SHA256SUMS-macos-amd64 SHA256SUMS-windows-amd64; do
+            if [[ ! -f "$sumfile" ]]; then
+              echo "Missing per-platform checksum file: $sumfile" >&2
+              exit 1
+            fi
+          done
+          tr -d '\r' < <(cat SHA256SUMS-macos-arm64 SHA256SUMS-macos-amd64 SHA256SUMS-windows-amd64) | LC_ALL=C sort -k2,2 > SHA256SUMS
+          rm -f SHA256SUMS-macos-arm64 SHA256SUMS-macos-amd64 SHA256SUMS-windows-amd64
+          sha256sum -c SHA256SUMS
+          cat SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          files: |
+            dist/PortWeave-${{ needs.prepare.outputs.version }}-macos-arm64.dmg
+            dist/PortWeave-${{ needs.prepare.outputs.version }}-macos-amd64.dmg
+            dist/PortWeave-${{ needs.prepare.outputs.version }}-windows-amd64.zip
+            dist/PortWeave-${{ needs.prepare.outputs.version }}-windows-amd64-setup.exe
+            dist/SHA256SUMS
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}

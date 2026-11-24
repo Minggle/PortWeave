@@ -1,35 +1,43 @@
 # PortWeave（端流）发布状态与历史
 
-更新日期：2026-11-23。当前开发版本 `0.9.4`，Flutter `3.50.0`，ARM64 已安装供用户测试，真实网络验收尚未完成。升级、测试与最新包状态见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。此页下半部分保留 Windows `v0.9.3-ports.1` 首版记录，其通过结果不代表 0.9.4 已通过。
+PortWeave 现同时面向 **macOS** 与 **Windows** 提供统一发布，正式下载入口为 [GitHub Releases](https://github.com/Minggle/PortWeave/releases/latest)（由 `.github/workflows/release.yaml` 在推送 `v*` 标签时原子发布全部平台产物与统一 `SHA256SUMS`）。详细开发与验收记录见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。
 
-本轮工作已归并回原主工作区，以 `ac80b820` 提交并推送 `main`；临时升级工作区已删除，本地及 origin 开发分支仅保留 `main`，原有修改的 stash 备份保留。
+分支测试构建分别由 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) 和 [PortWeave - Windows](https://github.com/Minggle/PortWeave/actions/workflows/ports-windows.yaml) 在推送 `main` 或手动触发时运行；Actions artifact 按平台仅保留最新 run，一天后到期，规则见 [构建说明](PORT_ROUTING.md#macos-与-windows-开发与构建)。
 
-`ac80b820` 的 macOS ARM64 包已完成全套 5,214 项 Flutter 测试、打包、下载后 SHA256／DMG／身份／架构／bundle 签名校验，并已安装到本机。旧应用备份保存在 `dist/installed-backups/`，个人配置保持原位，应用由用户启动测试。双架构及 CI 后续结果统一见 [Mac 开发记录](MACOS_DEVELOPMENT.md)。
+## macOS 与 Windows 发布产物与安装
 
-仓库已更名为 `Minggle/PortWeave`，`origin` 已更新，当前保持公开。Mac 沿用手动下载策略，**关于 → 下载测试版本**进入 [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml)。下载 Actions artifact 需按 GitHub 要求登录并具有仓库读取权限；选择目标提交的成功运行。维护者可通过 **Run workflow** 选择分支手动构建。
+| 平台 | 产物文件名 | 说明 |
+| --- | --- | --- |
+| macOS（Apple Silicon，12.0+） | `PortWeave-<版本>-macos-arm64.dmg` | 拖入 Applications 手动安装 |
+| macOS（Intel，12.0+） | `PortWeave-<版本>-macos-amd64.dmg` | 拖入 Applications 手动安装 |
+| Windows（x64 安装包） | `PortWeave-<版本>-windows-amd64-setup.exe` | Inno Setup 安装程序 |
+| Windows（x64 便携版） | `PortWeave-<版本>-windows-amd64.zip` | 完整解压后运行 `PortWeave.exe` |
+| 校验文件 | `SHA256SUMS` | 覆盖全部 4 个发布产物 |
 
-Actions artifact 按平台仅保留最新 run，一天后到期；下载及预算规则见 [构建说明](PORT_ROUTING.md#macos-开发与构建)。
-
-## macOS 产物与安装
-
-最低部署目标为 macOS 12.0，Apple Silicon 和 Intel 分别输出 `PortWeave-<版本>-macos-arm64.dmg`、`PortWeave-<版本>-macos-amd64.dmg`，并附 `SHA256SUMS-macos-<架构>`。解压 artifact 后在同目录核对相应校验文件：
+下载后请核对 `SHA256SUMS`：
 
 ```bash
-shasum -a 256 -c SHA256SUMS-macos-arm64
+# macOS
+shasum -a 256 -c SHA256SUMS --ignore-missing
 ```
 
-由用户退出已安装的 PortWeave、打开 DMG 并将 `PortWeave.app` 拖入 Applications 后启动。Mac 不自动替换应用，也不在启动时查询 Releases。当前没有完成 Developer ID 签名、公证或 Gatekeeper 首次安装验收；临时 bundle 签名检查不能替代这些步骤。
+```powershell
+# Windows（PowerShell）
+Get-FileHash .\PortWeave-<版本>-windows-amd64-setup.exe -Algorithm SHA256
+Get-FileHash .\PortWeave-<版本>-windows-amd64.zip -Algorithm SHA256
+```
 
-应用独立标识仍为 `io.github.minggle.portweave`，Debug 使用 `.debug` 后缀，注册 `portweave://`。普通混合代理默认 `7891`；控制接口默认关闭，开启后监听 `127.0.0.1:9091`，未设置密钥时自动生成；订阅端口从 `18082` 起分配。专用模式关闭有效系统代理、TUN、控制接口与默认混合端口，保留保存值。首次使用可导入订阅或备份；备份中的显式端口不会被默认值覆盖。
+- **macOS**：退出已安装的 PortWeave、打开 DMG 并将 `PortWeave.app` 拖入 Applications 后启动。当前没有完成 Developer ID 签名、公证或 Gatekeeper 首次安装验收。
+- **Windows**：`PortWeave.exe` 使用独立身份（`CompanyName=io.github.minggle`、`ProductName=PortWeave`、独立 Inno Setup `AppId`、独立数据目录 `%APPDATA%\io.github.minggle\PortWeave` 与 `%LOCALAPPDATA%\io.github.minggle\PortWeave`、以及 `portweave://` 协议），可与 FlClash 并存安装而不相互覆盖。便携版请完整解压，勿只复制单个 EXE。
+- **默认端口与隔离**：macOS 独立标识为 `io.github.minggle.portweave`（Debug 使用 `.debug` 后缀）；两端均注册 `portweave://`。普通混合代理默认 `7891`；控制接口默认关闭，开启后监听 `127.0.0.1:9091`，未设置密钥时自动生成；订阅端口从 `18082` 起分配。专用模式关闭有效系统代理、TUN、控制接口与默认混合端口，保留保存值。首次使用可导入订阅或备份；备份中的显式端口不会被默认值覆盖。
 
 当前使用方式见 [中文 README](README_zh_CN.md) / [English README](README.md)，详细限制与验证命令见 [PORT_ROUTING.md](PORT_ROUTING.md)，完整 Mac 历史与待验收项见 [MACOS_DEVELOPMENT.md](MACOS_DEVELOPMENT.md)。
 
-## 历史：多订阅端口版 v0.9.3-ports.1
+## 历史：多订阅端口版 v0.9.3-ports.1（已归档）
 
-以下记录基于上游 v0.9.3 的 Windows x64 预发行版本。它让多个应用通过不同的本地端口，同时使用不同订阅的代理节点。包名、端口示例、提交和验证结果按当时版本保留；仓库链接使用更名后的地址。
+以下记录基于上游 v0.9.3 的早期 Windows x64 预发行版本（原预发行标签已退役，历史提交仍保留在 `main` 中）。包名、端口示例、提交和验证结果按当时版本保留。
 
 - 历史功能基线：[`f2b03c06`](https://github.com/Minggle/PortWeave/tree/f2b03c06)（原 `feature/multi-subscription-ports`）
-- 发布下载：[`v0.9.3-ports.1`](https://github.com/Minggle/PortWeave/releases/tag/v0.9.3-ports.1)
 - 完整使用与开发说明：[PORT_ROUTING.md](PORT_ROUTING.md)
 
 ### 历史使用方法

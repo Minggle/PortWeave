@@ -4,17 +4,17 @@
 
 # PortWeave · 端流
 
-A macOS proxy client that connects your apps to different subscriptions through separate local ports.
+A macOS & Windows proxy client that connects your apps to different subscriptions through separate local ports.
 
 **English** · [简体中文](README_zh_CN.md)
 
-[Repository](https://github.com/Minggle/PortWeave) · [Test builds](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) · [Usage and development](PORT_ROUTING.md) · [Build status](MACOS_DEVELOPMENT.md)
+[Repository](https://github.com/Minggle/PortWeave) · [Releases](https://github.com/Minggle/PortWeave/releases/latest) · [Usage and development](PORT_ROUTING.md) · [Release status](RELEASE_PORTS.md)
 
 </div>
 
 PortWeave gives applications separate local proxy addresses backed by different subscriptions. A provider port can follow its original policy, use a fixed node, or select matching nodes. An aggregate proxy has its own listening port and routing groups, with a self-hosted route first and nodes from several subscriptions as backups.
 
-**Development version: 0.9.4 · Flutter 3.50.0** (November 23, 2026). See [macOS development status](MACOS_DEVELOPMENT.md) for build, installation and real-network acceptance records.
+**Release line: 1.0.0 · Flutter 3.50.0**. See [release status](RELEASE_PORTS.md) and [macOS development status](MACOS_DEVELOPMENT.md) for build and verification records.
 
 ## Choose how to route traffic
 
@@ -75,9 +75,9 @@ Dedicated mode closes the normal mixed port, TUN and system proxy while preservi
 
 For example, `curl --proxy http://127.0.0.1:18084 https://example.com` uses the aggregate port. Change the proxy URL to `socks5h://127.0.0.1:18082` to use the provider binding. Replace example ports with the actual values on their pages.
 
-## Independent macOS app and defaults
+## Independent macOS & Windows apps and defaults
 
-The macOS app is **`PortWeave.app`**, with its own icon, data, preferences, cache and login item. The build targets macOS 12 or later on Apple Silicon (`arm64`) and Intel (`amd64`); acceptance status is tracked in the [macOS development notes](MACOS_DEVELOPMENT.md). It can be installed alongside FlClash; import subscriptions or a backup on first use.
+PortWeave ships as an independent desktop app on both **macOS** (`PortWeave.app`, targeting macOS 12+ on Apple Silicon `arm64` and Intel `amd64`) and **Windows** (`PortWeave.exe`, x64 installer and portable ZIP). Both platforms keep their own icons, data directories, preferences, URL scheme (`portweave://`), and startup registrations so PortWeave can be installed side by side with FlClash without overwriting it; import subscriptions or a backup on first use.
 
 | Setting | Default |
 | --- | --- |
@@ -85,27 +85,41 @@ The macOS app is **`PortWeave.app`**, with its own icon, data, preferences, cach
 | External controller | Off by default; when enabled, listens on `127.0.0.1:9091` with a secret generated if none is set |
 | New subscription binding | Starts at `18082`, skipping ports already used by bindings |
 | DNS listener | Disabled by default; the editor example uses `1054` |
-| Release / Profile bundle ID | `io.github.minggle.portweave` |
-| Debug bundle ID | `io.github.minggle.portweave.debug` |
+| macOS Release / Profile bundle ID | `io.github.minggle.portweave` (Debug: `.debug`) |
+| Windows data directory | `%APPDATA%\io.github.minggle\PortWeave` and `%LOCALAPPDATA%\io.github.minggle\PortWeave` |
+| Windows installer & binary | Dedicated Inno Setup `AppId` and `PortWeave.exe` (does not conflict with FlClash) |
 | Registered URL scheme | `portweave://` |
 
 Explicit ports in imported backups are preserved. The network port form's reset action restores `7891`. System proxy, TUN and listening ports remain shared host resources, so use dedicated mode and non-conflicting ports when running alongside another client.
 
-The source tree also retains other platforms, including the earlier Windows subscription-port build. The current PortWeave product and delivery instructions focus on macOS; the [release history](RELEASE_PORTS.md) records the earlier Windows packages.
-
 ## Download and update
 
-Open [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml). The repository is public; downloading Actions artifacts requires signing in to GitHub with an account that has repository read access. Maintainers can use **Run workflow** to build a selected branch.
+Download the latest release from [GitHub Releases](https://github.com/Minggle/PortWeave/releases/latest). Each release publishes all platform binaries together with a unified `SHA256SUMS` file:
 
-Choose a successful run for the intended commit and download the artifact for your architecture. The workflow produces `PortWeave-<version>-macos-<arch>.dmg` and `SHA256SUMS-macos-<arch>`. In the extracted artifact directory, verify the corresponding checksum file, for example:
+| Platform | Asset | Notes |
+| --- | --- | --- |
+| macOS (Apple Silicon) | `PortWeave-<version>-macos-arm64.dmg` | Drag `PortWeave.app` to Applications |
+| macOS (Intel) | `PortWeave-<version>-macos-amd64.dmg` | Drag `PortWeave.app` to Applications |
+| Windows (x64 Installer) | `PortWeave-<version>-windows-amd64-setup.exe` | Inno Setup installer with side-by-side isolation from FlClash |
+| Windows (x64 Portable) | `PortWeave-<version>-windows-amd64.zip` | Extract the full archive and run `PortWeave.exe` |
+| Checksums | `SHA256SUMS` | Covers all four assets |
+
+Verify the downloaded file against `SHA256SUMS` before installing:
 
 ```bash
-shasum -a 256 -c SHA256SUMS-macos-arm64
+# macOS
+shasum -a 256 -c SHA256SUMS --ignore-missing
 ```
 
-Artifacts expire after one day, and only the latest run's artifacts are retained for each platform. Download the files you need while they are available.
+```powershell
+# Windows (PowerShell)
+Get-FileHash .\PortWeave-<version>-windows-amd64-setup.exe -Algorithm SHA256
+Get-FileHash .\PortWeave-<version>-windows-amd64.zip -Algorithm SHA256
+```
 
-Quit the installed PortWeave, open the DMG, drag `PortWeave.app` to Applications, then launch it yourself. **About → Download test version** opens the same build list. Updates are downloaded and installed manually; macOS does not query Releases on startup or replace the app automatically. These are development builds; Developer ID signing and Apple notarization are not complete.
+- **macOS**: Quit the installed PortWeave, open the DMG, drag `PortWeave.app` to Applications, then launch it yourself. Updates are downloaded and installed manually. Developer ID signing and Apple notarization are not yet configured.
+- **Windows**: Run `-setup.exe` to install or upgrade in place, or extract the portable `.zip` completely (keeping `PortWeave.exe`, `FlClashCore.exe`, `FlClashHelperService.exe`, DLLs, and `data/` together).
+- **CI test builds**: Development builds from `main` are also available on [PortWeave - macOS](https://github.com/Minggle/PortWeave/actions/workflows/ports-macos.yaml) and [PortWeave - Windows](https://github.com/Minggle/PortWeave/actions/workflows/ports-windows.yaml) (GitHub login required; artifacts expire after 1 day).
 
 ## Current limits
 

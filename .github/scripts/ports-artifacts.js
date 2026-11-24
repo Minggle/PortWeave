@@ -35,8 +35,13 @@ module.exports = async ({github, context, core, platform, arch, phase, paths}) =
   }
   if (phase === 'upload') {
     if (!groups[arch]) throw new Error('Unsupported artifact architecture.');
-    // ARM64 includes the optional debug ZIP; all three budgets total 450 MB.
-    const limit = platform === 'macos' && arch === 'arm64' ? 250_000_000 : 100_000_000;
+    // ARM64 includes the optional debug ZIP; Windows ships both portable ZIP and Inno Setup EXE.
+    const limit =
+      platform === 'macos' && arch === 'arm64'
+        ? 250_000_000
+        : platform === 'windows'
+          ? 200_000_000
+          : 100_000_000;
     checkSize(core, paths, limit);
   }
   const actions = github.rest.actions;
