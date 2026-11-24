@@ -1,4 +1,5 @@
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
@@ -21,7 +22,11 @@ const _blockInset = 10.0;
 
 /// The proxies page stays mounted under the dashboard and filters by the same
 /// query, so the sheet searches on its own and hands the page's query back.
-Future<void> showProxiesSheet(BuildContext context, {String? groupName}) async {
+Future<void> showProxiesSheet(
+  BuildContext context, {
+  String? groupName,
+  int? portBindingId,
+}) async {
   final container = ProviderScope.containerOf(context, listen: false);
   if (groupName != null) {
     container
@@ -33,9 +38,85 @@ Future<void> showProxiesSheet(BuildContext context, {String? groupName}) async {
   container.read(query.notifier).value = '';
   await showNestedSheet<void>(
     context,
-    builder: (_) => const ProxiesView(picker: true),
+    builder: (_) => ProxiesView(picker: true, portBindingId: portBindingId),
   );
   container.read(query.notifier).value = pageQuery;
+}
+
+typedef _DashboardPortScope = ({
+  List<Group> groups,
+  PortBinding? viewedBinding,
+  List<PortBinding> enabledBindings,
+  PortBinding? defaultBinding,
+  Map<int, PortBinding> bindingsById,
+});
+
+_DashboardPortScope _watchDashboardPortScope(WidgetRef ref) {
+  final active = ref.watch(portRoutingActiveProvider);
+  if (!active) {
+    return (
+      groups: ref.watch(visibleGroupsStateProvider).value,
+      viewedBinding: null,
+      enabledBindings: const [],
+      defaultBinding: null,
+      bindingsById: const {},
+    );
+  }
+  final bindings = ref.watch(
+    portRoutingSettingProvider.select((state) => state.bindings),
+  );
+  final enabledBindings = [
+    for (final binding in bindings)
+      if (binding.enabled) binding,
+  ];
+  final bindingsById = {for (final binding in bindings) binding.id: binding};
+  final defaultBinding = ref.watch(portRoutingDefaultBindingProvider);
+  final selectedId = ref.watch(dashboardPortBindingProvider);
+  final viewedBinding =
+      (selectedId != null
+          ? enabledBindings.where((b) => b.id == selectedId).firstOrNull
+          : null) ??
+      defaultBinding ??
+      enabledBindings.firstOrNull;
+  final List<Group> groups;
+  if (viewedBinding == null) {
+    groups = ref.watch(visibleGroupsStateProvider).value;
+  } else if (viewedBinding.usesRules) {
+    groups = ref
+        .watch(visibleGroupsStateProvider)
+        .value
+        .where((group) => group.name.startsWith(viewedBinding.policyPrefix))
+        .toList();
+  } else {
+    final allGroups = ref.watch(groupsProvider);
+    groups = [
+      for (final group in allGroups)
+        if (group.name == viewedBinding.groupName) group,
+    ];
+  }
+  return (
+    groups: groups,
+    viewedBinding: viewedBinding,
+    enabledBindings: enabledBindings,
+    defaultBinding: defaultBinding,
+    bindingsById: bindingsById,
+  );
+}
+
+String _displayGroupName(
+  Group group, {
+  PortBinding? viewedBinding,
+  Set<int> validBindingIds = const {},
+  Set<int> validProfileIds = const {},
+}) {
+  if (viewedBinding != null && group.name == viewedBinding.groupName) {
+    return viewedBinding.name;
+  }
+  return displayPortName(
+    group.name,
+    validBindingIds: validBindingIds,
+    validProfileIds: validProfileIds,
+  );
 }
 
 /// Drawn in the proportions of the proxies page's group header, always
@@ -44,12 +125,14 @@ Future<void> showProxiesSheet(BuildContext context, {String? groupName}) async {
 class _GroupIcon extends StatelessWidget {
   const _GroupIcon({
     required this.group,
+    required this.displayName,
     required this.size,
     required this.radius,
     this.ring,
   });
 
   final Group group;
+  final String displayName;
   final double size;
   final double radius;
   final Color? ring;
@@ -86,7 +169,7 @@ class _GroupIcon extends StatelessWidget {
           ),
           child: CommonTargetIcon(
             src: group.icon,
-            fallback: GroupMonogram(group.name),
+            fallback: GroupMonogram(displayName),
           ),
         ),
       ),
@@ -95,15 +178,39 @@ class _GroupIcon extends StatelessWidget {
 }
 
 class _SelectedName extends ConsumerWidget {
-  const _SelectedName({required this.group});
+  const _SelectedName({required this.group, required this.bindingsById});
 
   final Group group;
+  final Map<int, PortBinding> bindingsById;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = ref.watch(selectedProxyNameProvider(group.name)) ?? '';
+    final rawSelected = ref.watch(selectedProxyNameProvider(group.name)) ?? '';
+    if (rawSelected.isEmpty) {
+      return EmojiText(
+        '—',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: DashboardText.label(context),
+      );
+    }
+    final profileLabels = ref.watch(
+      profilesProvider.select(
+        (profiles) => {for (final p in profiles) p.id: p.realLabel},
+      ),
+    );
+    final groupsByName = ref.watch(
+      groupsProvider.select((groups) => {for (final g in groups) g.name: g}),
+    );
+    final resolved = resolveDisplaySelected(
+      rawSelected,
+      groupsByName: groupsByName,
+      profileLabels: profileLabels,
+      bindingsById: bindingsById,
+    );
+    final text = formatDisplayWithSource(resolved.name, resolved.source);
     return EmojiText(
-      name.isEmpty ? '—' : name,
+      text.isEmpty ? '—' : text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: DashboardText.label(context),
@@ -218,7 +325,11 @@ class ProxyGroupsCard extends ConsumerWidget {
     }
     final compact = density.isCompact;
     final scale = DashboardDensityScope.scaleOf(context);
-    final groups = ref.watch(visibleGroupsStateProvider).value;
+    final scope = _watchDashboardPortScope(ref);
+    final groups = scope.groups;
+    final profileIds = ref.watch(
+      profilesProvider.select((profiles) => {for (final p in profiles) p.id}),
+    );
     final padding = dashboardCardPadding(density);
     final tileHeight = (compact ? 52 : 60) * scale;
     final tileGap = compact ? 6.0 : 8.0;
@@ -229,6 +340,9 @@ class ProxyGroupsCard extends ConsumerWidget {
         builder: (context, constraints) {
           final tiles = _GroupTiles(
             groups: groups,
+            viewedBinding: scope.viewedBinding,
+            bindingsById: scope.bindingsById,
+            validProfileIds: profileIds,
             columns: _GroupTiles.columnsFor(
               constraints.maxWidth,
               scale: scale,
@@ -242,7 +356,13 @@ class ProxyGroupsCard extends ConsumerWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _GroupsHeader(groups: groups, count: true),
+              _GroupsHeader(
+                groups: groups,
+                count: true,
+                viewedBinding: scope.viewedBinding,
+                enabledBindings: scope.enabledBindings,
+                defaultBindingId: scope.defaultBinding?.id,
+              ),
               if (groups.isEmpty)
                 const Expanded(child: _GroupsEmpty(fit: true))
               else ...[
@@ -268,16 +388,94 @@ _FigureMetrics _figureMetricsOf(DashboardDensity density) => density.isCompact
     ? (style: AppTextStyle.largeTitle, icon: 34)
     : (style: AppTextStyle.display, icon: 40);
 
+class _PortSwitcherButton extends ConsumerWidget {
+  const _PortSwitcherButton({
+    required this.viewedBinding,
+    required this.enabledBindings,
+    required this.defaultBindingId,
+  });
+
+  final PortBinding viewedBinding;
+  final List<PortBinding> enabledBindings;
+  final int? defaultBindingId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.appLocalizations;
+    final colors = DashboardColors.of(context);
+    final foreground = context.colorScheme.onSurfaceVariant;
+    return PopupAnchor(
+      targetBuilder: (open) => Tooltip(
+        message: l.portRoutingSwitcherTooltip,
+        child: PressSurface(
+          fill: colors.tone,
+          shape: AppShape.full,
+          onPressed: open,
+          child: SizedBox(
+            height: 24,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 4,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 96),
+                    child: EmojiText(
+                      viewedBinding.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyle.caption1
+                          .of(context, emphasized: true)
+                          .copyWith(color: foreground),
+                    ),
+                  ),
+                  GlyphIcon(AppGlyphs.chevronDown, size: 12, color: foreground),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      popupBuilder: (_) => PopupMenu(
+        items: [
+          for (final binding in enabledBindings)
+            PopupMenuItem(
+              label: '${binding.name} · :${binding.port}',
+              subtitle: binding.id == defaultBindingId
+                  ? l.portRoutingPrimaryTag
+                  : null,
+              checked: binding.id == viewedBinding.id,
+              onPressed: () => ref
+                  .read(dashboardPortBindingProvider.notifier)
+                  .select(binding.id),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _GroupsHeader extends StatelessWidget {
-  const _GroupsHeader({required this.groups, this.count = false});
+  const _GroupsHeader({
+    required this.groups,
+    this.count = false,
+    this.viewedBinding,
+    this.enabledBindings = const [],
+    this.defaultBindingId,
+  });
 
   final List<Group> groups;
   final bool count;
+  final PortBinding? viewedBinding;
+  final List<PortBinding> enabledBindings;
+  final int? defaultBindingId;
 
   @override
   Widget build(BuildContext context) {
     final appLocalizations = context.appLocalizations;
     final mobile = !DashboardDensityScope.of(context).isDesktop;
+    final showSwitcher = viewedBinding != null && enabledBindings.isNotEmpty;
     return DashboardCardHeader(
       glyph: AppGlyphs.nodeGroup,
       title: appLocalizations.proxyGroup,
@@ -291,6 +489,12 @@ class _GroupsHeader extends StatelessWidget {
         _TimeoutChip(groups: groups),
       ],
       trailing: [
+        if (showSwitcher)
+          _PortSwitcherButton(
+            viewedBinding: viewedBinding!,
+            enabledBindings: enabledBindings,
+            defaultBindingId: defaultBindingId,
+          ),
         if (!mobile)
           Transform.translate(
             offset: const Offset(8, 0),
@@ -299,7 +503,10 @@ class _GroupsHeader extends StatelessWidget {
               tooltip: appLocalizations.proxyGroup,
               onPressed: groups.isEmpty
                   ? null
-                  : () => showProxiesSheet(context),
+                  : () => showProxiesSheet(
+                      context,
+                      portBindingId: viewedBinding?.id,
+                    ),
             ),
           ),
       ],
@@ -308,10 +515,19 @@ class _GroupsHeader extends StatelessWidget {
 }
 
 class _GroupsFigure extends StatelessWidget {
-  const _GroupsFigure({required this.groups, required this.metrics});
+  const _GroupsFigure({
+    required this.groups,
+    required this.metrics,
+    required this.viewedBinding,
+    required this.validBindingIds,
+    required this.validProfileIds,
+  });
 
   final List<Group> groups;
   final _FigureMetrics metrics;
+  final PortBinding? viewedBinding;
+  final Set<int> validBindingIds;
+  final Set<int> validProfileIds;
 
   @override
   Widget build(BuildContext context) {
@@ -334,6 +550,9 @@ class _GroupsFigure extends StatelessWidget {
       start: count,
       end: _IconStack(
         groups: groups,
+        viewedBinding: viewedBinding,
+        validBindingIds: validBindingIds,
+        validProfileIds: validProfileIds,
         size: metrics.icon,
         ring: DashboardColors.of(context).card,
       ),
@@ -344,11 +563,17 @@ class _GroupsFigure extends StatelessWidget {
 class _IconStack extends StatelessWidget {
   const _IconStack({
     required this.groups,
+    required this.viewedBinding,
+    required this.validBindingIds,
+    required this.validProfileIds,
     required this.size,
     required this.ring,
   });
 
   final List<Group> groups;
+  final PortBinding? viewedBinding;
+  final Set<int> validBindingIds;
+  final Set<int> validProfileIds;
   final double size;
   final Color ring;
 
@@ -370,6 +595,12 @@ class _IconStack extends StatelessWidget {
               start: index * (size - _overlap),
               child: _GroupIcon(
                 group: group,
+                displayName: _displayGroupName(
+                  group,
+                  viewedBinding: viewedBinding,
+                  validBindingIds: validBindingIds,
+                  validProfileIds: validProfileIds,
+                ),
                 size: size,
                 radius: DashboardCorner.badge,
                 ring: ring,
@@ -411,6 +642,9 @@ class _IconStack extends StatelessWidget {
 class _GroupTiles extends StatelessWidget {
   const _GroupTiles({
     required this.groups,
+    required this.viewedBinding,
+    required this.bindingsById,
+    required this.validProfileIds,
     required this.columns,
     required this.height,
     required this.gap,
@@ -419,6 +653,9 @@ class _GroupTiles extends StatelessWidget {
   });
 
   final List<Group> groups;
+  final PortBinding? viewedBinding;
+  final Map<int, PortBinding> bindingsById;
+  final Set<int> validProfileIds;
   final int columns;
   final double height;
   final double gap;
@@ -435,6 +672,7 @@ class _GroupTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final validBindingIds = bindingsById.keys.toSet();
     return LayoutBuilder(
       builder: (context, constraints) {
         final rows = (groups.length / columns).ceil();
@@ -449,12 +687,26 @@ class _GroupTiles extends StatelessWidget {
             mainAxisExtent: height,
           ),
           itemCount: groups.length,
-          itemBuilder: (context, index) => _GroupTile(
-            group: groups[index],
-            iconSize: iconSize,
-            onTap: () =>
-                showProxiesSheet(context, groupName: groups[index].name),
-          ),
+          itemBuilder: (context, index) {
+            final group = groups[index];
+            final displayName = _displayGroupName(
+              group,
+              viewedBinding: viewedBinding,
+              validBindingIds: validBindingIds,
+              validProfileIds: validProfileIds,
+            );
+            return _GroupTile(
+              group: group,
+              displayName: displayName,
+              bindingsById: bindingsById,
+              iconSize: iconSize,
+              onTap: () => showProxiesSheet(
+                context,
+                groupName: group.name,
+                portBindingId: viewedBinding?.id,
+              ),
+            );
+          },
         );
         return overflows ? DashboardFadeOut(child: grid) : grid;
       },
@@ -465,11 +717,15 @@ class _GroupTiles extends StatelessWidget {
 class _GroupTile extends StatelessWidget {
   const _GroupTile({
     required this.group,
+    required this.displayName,
+    required this.bindingsById,
     required this.iconSize,
     required this.onTap,
   });
 
   final Group group;
+  final String displayName;
+  final Map<int, PortBinding> bindingsById;
   final double iconSize;
   final VoidCallback onTap;
 
@@ -479,12 +735,13 @@ class _GroupTile extends StatelessWidget {
       radius: DashboardCorner.block,
       padding: const EdgeInsetsDirectional.fromSTEB(_blockInset, 0, 14, 0),
       onTap: onTap,
-      semanticLabel: group.name,
+      semanticLabel: displayName,
       child: Row(
         spacing: 12,
         children: [
           _GroupIcon(
             group: group,
+            displayName: displayName,
             size: iconSize,
             radius: DashboardCorner.block - _blockInset,
           ),
@@ -494,12 +751,12 @@ class _GroupTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 EmojiText(
-                  group.name,
+                  displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: DashboardText.rowTitle(context),
                 ),
-                _SelectedName(group: group),
+                _SelectedName(group: group, bindingsById: bindingsById),
               ],
             ),
           ),
@@ -516,11 +773,24 @@ class ProxyGroupsSummaryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appLocalizations = context.appLocalizations;
-    final groups = ref.watch(visibleGroupsStateProvider).value;
+    final scope = _watchDashboardPortScope(ref);
+    final groups = scope.groups;
+    final profileIds = ref.watch(
+      profilesProvider.select((profiles) => {for (final p in profiles) p.id}),
+    );
     final density = DashboardDensityScope.of(context);
     final figure = _GroupsFigure(
       groups: groups,
       metrics: _figureMetricsOf(density),
+      viewedBinding: scope.viewedBinding,
+      validBindingIds: scope.bindingsById.keys.toSet(),
+      validProfileIds: profileIds,
+    );
+    final header = _GroupsHeader(
+      groups: groups,
+      viewedBinding: scope.viewedBinding,
+      enabledBindings: scope.enabledBindings,
+      defaultBindingId: scope.defaultBinding?.id,
     );
     if (density.isDesktop) {
       return DashboardCard(
@@ -528,7 +798,7 @@ class ProxyGroupsSummaryCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _GroupsHeader(groups: groups),
+            header,
             const Spacer(),
             if (groups.isEmpty) const _GroupsEmptySummary() else figure,
             const Spacer(),
@@ -538,12 +808,17 @@ class ProxyGroupsSummaryCard extends ConsumerWidget {
     }
     return DashboardCard(
       semanticLabel: appLocalizations.proxyGroup,
-      onTap: groups.isEmpty ? null : () => showProxiesSheet(context),
+      onTap: groups.isEmpty
+          ? null
+          : () => showProxiesSheet(
+              context,
+              portBindingId: scope.viewedBinding?.id,
+            ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _GroupsHeader(groups: groups),
+          header,
           const SizedBox(height: 12),
           if (groups.isEmpty)
             const Padding(

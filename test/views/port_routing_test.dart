@@ -385,4 +385,127 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'default outbound selector, primary badge, and drag-to-reorder work in overview',
+    (tester) async {
+      final reordered = <List<int>>[];
+      int? defaultSet;
+      bool? takeoverSet;
+      final action = _ManageAction(
+        onDefault: (id) => defaultSet = id,
+        onTakeover: (value) => takeoverSet = value,
+        onReorder: reordered.add,
+      );
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWith(
+            () => TestProfiles([
+              Profile.normal(label: 'Sub A').copyWith(id: 11),
+              Profile.normal(label: 'Sub B').copyWith(id: 22),
+            ]),
+          ),
+          portRoutingActionProvider.overrideWith(() => action),
+        ],
+      );
+      addTearDown(container.dispose);
+      globalState.container = container;
+      container.read(viewSizeProvider.notifier).value = const Size(1200, 1000);
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = const PortRoutingConfig(
+        takeoverSystem: true,
+        defaultBindingId: 1,
+        bindings: [
+          PortBinding(
+            id: 1,
+            name: 'Port One',
+            profileId: 11,
+            port: 18081,
+            selection: PortSelection.original,
+          ),
+          PortBinding(
+            id: 2,
+            name: 'Port Two',
+            profileId: 22,
+            port: 18082,
+            selection: PortSelection.fixed,
+            node: 'JP 01',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const TestApp(locale: Locale('en'), child: PortRoutingView()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Default outbound'), findsOneWidget);
+      expect(find.text('Primary'), findsOneWidget);
+      expect(find.byType(SliverPrismReorderableList), findsOneWidget);
+      expect(find.byType(ReorderDragStartListener), findsNWidgets(2));
+
+      await tester.tap(find.text('Default outbound'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Port Two · :18082').last);
+      await tester.pumpAndSettle();
+      expect(defaultSet, 2);
+
+      await tester.tap(find.text('Default outbound'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Isolated mode (no system takeover)').last);
+      await tester.pumpAndSettle();
+      expect(takeoverSet, isFalse);
+
+      final reorderable = tester.widget<SliverPrismReorderableList>(
+        find.byType(SliverPrismReorderableList),
+      );
+      reorderable.onReorderItem!(0, 2);
+      await tester.pumpAndSettle();
+      expect(reordered, [
+        [2, 1],
+      ]);
+      expect(tester.takeException(), isNull);
+    },
+  );
+}
+
+class _ManageAction extends PortRoutingAction {
+  _ManageAction({this.onDefault, this.onTakeover, this.onReorder});
+
+  final void Function(int? id)? onDefault;
+  final void Function(bool value)? onTakeover;
+  final void Function(List<int> ids)? onReorder;
+
+  @override
+  void build() {}
+
+  @override
+  Future<void> setDefaultBinding(int? bindingId) async {
+    onDefault?.call(bindingId);
+    final config = ref.read(portRoutingSettingProvider);
+    ref.read(portRoutingSettingProvider.notifier).value = config.copyWith(
+      defaultBindingId: bindingId,
+    );
+  }
+
+  @override
+  Future<void> setTakeoverSystem(bool takeover) async {
+    onTakeover?.call(takeover);
+    final config = ref.read(portRoutingSettingProvider);
+    ref.read(portRoutingSettingProvider.notifier).value = config.copyWith(
+      takeoverSystem: takeover,
+    );
+  }
+
+  @override
+  Future<void> reorderBindings(List<int> orderedIds) async {
+    onReorder?.call(orderedIds);
+  }
 }

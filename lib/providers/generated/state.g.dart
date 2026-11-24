@@ -2132,7 +2132,7 @@ final class FilterGroupsStateProvider
   }
 }
 
-String _$filterGroupsStateHash() => r'd27c043b7647ce7f6182f2e5d4a880d987d2d5af';
+String _$filterGroupsStateHash() => r'8025e4d2776aea0d9cc0160c34601c24379adbff';
 
 /// Searches before hiding, so a group whose matches all timed out keeps them,
 /// and with them its delay test, instead of dropping out of the results.
@@ -2156,6 +2156,424 @@ final class FilterGroupsStateFamily extends $Family
 
   @override
   String toString() => r'filterGroupsStateProvider';
+}
+
+@ProviderFor(portScopedGroupsState)
+final portScopedGroupsStateProvider = PortScopedGroupsStateFamily._();
+
+final class PortScopedGroupsStateProvider
+    extends $FunctionalProvider<GroupsState, GroupsState, GroupsState>
+    with $Provider<GroupsState> {
+  PortScopedGroupsStateProvider._({
+    required PortScopedGroupsStateFamily super.from,
+    required (int, String) super.argument,
+  }) : super(
+         retry: null,
+         name: r'portScopedGroupsStateProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$portScopedGroupsStateHash();
+
+  @override
+  String toString() {
+    return r'portScopedGroupsStateProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<GroupsState> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  GroupsState create(Ref ref) {
+    final argument = this.argument as (int, String);
+    return portScopedGroupsState(ref, argument.$1, argument.$2);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GroupsState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GroupsState>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PortScopedGroupsStateProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$portScopedGroupsStateHash() =>
+    r'8cd8000ae000a4d114ba4f0254c6b90dedc3b7da';
+
+final class PortScopedGroupsStateFamily extends $Family
+    with $FunctionalFamilyOverride<GroupsState, (int, String)> {
+  PortScopedGroupsStateFamily._()
+    : super(
+        retry: null,
+        name: r'portScopedGroupsStateProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  PortScopedGroupsStateProvider call(int portBindingId, String query) =>
+      PortScopedGroupsStateProvider._(
+        argument: (portBindingId, query),
+        from: this,
+      );
+
+  @override
+  String toString() => r'portScopedGroupsStateProvider';
+}
+
+@ProviderFor(portScopedProxiesListState)
+final portScopedProxiesListStateProvider = PortScopedProxiesListStateFamily._();
+
+final class PortScopedProxiesListStateProvider
+    extends
+        $FunctionalProvider<
+          ProxiesListState,
+          ProxiesListState,
+          ProxiesListState
+        >
+    with $Provider<ProxiesListState> {
+  PortScopedProxiesListStateProvider._({
+    required PortScopedProxiesListStateFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'portScopedProxiesListStateProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$portScopedProxiesListStateHash();
+
+  @override
+  String toString() {
+    return r'portScopedProxiesListStateProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<ProxiesListState> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ProxiesListState create(Ref ref) {
+    final argument = this.argument as int;
+    return portScopedProxiesListState(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProxiesListState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProxiesListState>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PortScopedProxiesListStateProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$portScopedProxiesListStateHash() =>
+    r'eed8fec102eb9e4f2d379ab63bfbba85e60e0339';
+
+final class PortScopedProxiesListStateFamily extends $Family
+    with $FunctionalFamilyOverride<ProxiesListState, int> {
+  PortScopedProxiesListStateFamily._()
+    : super(
+        retry: null,
+        name: r'portScopedProxiesListStateProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  PortScopedProxiesListStateProvider call(int portBindingId) =>
+      PortScopedProxiesListStateProvider._(argument: portBindingId, from: this);
+
+  @override
+  String toString() => r'portScopedProxiesListStateProvider';
+}
+
+@ProviderFor(portScopedProxiesTabState)
+final portScopedProxiesTabStateProvider = PortScopedProxiesTabStateFamily._();
+
+final class PortScopedProxiesTabStateProvider
+    extends
+        $FunctionalProvider<ProxiesTabState, ProxiesTabState, ProxiesTabState>
+    with $Provider<ProxiesTabState> {
+  PortScopedProxiesTabStateProvider._({
+    required PortScopedProxiesTabStateFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'portScopedProxiesTabStateProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$portScopedProxiesTabStateHash();
+
+  @override
+  String toString() {
+    return r'portScopedProxiesTabStateProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<ProxiesTabState> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ProxiesTabState create(Ref ref) {
+    final argument = this.argument as int;
+    return portScopedProxiesTabState(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProxiesTabState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProxiesTabState>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PortScopedProxiesTabStateProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$portScopedProxiesTabStateHash() =>
+    r'362bbe2fc921938141bf4b9793743a2f204fbdc8';
+
+final class PortScopedProxiesTabStateFamily extends $Family
+    with $FunctionalFamilyOverride<ProxiesTabState, int> {
+  PortScopedProxiesTabStateFamily._()
+    : super(
+        retry: null,
+        name: r'portScopedProxiesTabStateProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  PortScopedProxiesTabStateProvider call(int portBindingId) =>
+      PortScopedProxiesTabStateProvider._(argument: portBindingId, from: this);
+
+  @override
+  String toString() => r'portScopedProxiesTabStateProvider';
+}
+
+@ProviderFor(portScopedProxiesTabControllerState)
+final portScopedProxiesTabControllerStateProvider =
+    PortScopedProxiesTabControllerStateFamily._();
+
+final class PortScopedProxiesTabControllerStateProvider
+    extends
+        $FunctionalProvider<
+          ProxiesTabControllerState,
+          ProxiesTabControllerState,
+          ProxiesTabControllerState
+        >
+    with $Provider<ProxiesTabControllerState> {
+  PortScopedProxiesTabControllerStateProvider._({
+    required PortScopedProxiesTabControllerStateFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'portScopedProxiesTabControllerStateProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$portScopedProxiesTabControllerStateHash();
+
+  @override
+  String toString() {
+    return r'portScopedProxiesTabControllerStateProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<ProxiesTabControllerState> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProxiesTabControllerState create(Ref ref) {
+    final argument = this.argument as int;
+    return portScopedProxiesTabControllerState(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProxiesTabControllerState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProxiesTabControllerState>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PortScopedProxiesTabControllerStateProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$portScopedProxiesTabControllerStateHash() =>
+    r'2144b54ac8aa2d537aaf62c065722d70f33f9ec9';
+
+final class PortScopedProxiesTabControllerStateFamily extends $Family
+    with $FunctionalFamilyOverride<ProxiesTabControllerState, int> {
+  PortScopedProxiesTabControllerStateFamily._()
+    : super(
+        retry: null,
+        name: r'portScopedProxiesTabControllerStateProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  PortScopedProxiesTabControllerStateProvider call(int portBindingId) =>
+      PortScopedProxiesTabControllerStateProvider._(
+        argument: portBindingId,
+        from: this,
+      );
+
+  @override
+  String toString() => r'portScopedProxiesTabControllerStateProvider';
+}
+
+@ProviderFor(portScopedGroupDelayTesting)
+final portScopedGroupDelayTestingProvider =
+    PortScopedGroupDelayTestingFamily._();
+
+final class PortScopedGroupDelayTestingProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  PortScopedGroupDelayTestingProvider._({
+    required PortScopedGroupDelayTestingFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'portScopedGroupDelayTestingProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$portScopedGroupDelayTestingHash();
+
+  @override
+  String toString() {
+    return r'portScopedGroupDelayTestingProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    final argument = this.argument as int;
+    return portScopedGroupDelayTesting(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PortScopedGroupDelayTestingProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$portScopedGroupDelayTestingHash() =>
+    r'ccaac486584a4279defdea04f35a858665250aff';
+
+final class PortScopedGroupDelayTestingFamily extends $Family
+    with $FunctionalFamilyOverride<bool, int> {
+  PortScopedGroupDelayTestingFamily._()
+    : super(
+        retry: null,
+        name: r'portScopedGroupDelayTestingProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  PortScopedGroupDelayTestingProvider call(int portBindingId) =>
+      PortScopedGroupDelayTestingProvider._(
+        argument: portBindingId,
+        from: this,
+      );
+
+  @override
+  String toString() => r'portScopedGroupDelayTestingProvider';
 }
 
 @ProviderFor(proxiesListState)

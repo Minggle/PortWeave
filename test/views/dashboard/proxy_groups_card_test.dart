@@ -396,4 +396,129 @@ void main() {
     await pumpCard(tester, density: DashboardDensity.mobile);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'port switcher scopes dashboard groups, strips prefixes, and shows fixed hidden group',
+    (tester) async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [
+          profilesProvider.overrideWith(
+            () => TestProfiles([
+              const Profile(
+                id: 1,
+                label: 'Sub A',
+                autoUpdateDuration: Duration.zero,
+              ),
+              const Profile(
+                id: 2,
+                label: 'Sub B',
+                autoUpdateDuration: Duration.zero,
+              ),
+            ]),
+          ),
+          coreStatusProvider.overrideWithBuild((_, _) => CoreStatus.connected),
+        ],
+      );
+      globalState.container = container;
+      container.listen(groupsProvider, (_, _) {});
+      container.read(currentProfileIdProvider.notifier).value = 1;
+      container.listen(proxiesStyleSettingProvider, (_, _) {});
+      container
+          .read(proxiesStyleSettingProvider.notifier)
+          .update(
+            (state) => state.copyWith(
+              type: ProxiesType.tab,
+              layout: ProxiesLayout.loose,
+            ),
+          );
+
+      const aggBinding = PortBinding(
+        id: 1,
+        name: 'Agg Port',
+        profileId: 1,
+        port: 18081,
+        selection: PortSelection.aggregate,
+      );
+      const fixedBinding = PortBinding(
+        id: 2,
+        name: 'Fixed Port',
+        profileId: 2,
+        port: 18082,
+        selection: PortSelection.fixed,
+        node: 'JP 01',
+      );
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = const PortRoutingConfig(
+        workspaceProfileId: 1,
+        defaultBindingId: 1,
+        bindings: [aggBinding, fixedBinding],
+      );
+
+      container.read(groupsProvider.notifier).value = [
+        Group(
+          type: GroupType.Selector,
+          name: '${aggBinding.policyPrefix}Media',
+          hidden: false,
+          now: '${aggBinding.policyPrefix}[priority:2] US 01',
+          testUrl: _testUrl,
+          all: [
+            Proxy(
+              name: '${aggBinding.policyPrefix}[priority:2] US 01',
+              type: 'VLESS',
+            ),
+          ],
+        ),
+        Group(
+          type: GroupType.Selector,
+          name: fixedBinding.groupName,
+          hidden: true,
+          now: '${fixedBinding.policyPrefix}JP 01',
+          testUrl: _testUrl,
+          all: [
+            Proxy(name: '${fixedBinding.policyPrefix}JP 01', type: 'Trojan'),
+          ],
+        ),
+      ];
+
+      await pumpCard(tester);
+      expect(name('Agg Port'), findsOneWidget);
+      expect(name('Media'), findsOneWidget);
+      expect(name('US 01 · Sub B'), findsOneWidget);
+      expect(find.textContaining('[port:'), findsNothing);
+      expect(find.textContaining('[priority:'), findsNothing);
+
+      // Switch to Fixed Port via switcher menu.
+      await tester.tap(name('Agg Port'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Fixed Port · :18082'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(dashboardPortBindingProvider), 2);
+      expect(name('Fixed Port'), findsNWidgets(2)); // Switcher + Tile title
+      expect(name('JP 01'), findsOneWidget);
+      expect(name('Media'), findsNothing);
+
+      // Open scoped ProxiesView picker sheet.
+      await tester.tap(name('JP 01'));
+      await tester.pumpAndSettle();
+      expect(inSheet(name('Fixed Port')), findsOneWidget);
+      expect(inSheet(name('JP 01')), findsOneWidget);
+      expect(inSheet(find.textContaining('[port:')), findsNothing);
+
+      // Auto-reset dashboardPortBindingProvider when selected binding is disabled.
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = PortRoutingConfig(
+        workspaceProfileId: 1,
+        defaultBindingId: 1,
+        bindings: [aggBinding, fixedBinding.copyWith(enabled: false)],
+      );
+      await tester.pump();
+      expect(container.read(dashboardPortBindingProvider), isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

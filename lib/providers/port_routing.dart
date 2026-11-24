@@ -21,6 +21,24 @@ class SelectedPortBinding extends _$SelectedPortBinding {
   void select(int? id) => state = id;
 }
 
+@Riverpod(keepAlive: true)
+class DashboardPortBinding extends _$DashboardPortBinding {
+  @override
+  int? build() {
+    ref.listen(portRoutingSettingProvider, (_, next) {
+      if (state != null &&
+          !next.bindings.any(
+            (binding) => binding.id == state && binding.enabled,
+          )) {
+        state = null;
+      }
+    });
+    return null;
+  }
+
+  void select(int? id) => state = id;
+}
+
 enum PortBindingPhase { stopped, checking, listening, blocked, failed }
 
 class PortBindingCheck {

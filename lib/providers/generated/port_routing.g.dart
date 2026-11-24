@@ -62,6 +62,59 @@ abstract class _$SelectedPortBinding extends $Notifier<int?> {
   }
 }
 
+@ProviderFor(DashboardPortBinding)
+final dashboardPortBindingProvider = DashboardPortBindingProvider._();
+
+final class DashboardPortBindingProvider
+    extends $NotifierProvider<DashboardPortBinding, int?> {
+  DashboardPortBindingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dashboardPortBindingProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dashboardPortBindingHash();
+
+  @$internal
+  @override
+  DashboardPortBinding create() => DashboardPortBinding();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int?>(value),
+    );
+  }
+}
+
+String _$dashboardPortBindingHash() =>
+    r'b5358731aac0469fb97818b959254a1d1bd7493d';
+
+abstract class _$DashboardPortBinding extends $Notifier<int?> {
+  int? build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<int?, int?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int?, int?>,
+              int?,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(PortRoutingActivity)
 final portRoutingActivityProvider = PortRoutingActivityProvider._();
 

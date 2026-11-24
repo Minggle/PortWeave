@@ -1,4 +1,5 @@
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
@@ -58,12 +59,12 @@ class ProxyCard extends ConsumerWidget {
 
   Measure get measure => globalState.measure;
 
-  Widget _buildProxyNameText(BuildContext context) {
+  Widget _buildProxyNameText(BuildContext context, String displayName) {
     if (type == ProxyCardType.compact) {
       return SizedBox(
         height: measure.textHeight(AppTextStyle.subheadline) * 1,
         child: EmojiText(
-          proxy.name,
+          displayName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle.subheadline.of(context),
@@ -73,7 +74,7 @@ class ProxyCard extends ConsumerWidget {
       return SizedBox(
         height: measure.textHeight(AppTextStyle.subheadline) * 2,
         child: EmojiText(
-          proxy.name,
+          displayName,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle.subheadline.of(context),
@@ -132,25 +133,50 @@ class ProxyCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final measure = globalState.measure;
     final isLoose = type == ProxyCardType.loose;
+    final bindings = ref.watch(
+      portRoutingSettingProvider.select((state) => state.bindings),
+    );
+    final bindingsById = {for (final b in bindings) b.id: b};
+    final profileLabels = ref.watch(
+      profilesProvider.select(
+        (profiles) => {for (final p in profiles) p.id: p.realLabel},
+      ),
+    );
+    final displayName = displayPortName(
+      proxy.name,
+      validBindingIds: bindingsById.keys.toSet(),
+      validProfileIds: profileLabels.keys.toSet(),
+    );
+    final source = portSourceLabel(
+      proxy.name,
+      profileLabels: profileLabels,
+      bindingsById: bindingsById,
+    );
     final delayText = _DelayText(
       proxy: proxy,
       testUrl: testUrl,
       alignment: isLoose ? Alignment.centerLeft : Alignment.centerRight,
     );
-    final proxyNameText = _buildProxyNameText(context);
+    final proxyNameText = _buildProxyNameText(context, displayName);
     final typeStyle = AppTextStyle.footnote
         .of(context)
         .copyWith(
           overflow: TextOverflow.ellipsis,
           color: context.colorScheme.onSurface.opacity80,
         );
+    final compactDesc = formatDisplayWithSource(proxy.type, source);
     final details = isLoose
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 height: measure.textHeight(AppTextStyle.footnote),
-                child: _ProxyDesc(proxy: proxy, style: typeStyle),
+                child: _ProxyDesc(
+                  proxy: proxy,
+                  style: typeStyle,
+                  bindingsById: bindingsById,
+                  profileLabels: profileLabels,
+                ),
               ),
               const SizedBox(height: 6),
               delayText,
@@ -165,7 +191,7 @@ class ProxyCard extends ConsumerWidget {
                 Flexible(
                   flex: 1,
                   child: TooltipText(
-                    text: Text(proxy.type, maxLines: 1, style: typeStyle),
+                    text: Text(compactDesc, maxLines: 1, style: typeStyle),
                   ),
                 ),
                 delayText,
@@ -231,10 +257,17 @@ class ProxyCard extends ConsumerWidget {
 }
 
 class _ProxyDesc extends ConsumerWidget {
-  const _ProxyDesc({required this.proxy, required this.style});
+  const _ProxyDesc({
+    required this.proxy,
+    required this.style,
+    required this.bindingsById,
+    required this.profileLabels,
+  });
 
   final Proxy proxy;
   final TextStyle style;
+  final Map<int, PortBinding> bindingsById;
+  final Map<int, String> profileLabels;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -246,8 +279,27 @@ class _ProxyDesc extends ConsumerWidget {
             ).select((state) => state.proxyName),
           )
         : proxy.name;
+    final displayNode = displayPortName(
+      nodeName,
+      validBindingIds: bindingsById.keys.toSet(),
+      validProfileIds: profileLabels.keys.toSet(),
+    );
+    final source =
+        portSourceLabel(
+          nodeName,
+          profileLabels: profileLabels,
+          bindingsById: bindingsById,
+        ) ??
+        portSourceLabel(
+          proxy.name,
+          profileLabels: profileLabels,
+          bindingsById: bindingsById,
+        );
+    final baseText = nodeName == proxy.name
+        ? proxy.type
+        : '${proxy.type}($displayNode)';
     return EmojiText(
-      nodeName == proxy.name ? proxy.type : '${proxy.type}($nodeName)',
+      formatDisplayWithSource(baseText, source),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: style,

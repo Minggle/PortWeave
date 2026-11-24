@@ -315,13 +315,13 @@ void main() {
           Group(
             type: GroupType.Fallback,
             name: '${_binding.policyPrefix}Video',
-            now: '${_binding.policyPrefix}[priority:22] JP Node',
+            now: '${_binding.policyPrefix}[priority:11] JP Node',
             all: const [],
           ),
         ],
       );
       expect(find.text('Video'), findsOneWidget);
-      expect(find.text('JP Node'), findsOneWidget);
+      expect(find.text('JP Node · Base'), findsOneWidget);
       expect(find.textContaining('[priority:'), findsNothing);
       expect(find.textContaining('[port:'), findsNothing);
       expect(tester.takeException(), isNull);

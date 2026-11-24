@@ -1,11 +1,14 @@
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
-import 'package:fl_clash/models/common.dart';
+import 'package:fl_clash/common/port_display.dart';
+import 'package:fl_clash/models/models.dart';
+import 'package:fl_clash/providers/providers.dart';
 import 'package:fl_clash/ui/icons/icons.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prism_ui/prism_ui.dart';
 
 const _stripInset = 16.0;
@@ -15,17 +18,23 @@ const _tabPadding = 16.0;
 /// The group chips over the proxies tab view. Only the chips in view are
 /// built: each chip's width comes from its label, so the strip can scroll to
 /// one it has not built.
-class GroupTabs extends StatefulWidget {
-  const GroupTabs({super.key, required this.controller, required this.groups});
+class GroupTabs extends ConsumerStatefulWidget {
+  const GroupTabs({
+    super.key,
+    required this.controller,
+    required this.groups,
+    this.portBindingId,
+  });
 
   final TabController controller;
   final List<Group> groups;
+  final int? portBindingId;
 
   @override
-  State<GroupTabs> createState() => _GroupTabsState();
+  ConsumerState<GroupTabs> createState() => _GroupTabsState();
 }
 
-class _GroupTabsState extends State<GroupTabs> {
+class _GroupTabsState extends ConsumerState<GroupTabs> {
   static const _fadeExtent = 24.0;
 
   // A sheet's controller would hand the strip's drags to the sheet.
@@ -135,7 +144,7 @@ class _GroupTabsState extends State<GroupTabs> {
     ).createShader(bounds, textDirection: Directionality.of(context));
   }
 
-  Widget _buildMoreButton() {
+  Widget _buildMoreButton(List<String> displayNames) {
     return TonalButtonTheme(
       size: TonalButtonSize.section,
       child: ElasticPress(
@@ -148,9 +157,9 @@ class _GroupTabsState extends State<GroupTabs> {
           popupBuilder: (_) => PopupMenu(
             maxVisibleItems: 7,
             items: [
-              for (final (index, group) in widget.groups.indexed)
+              for (final (index, name) in displayNames.indexed)
                 PopupMenuItem(
-                  label: group.name,
+                  label: name,
                   checked: index == widget.controller.index,
                   onPressed: () => _select(index),
                 ),
@@ -161,9 +170,12 @@ class _GroupTabsState extends State<GroupTabs> {
     );
   }
 
-  Widget _buildTabs(_TabExtents extents, bool hasMore) {
-    final groups = widget.groups;
-    final last = groups.length - 1;
+  Widget _buildTabs(
+    _TabExtents extents,
+    bool hasMore,
+    List<String> displayNames,
+  ) {
+    final last = displayNames.length - 1;
     return ListView.custom(
       controller: _scrollController,
       scrollDirection: Axis.horizontal,
@@ -180,21 +192,47 @@ class _GroupTabsState extends State<GroupTabs> {
             end: index < last ? _tabSpacing : 0,
           ),
           child: _GroupTab(
-            name: groups[index].name,
+            name: displayNames[index],
             index: index,
             selected: _selected,
             onPressed: () => _select(index),
           ),
         ),
-        childCount: groups.length,
+        childCount: displayNames.length,
         extent: extents.total,
       ),
     );
   }
 
+  List<String> _displayNames() {
+    final bindings = ref.watch(
+      portRoutingSettingProvider.select((state) => state.bindings),
+    );
+    final validBindingIds = {for (final b in bindings) b.id};
+    final validProfileIds = ref.watch(
+      profilesProvider.select((profiles) => {for (final p in profiles) p.id}),
+    );
+    final bindingId = widget.portBindingId;
+    final binding = bindingId == null
+        ? null
+        : bindings.where((b) => b.id == bindingId).firstOrNull;
+    return [
+      for (final group in widget.groups)
+        if (binding != null && group.name == binding.groupName)
+          binding.name
+        else
+          displayPortName(
+            group.name,
+            validBindingIds: validBindingIds,
+            validProfileIds: validProfileIds,
+          ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final extents = _extents = _TabExtents.of(context, widget.groups, _extents);
+    final displayNames = _displayNames();
+    final extents = _extents = _TabExtents.of(context, displayNames, _extents);
     return SizedBox(
       height: TonalButtonSize.section.button,
       child: ValueListenableBuilder(
@@ -217,7 +255,7 @@ class _GroupTabsState extends State<GroupTabs> {
                             _buildEdgeFade(bounds, fade),
                         child: child,
                       ),
-                      child: _buildTabs(extents, hasMore),
+                      child: _buildTabs(extents, hasMore, displayNames),
                     ),
                   ),
                 ),
@@ -230,7 +268,7 @@ class _GroupTabsState extends State<GroupTabs> {
             ],
           );
         },
-        child: _buildMoreButton(),
+        child: _buildMoreButton(displayNames),
       ),
     );
   }
@@ -259,7 +297,7 @@ class _TabExtents {
 
   static _TabExtents of(
     BuildContext context,
-    List<Group> groups,
+    List<String> names,
     _TabExtents? previous,
   ) {
     final style = AppTextStyle.subheadline.of(context, emphasized: true);
@@ -268,7 +306,6 @@ class _TabExtents {
       context,
       const EdgeInsets.symmetric(horizontal: _tabPadding),
     ).horizontal;
-    final names = [for (final group in groups) group.name];
     final key = (
       _NamesKey(names),
       style,

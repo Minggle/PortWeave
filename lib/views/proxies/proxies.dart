@@ -12,11 +12,12 @@ import 'tab.dart';
 import '../port_routing.dart';
 
 class ProxiesView extends ConsumerStatefulWidget {
-  const ProxiesView({super.key, this.picker = false});
+  const ProxiesView({super.key, this.picker = false, this.portBindingId});
 
   /// Leaves the bar only its search and delay test, for picking a proxy from a
   /// sheet.
   final bool picker;
+  final int? portBindingId;
 
   @override
   ConsumerState<ProxiesView> createState() => _ProxiesViewState();
@@ -27,7 +28,10 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
 
   // The same instance on every build, so the bar changing with the current
   // group or its delay test leaves the page alone.
-  late final _tabView = ProxiesTabView(key: _proxiesTabKey);
+  late final _tabView = ProxiesTabView(
+    key: _proxiesTabKey,
+    portBindingId: widget.portBindingId,
+  );
   bool _isTab = false;
 
   void _updateStyle(
@@ -118,7 +122,12 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
     if (!_isTab) {
       return null;
     }
-    final isDelayTesting = ref.watch(currentGroupDelayTestingProvider);
+    final bindingId = widget.portBindingId;
+    final isDelayTesting = ref.watch(
+      bindingId == null
+          ? currentGroupDelayTestingProvider
+          : portScopedGroupDelayTestingProvider(bindingId),
+    );
     return IconButtonData(
       glyph: AppGlyphs.bolt,
       onPressed: () {
@@ -187,7 +196,9 @@ class _ProxiesViewState extends ConsumerState<ProxiesView> {
       searchState: AppBarSearchState(onSearch: _onSearch),
       body: switch (style.type) {
         ProxiesType.tab => _tabView,
-        ProxiesType.list => const ProxiesListView(),
+        ProxiesType.list => ProxiesListView(
+          portBindingId: widget.portBindingId,
+        ),
       },
     );
   }

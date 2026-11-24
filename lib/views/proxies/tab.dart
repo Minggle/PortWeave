@@ -14,7 +14,9 @@ import 'common.dart';
 import 'group_tabs.dart';
 
 class ProxiesTabView extends ConsumerStatefulWidget {
-  const ProxiesTabView({super.key});
+  const ProxiesTabView({super.key, this.portBindingId});
+
+  final int? portBindingId;
 
   static Map<String, PageStorageKey> pageListStoreMap = {};
 
@@ -31,17 +33,26 @@ class ProxiesTabViewState extends ConsumerState<ProxiesTabView>
   @override
   void initState() {
     super.initState();
-    ref.listenManual(proxiesTabControllerStateProvider, (prev, next) {
-      if (prev == next) {
-        return;
-      }
-      if (!stringListEquality.equals(prev?.groupNames, next.groupNames)) {
-        final groupNames = next.groupNames;
-        final currentGroupName = next.currentGroupName;
-        final index = groupNames.indexWhere((item) => item == currentGroupName);
-        _updateTabController(groupNames.length, index);
-      }
-    }, fireImmediately: true);
+    final bindingId = widget.portBindingId;
+    ref.listenManual(
+      bindingId == null
+          ? proxiesTabControllerStateProvider
+          : portScopedProxiesTabControllerStateProvider(bindingId),
+      (prev, next) {
+        if (prev == next) {
+          return;
+        }
+        if (!stringListEquality.equals(prev?.groupNames, next.groupNames)) {
+          final groupNames = next.groupNames;
+          final currentGroupName = next.currentGroupName;
+          final index = groupNames.indexWhere(
+            (item) => item == currentGroupName,
+          );
+          _updateTabController(groupNames.length, index);
+        }
+      },
+      fireImmediately: true,
+    );
   }
 
   @override
@@ -82,7 +93,14 @@ class ProxiesTabViewState extends ConsumerState<ProxiesTabView>
     if (group == null || controller == null) {
       return;
     }
-    final cardType = ref.read(proxiesTabStateProvider).proxyCardType;
+    final bindingId = widget.portBindingId;
+    final cardType = ref
+        .read(
+          bindingId == null
+              ? proxiesTabStateProvider
+              : portScopedProxiesTabStateProvider(bindingId),
+        )
+        .proxyCardType;
     final rowOffset = selectedRowOffset(
       proxies: group.all,
       selectedProxyName: ref.read(selectedProxyNameProvider(group.name)),
@@ -110,7 +128,14 @@ class ProxiesTabViewState extends ConsumerState<ProxiesTabView>
   }
 
   Group? _getGroup(int? index) {
-    final groups = ref.read(proxiesTabStateProvider).groups;
+    final bindingId = widget.portBindingId;
+    final groups = ref
+        .read(
+          bindingId == null
+              ? proxiesTabStateProvider
+              : portScopedProxiesTabStateProvider(bindingId),
+        )
+        .groups;
     if (index == null || index < 0 || index >= groups.length) {
       return null;
     }
@@ -160,11 +185,13 @@ class ProxiesTabViewState extends ConsumerState<ProxiesTabView>
   Widget build(BuildContext context) {
     final appLocalizations = context.appLocalizations;
     ref.watch(themeSettingProvider.select((state) => state.textScale));
-    final groups = ref.watch(
-      proxiesTabStateProvider.select((state) => state.groups),
-    );
+    final bindingId = widget.portBindingId;
+    final tabProvider = bindingId == null
+        ? proxiesTabStateProvider
+        : portScopedProxiesTabStateProvider(bindingId);
+    final groups = ref.watch(tabProvider.select((state) => state.groups));
     final cardType = ref.watch(
-      proxiesTabStateProvider.select((state) => state.proxyCardType),
+      tabProvider.select((state) => state.proxyCardType),
     );
     final proxiesLayout = ref.watch(
       proxiesStyleSettingProvider.select((state) => state.layout),
@@ -193,7 +220,11 @@ class ProxiesTabViewState extends ConsumerState<ProxiesTabView>
                       top: context.contentTopPadding - context.appBarInset,
                       bottom: 16,
                     ),
-                    child: GroupTabs(controller: controller, groups: groups),
+                    child: GroupTabs(
+                      controller: controller,
+                      groups: groups,
+                      portBindingId: bindingId,
+                    ),
                   ),
                   Expanded(
                     child: WidthBuilder(

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
@@ -21,7 +22,9 @@ const _groupMaxColumns = 3;
 const _lastRowGrowth = _headerInset - proxyGridSpacing;
 
 class ProxiesListView extends ConsumerStatefulWidget {
-  const ProxiesListView({super.key});
+  const ProxiesListView({super.key, this.portBindingId});
+
+  final int? portBindingId;
 
   @override
   ConsumerState<ProxiesListView> createState() => _ProxiesListViewState();
@@ -32,6 +35,15 @@ class _ProxiesListViewState extends ConsumerState<ProxiesListView> {
   int _columns = 1;
   int _groupColumns = 1;
   double _gap = 0;
+
+  ProxiesListState _readListState() {
+    final bindingId = widget.portBindingId;
+    return ref.read(
+      bindingId == null
+          ? proxiesListStateProvider
+          : portScopedProxiesListStateProvider(bindingId),
+    );
+  }
 
   @override
   void initState() {
@@ -57,7 +69,7 @@ class _ProxiesListViewState extends ConsumerState<ProxiesListView> {
   }
 
   GroupOffsets _getGroupOffsets() {
-    final state = ref.read(proxiesListStateProvider);
+    final state = _readListState();
     final offsets = <double>[];
     final rowExtent = getRowExtent(state.proxyCardType);
     final columnOffsets = List.filled(_groupColumns, 0.0);
@@ -134,12 +146,9 @@ class _ProxiesListViewState extends ConsumerState<ProxiesListView> {
   }
 
   void _scrollToGroupSelected(String groupName) {
-    final cardType = ref.read(proxiesListStateProvider).proxyCardType;
-    final proxies = ref
-        .read(proxiesListStateProvider)
-        .groups
-        .getGroup(groupName)
-        ?.all;
+    final state = _readListState();
+    final cardType = state.proxyCardType;
+    final proxies = state.groups.getGroup(groupName)?.all;
     if (proxies == null) {
       return;
     }
@@ -160,11 +169,13 @@ class _ProxiesListViewState extends ConsumerState<ProxiesListView> {
     final appLocalizations = context.appLocalizations;
     return Consumer(
       builder: (_, ref, _) {
-        final groups = ref.watch(
-          proxiesListStateProvider.select((state) => state.groups),
-        );
+        final bindingId = widget.portBindingId;
+        final listProvider = bindingId == null
+            ? proxiesListStateProvider
+            : portScopedProxiesListStateProvider(bindingId);
+        final groups = ref.watch(listProvider.select((state) => state.groups));
         final cardType = ref.watch(
-          proxiesListStateProvider.select((state) => state.proxyCardType),
+          listProvider.select((state) => state.proxyCardType),
         );
         ref.watch(themeSettingProvider.select((state) => state.textScale));
         final viewMode = ref.watch(viewModeProvider);
@@ -205,6 +216,7 @@ class _ProxiesListViewState extends ConsumerState<ProxiesListView> {
               Widget buildGroup(Group group) => _GroupSliver(
                 key: _GroupSliverKey(group.name),
                 group: group,
+                portBindingId: widget.portBindingId,
                 columns: columns,
                 cardType: cardType,
                 gap: gap,
@@ -286,6 +298,7 @@ class _GroupSliver extends ConsumerStatefulWidget {
   const _GroupSliver({
     super.key,
     required this.group,
+    this.portBindingId,
     required this.columns,
     required this.cardType,
     required this.gap,
@@ -294,6 +307,7 @@ class _GroupSliver extends ConsumerStatefulWidget {
   });
 
   final Group group;
+  final int? portBindingId;
   final int columns;
   final ProxyCardType cardType;
   final double gap;
@@ -488,6 +502,7 @@ class _GroupSliverState extends ConsumerState<_GroupSliver>
         isExpand: isExpand,
         unfolded: unfolded,
         group: widget.group,
+        portBindingId: widget.portBindingId,
         onChange: widget.onChange,
       ),
     );
@@ -594,15 +609,33 @@ class ListHeader extends ConsumerWidget {
     this.floating = 0,
     this.lift = 0,
     required this.group,
+    this.portBindingId,
     required this.onChange,
     required this.onScrollToSelected,
     required this.isExpand,
     required this.unfolded,
   });
 
+  final int? portBindingId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final groupName = group.name;
+    final bindings = ref.watch(
+      portRoutingSettingProvider.select((state) => state.bindings),
+    );
+    final bindingsById = {for (final b in bindings) b.id: b};
+    final validProfileIds = ref.watch(
+      profilesProvider.select((profiles) => {for (final p in profiles) p.id}),
+    );
+    final binding = portBindingId == null ? null : bindingsById[portBindingId];
+    final displayName = binding != null && groupName == binding.groupName
+        ? binding.name
+        : displayPortName(
+            groupName,
+            validBindingIds: bindingsById.keys.toSet(),
+            validProfileIds: validProfileIds,
+          );
     final isDelayTesting = ref.watch(
       delayTestingGroupsProvider.select((state) => state.contains(groupName)),
     );
@@ -624,8 +657,14 @@ class ListHeader extends ConsumerWidget {
             Flexible(
               child: Row(
                 children: [
-                  _GroupIcon(src: group.icon, name: groupName),
-                  Flexible(child: _GroupSummary(groupName: groupName)),
+                  _GroupIcon(src: group.icon, name: displayName),
+                  Flexible(
+                    child: _GroupSummary(
+                      groupName: groupName,
+                      displayName: displayName,
+                      bindingsById: bindingsById,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -756,9 +795,15 @@ class _GroupIcon extends ConsumerWidget {
 }
 
 class _GroupSummary extends StatelessWidget {
-  const _GroupSummary({required this.groupName});
+  const _GroupSummary({
+    required this.groupName,
+    required this.displayName,
+    required this.bindingsById,
+  });
 
   final String groupName;
+  final String displayName;
+  final Map<int, PortBinding> bindingsById;
 
   @override
   Widget build(BuildContext context) {
@@ -767,33 +812,58 @@ class _GroupSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         EmojiText(
-          groupName,
+          displayName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyle.callout.of(context, emphasized: true),
         ),
         const SizedBox(height: 2),
-        Flexible(flex: 1, child: _SelectedProxyName(groupName: groupName)),
+        Flexible(
+          flex: 1,
+          child: _SelectedProxyName(
+            groupName: groupName,
+            bindingsById: bindingsById,
+          ),
+        ),
       ],
     );
   }
 }
 
 class _SelectedProxyName extends ConsumerWidget {
-  const _SelectedProxyName({required this.groupName});
+  const _SelectedProxyName({
+    required this.groupName,
+    required this.bindingsById,
+  });
 
   final String groupName;
+  final Map<int, PortBinding> bindingsById;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final proxyName = ref
+    final rawSelected = ref
         .watch(selectedProxyNameProvider(groupName))
         .takeFirstValid([]);
-    if (proxyName.isEmpty) {
+    if (rawSelected.isEmpty) {
       return const SizedBox.shrink();
     }
+    final profileLabels = ref.watch(
+      profilesProvider.select(
+        (profiles) => {for (final p in profiles) p.id: p.realLabel},
+      ),
+    );
+    final groupsByName = ref.watch(
+      groupsProvider.select((groups) => {for (final g in groups) g.name: g}),
+    );
+    final resolved = resolveDisplaySelected(
+      rawSelected,
+      groupsByName: groupsByName,
+      profileLabels: profileLabels,
+      bindingsById: bindingsById,
+    );
+    final text = formatDisplayWithSource(resolved.name, resolved.source);
     return EmojiText(
-      proxyName,
+      text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: AppTextStyle.caption1.of(context, emphasized: true).toLight,

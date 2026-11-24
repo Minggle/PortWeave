@@ -97,15 +97,7 @@ GroupsState _hideTimeoutProxies(Ref ref, GroupsState groups) {
   );
 }
 
-/// Searches before hiding, so a group whose matches all timed out keeps them,
-/// and with them its delay test, instead of dropping out of the results.
-@riverpod
-GroupsState filterGroupsState(Ref ref, String query) {
-  final searchQuery = SearchQuery(query);
-  if (searchQuery.isEmpty) {
-    return ref.watch(visibleGroupsStateProvider);
-  }
-  final currentGroups = ref.watch(currentGroupsStateProvider);
+GroupsState _searchGroups(GroupsState currentGroups, SearchQuery searchQuery) {
   final matches = <Proxy, bool>{};
   final groups = currentGroups.value
       .map((group) {
@@ -120,7 +112,117 @@ GroupsState filterGroupsState(Ref ref, String query) {
       })
       .where((group) => group.all.isNotEmpty)
       .toList();
-  return _hideTimeoutProxies(ref, currentGroups.copyWith(value: groups));
+  return currentGroups.copyWith(value: groups);
+}
+
+/// Searches before hiding, so a group whose matches all timed out keeps them,
+/// and with them its delay test, instead of dropping out of the results.
+@riverpod
+GroupsState filterGroupsState(Ref ref, String query) {
+  final searchQuery = SearchQuery(query);
+  if (searchQuery.isEmpty) {
+    return ref.watch(visibleGroupsStateProvider);
+  }
+  final currentGroups = ref.watch(currentGroupsStateProvider);
+  return _hideTimeoutProxies(ref, _searchGroups(currentGroups, searchQuery));
+}
+
+@riverpod
+GroupsState portScopedGroupsState(Ref ref, int portBindingId, String query) {
+  final binding = ref.watch(
+    portRoutingSettingProvider.select(
+      (state) => state.bindings.where((b) => b.id == portBindingId).firstOrNull,
+    ),
+  );
+  if (binding == null) {
+    return ref.watch(filterGroupsStateProvider(query));
+  }
+  final GroupsState base;
+  if (binding.usesRules) {
+    final current = ref.watch(currentGroupsStateProvider);
+    base = current.copyWith(
+      value: current.value
+          .where((group) => group.name.startsWith(binding.policyPrefix))
+          .toList(),
+    );
+  } else {
+    final groups = ref.watch(groupsProvider);
+    final shown = [
+      for (final group in groups)
+        if (group.name == binding.groupName) _withoutSelection(group),
+    ];
+    base = GroupsState(value: shown);
+  }
+  final searchQuery = SearchQuery(query);
+  final filtered = searchQuery.isEmpty
+      ? base
+      : _searchGroups(base, searchQuery);
+  return _hideTimeoutProxies(ref, filtered);
+}
+
+@riverpod
+ProxiesListState portScopedProxiesListState(Ref ref, int portBindingId) {
+  final query = ref.watch(queryProvider(QueryTag.proxies));
+  final currentGroups = ref.watch(
+    portScopedGroupsStateProvider(portBindingId, query),
+  );
+  final currentUnfoldSet = ref.watch(unfoldSetProvider);
+  final cardType = ref.watch(
+    proxiesStyleSettingProvider.select((state) => state.cardType),
+  );
+  return ProxiesListState(
+    groups: currentGroups.value,
+    currentUnfoldSet: currentUnfoldSet,
+    proxyCardType: cardType,
+  );
+}
+
+@riverpod
+ProxiesTabState portScopedProxiesTabState(Ref ref, int portBindingId) {
+  final query = ref.watch(queryProvider(QueryTag.proxies));
+  final currentGroups = ref.watch(
+    portScopedGroupsStateProvider(portBindingId, query),
+  );
+  final currentGroupName = ref.watch(
+    currentProfileProvider.select((state) => state?.currentGroupName),
+  );
+  final cardType = ref.watch(
+    proxiesStyleSettingProvider.select((state) => state.cardType),
+  );
+  return ProxiesTabState(
+    groups: currentGroups.value,
+    currentGroupName: currentGroupName,
+    proxyCardType: cardType,
+  );
+}
+
+@riverpod
+ProxiesTabControllerState portScopedProxiesTabControllerState(
+  Ref ref,
+  int portBindingId,
+) {
+  return ref.watch(
+    portScopedProxiesTabStateProvider(portBindingId).select(
+      (state) => ProxiesTabControllerState(
+        groupNames: state.groups.map((group) => group.name).toList(),
+        currentGroupName: state.currentGroupName,
+      ),
+    ),
+  );
+}
+
+@riverpod
+bool portScopedGroupDelayTesting(Ref ref, int portBindingId) {
+  final currentGroupName = ref.watch(
+    portScopedProxiesTabControllerStateProvider(
+      portBindingId,
+    ).select((state) => state.currentGroupName),
+  );
+  return ref.watch(
+    delayTestingGroupsProvider.select(
+      (state) => state.contains(currentGroupName),
+    ),
+  );
 }
 
 @riverpod

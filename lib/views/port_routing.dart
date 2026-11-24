@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/common/port_display.dart';
 import 'package:fl_clash/common/port_routing.dart';
 import 'package:fl_clash/common/priority_policy.dart';
 import 'package:fl_clash/core/core.dart';
@@ -134,7 +135,26 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
     }
   }
 
-  Widget _binding(PortBinding binding, bool active) {
+  Future<void> _setDefaultOutbound(int? bindingId) async {
+    await _run(() async {
+      final notifier = ref.read(portRoutingActionProvider.notifier);
+      if (bindingId == null) {
+        await notifier.setTakeoverSystem(false);
+        return;
+      }
+      if (!ref.read(portRoutingSettingProvider).takeoverSystem) {
+        await notifier.setTakeoverSystem(true);
+      }
+      await notifier.setDefaultBinding(bindingId);
+    });
+  }
+
+  Widget _binding(
+    PortBinding binding,
+    bool active, {
+    required bool isPrimary,
+    int? reorderIndex,
+  }) {
     return Consumer(
       builder: (context, ref, _) {
         final l = context.appLocalizations;
@@ -177,6 +197,11 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                   Clipboard.setData(ClipboardData(text: binding.socksAddress)),
             ),
             PopupMenuItem(label: l.edit, onPressed: () => _edit(binding)),
+            if (binding.enabled && !isPrimary)
+              PopupMenuItem(
+                label: l.portRoutingSetDefaultOutbound,
+                onPressed: () => _setDefaultOutbound(binding.id),
+              ),
             for (final source in profiles) ...[
               PopupMenuItem(
                 label: '${l.portRoutingRefreshSettings} · ${source.realLabel}',
@@ -202,7 +227,15 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
             ),
           ],
           child: ListItem(
-            title: Text('${binding.name} · 127.0.0.1:${binding.port}'),
+            title: Row(
+              spacing: 8,
+              children: [
+                Flexible(
+                  child: Text('${binding.name} · 127.0.0.1:${binding.port}'),
+                ),
+                if (isPrimary) _PrimaryBadge(label: l.portRoutingPrimaryTag),
+              ],
+            ),
             subtitle: Text(
               [
                 profiles.isEmpty
@@ -226,15 +259,36 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                     builder: (_) => PortRoutingView(bindingId: binding.id),
                   )
                 : () => _edit(binding),
-            trailing: Switch(
-              value: binding.enabled,
-              onChanged: _busy
-                  ? null
-                  : (value) => _run(
-                      () => ref
-                          .read(portRoutingActionProvider.notifier)
-                          .saveBinding(binding.copyWith(enabled: value)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                Switch(
+                  value: binding.enabled,
+                  onChanged: _busy
+                      ? null
+                      : (value) => _run(
+                          () => ref
+                              .read(portRoutingActionProvider.notifier)
+                              .saveBinding(binding.copyWith(enabled: value)),
+                        ),
+                ),
+                if (reorderIndex != null)
+                  ReorderDragStartListener(
+                    index: reorderIndex,
+                    child: Tooltip(
+                      message: l.portRoutingReorderTooltip,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: GlyphIcon(
+                          AppGlyphs.dragHandle,
+                          size: 20,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
+                  ),
+              ],
             ),
           ),
         );
@@ -265,6 +319,33 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
             ),
           )
         : const <PriorityPolicy>[];
+    final defaultBinding = config.takeoverSystem
+        ? config.resolveDefaultBinding()
+        : null;
+    final enabledBindings = [
+      for (final binding in config.bindings)
+        if (binding.enabled) binding,
+    ];
+    final bindingsById = {
+      for (final binding in config.bindings) binding.id: binding,
+    };
+    Widget bindingItemAt(int index, {int? reorderIndex}) {
+      final binding = bindings[index];
+      return KeyedSubtree(
+        key: ValueKey(binding.id),
+        child: generateSection(
+          items: [
+            _binding(
+              binding,
+              active,
+              isPrimary: binding.id == defaultBinding?.id,
+              reorderIndex: reorderIndex,
+            ),
+          ],
+        ),
+      );
+    }
+
     if (widget.bindingId != null && detail == null) {
       return Scaffold(
         title: l.portRoutingTitle,
@@ -320,11 +401,26 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                             title: Text(l.aggregateProxy),
                             subtitle: Text(l.aggregateProxyDescription),
                           ),
-                        if (detail != null)
+                        if (detail != null) ...[
                           ListItem(
                             title: Text(detail.httpAddress),
                             subtitle: Text(l.portProxyPageHint),
                           ),
+                          if (detail.id == defaultBinding?.id)
+                            ListItem(
+                              title: Text(l.portRoutingDefaultOutbound),
+                              trailing: _PrimaryBadge(
+                                label: l.portRoutingPrimaryTag,
+                              ),
+                            )
+                          else if (detail.enabled)
+                            ListItem(
+                              title: Text(l.portRoutingSetDefaultOutbound),
+                              onTap: _busy
+                                  ? null
+                                  : () => _setDefaultOutbound(detail.id),
+                            ),
+                        ],
                         ListItem(
                           title: Text(l.portRoutingMode),
                           subtitle: Text(
@@ -353,6 +449,31 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                                   ),
                           ),
                         ),
+                        if (widget.bindingId == null &&
+                            config.bindings.isNotEmpty)
+                          ListItem<int?>.options(
+                            title: Text(l.portRoutingDefaultOutbound),
+                            subtitle: Text(
+                              !config.takeoverSystem
+                                  ? l.portRoutingIsolatedMode
+                                  : defaultBinding != null
+                                  ? '${defaultBinding.name} · :${defaultBinding.port}'
+                                  : l.portRoutingNoDefaultOutbound,
+                            ),
+                            value: config.takeoverSystem
+                                ? defaultBinding?.id
+                                : null,
+                            options: <int?>[
+                              null,
+                              for (final binding in enabledBindings) binding.id,
+                            ],
+                            textBuilder: (id) => id == null
+                                ? l.portRoutingIsolatedMode
+                                : '${bindingsById[id]!.name} · :${bindingsById[id]!.port}',
+                            onChanged: (id) {
+                              if (!_busy) _setDefaultOutbound(id);
+                            },
+                          ),
                         if (detail?.selection == PortSelection.aggregate) ...[
                           ListItem.open(
                             title: Text(l.aggregateProxyGroups),
@@ -402,12 +523,37 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
                       active &&
                       detail.enabled)
                     _PortGroupChoices(binding: detail),
-                  SliverPrismList(
-                    itemCount: bindings.length,
-                    itemBuilder: (_, index) => generateSection(
-                      items: [_binding(bindings[index], active)],
+                  if (widget.bindingId == null && bindings.length > 1)
+                    SliverPrismReorderableList(
+                      itemCount: bindings.length,
+                      estimatedItemExtent: 108,
+                      itemBuilder: (_, index) =>
+                          bindingItemAt(index, reorderIndex: index),
+                      proxyDecorator: (child, index, animation) =>
+                          commonProxyDecorator(
+                            bindingItemAt(index),
+                            index,
+                            animation,
+                          ),
+                      onReorderItem: (oldIndex, newIndex) {
+                        final target = newIndex > oldIndex
+                            ? newIndex - 1
+                            : newIndex;
+                        final reordered = [
+                          for (final binding in bindings) binding.id,
+                        ].copyAndReorder(oldIndex, target);
+                        _run(
+                          () => ref
+                              .read(portRoutingActionProvider.notifier)
+                              .reorderBindings(reordered),
+                        );
+                      },
+                    )
+                  else
+                    SliverPrismList(
+                      itemCount: bindings.length,
+                      itemBuilder: (_, index) => bindingItemAt(index),
                     ),
-                  ),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -428,24 +574,40 @@ class _PortRoutingViewState extends ConsumerState<PortRoutingView> {
   }
 }
 
+class _PrimaryBadge extends StatelessWidget {
+  const _PrimaryBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: ShapeDecoration(
+        color: colorScheme.primaryContainer,
+        shape: AppShape.full,
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        style: AppTextStyle.caption2
+            .of(context, emphasized: true)
+            .copyWith(color: colorScheme.onPrimaryContainer),
+      ),
+    );
+  }
+}
+
 class _PortGroupChoices extends ConsumerWidget {
   const _PortGroupChoices({required this.binding});
 
   final PortBinding binding;
 
-  static final _priorityPrefix = RegExp(r'^\[priority:[0-9]+\] ');
-
-  String _label(String name) {
-    final stripped = name.startsWith(binding.policyPrefix)
-        ? name.substring(binding.policyPrefix.length)
-        : name;
-    return stripped.replaceFirst(_priorityPrefix, '');
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groups = ref
-        .watch(groupsProvider)
+    final allGroups = ref.watch(groupsProvider);
+    final groups = allGroups
         .where(
           (group) =>
               group.name.startsWith(binding.policyPrefix) &&
@@ -455,23 +617,71 @@ class _PortGroupChoices extends ConsumerWidget {
     if (groups.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
+    final bindings = ref.watch(
+      portRoutingSettingProvider.select((state) => state.bindings),
+    );
+    final bindingsById = {for (final b in bindings) b.id: b};
+    final validBindingIds = bindingsById.keys.toSet();
+    final profileLabels = ref.watch(
+      profilesProvider.select(
+        (profiles) => {for (final p in profiles) p.id: p.realLabel},
+      ),
+    );
+    final validProfileIds = profileLabels.keys.toSet();
+    final groupsByName = {for (final g in allGroups) g.name: g};
+    String labelOf(String raw) {
+      final clean = displayPortName(
+        raw,
+        validBindingIds: validBindingIds,
+        validProfileIds: validProfileIds,
+      );
+      final source = portSourceLabel(
+        raw,
+        profileLabels: profileLabels,
+        bindingsById: bindingsById,
+      );
+      return formatDisplayWithSource(clean, source);
+    }
+
+    String resolvedOf(String raw) {
+      final resolved = resolveDisplaySelected(
+        raw,
+        groupsByName: groupsByName,
+        profileLabels: profileLabels,
+        bindingsById: bindingsById,
+      );
+      return formatDisplayWithSource(resolved.name, resolved.source);
+    }
+
     final selections = ref.watch(selectedMapProvider);
     return generateSliverSection(
       items: groups,
       itemBuilder: (group) =>
           group.type == GroupType.Selector && group.all.isNotEmpty
           ? ListItem<String>.options(
-              title: Text(_label(group.name)),
+              title: Text(
+                displayPortName(
+                  group.name,
+                  validBindingIds: validBindingIds,
+                  validProfileIds: validProfileIds,
+                ),
+              ),
               value: group.getCurrentSelectedName(selections[group.name] ?? ''),
               options: group.all.map((proxy) => proxy.name).toList(),
-              textBuilder: _label,
+              textBuilder: labelOf,
               onChanged: (value) => ref
                   .read(proxiesActionProvider.notifier)
                   .changeProxy(groupName: group.name, proxyName: value),
             )
           : ListItem(
-              title: Text(_label(group.name)),
-              subtitle: Text(_label(group.realNow)),
+              title: Text(
+                displayPortName(
+                  group.name,
+                  validBindingIds: validBindingIds,
+                  validProfileIds: validProfileIds,
+                ),
+              ),
+              subtitle: Text(resolvedOf(group.realNow)),
             ),
     );
   }
