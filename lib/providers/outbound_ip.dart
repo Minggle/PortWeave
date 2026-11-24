@@ -2,6 +2,7 @@ import 'package:fl_clash/common/service_probe.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'config.dart';
 import 'core.dart';
 import 'route_state.dart';
 import 'routed_probe.dart';
@@ -21,7 +22,8 @@ class OutboundIpProbe extends _$OutboundIpProbe
     String target,
     RouteState route,
   ) async {
-    final proxyName = target == routedOutbound && !route.proxied
+    final isolated = ref.read(portRoutingIsolatedProvider);
+    final proxyName = target == routedOutbound && (!route.proxied || isolated)
         ? directOutbound
         : target;
     final result = await lookupOutboundIp(

@@ -43,10 +43,11 @@ class FlClashHttpOverrides extends HttpOverrides {
     final isStart = read(isStartProvider);
     final suspend = read(suspendProvider);
     if (!isStart || suspend) return 'DIRECT';
-    if (read(portRoutingActiveProvider)) return 'DIRECT';
+    if (read(portRoutingIsolatedProvider)) return 'DIRECT';
     final mixedPort = read(
       patchClashConfigProvider.select((state) => state.mixedPort),
     );
+    if (mixedPort <= 0) return 'DIRECT';
     final authentication = read(
       networkSettingProvider.select((state) => state.authentication),
     );

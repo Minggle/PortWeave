@@ -25,6 +25,17 @@ bool portRoutingActive(Ref ref) => ref
     .isActive(ref.watch(currentProfileIdProvider));
 
 @riverpod
+PortBinding? portRoutingDefaultBinding(Ref ref) {
+  if (!ref.watch(portRoutingActiveProvider)) return null;
+  return ref.watch(portRoutingSettingProvider).resolveDefaultBinding();
+}
+
+@riverpod
+bool portRoutingIsolated(Ref ref) =>
+    ref.watch(portRoutingActiveProvider) &&
+    ref.watch(portRoutingDefaultBindingProvider) == null;
+
+@riverpod
 class AppSetting extends _$AppSetting with AutoDisposeNotifierMixin {
   @override
   AppSettingProps build() {

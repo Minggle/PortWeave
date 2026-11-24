@@ -1201,5 +1201,23 @@
   "aggregateProxyGroups": "グループと優先順位",
   "aggregateProxyCopyPriorities": "基本設定の優先順位をコピー",
   "portProxyPageHint": "アプリのプロキシをこのアドレスに設定します。専用モードでは有効な全ポートが動作し、通常の混合ポートは閉じます。",
-  "priorityLegacy": "通常の混合ポートの既存の優先順位"
+  "priorityLegacy": "通常の混合ポートの既存の優先順位",
+  "portRoutingDefaultOutbound": "デフォルト送信先",
+  "portRoutingSetDefaultOutbound": "デフォルト送信先に設定",
+  "portRoutingPrimaryTag": "メイン",
+  "portRoutingIsolatedMode": "分離モード（システム通信を引き継がない）",
+  "portRoutingIsolatedTip": "デフォルト送信先が有効でないため、システムプロキシと TUN は無効です。",
+  "portRoutingNoDefaultOutbound": "デフォルト送信先なし",
+  "portRoutingRuleModeOnlyTip": "マルチポートモードではルールモードが必要です",
+  "portRoutingDefaultSwitched": "デフォルト送信先を {name} に切り替えました",
+  "@portRoutingDefaultSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "portRoutingEnteredIsolatedTip": "有効なバインディングがないため、分離モードに入りました。",
+  "portRoutingSwitcherTooltip": "ポートを切り替え",
+  "portRoutingReorderTooltip": "ドラッグして並び替え"
 }

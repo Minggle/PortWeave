@@ -1201,5 +1201,23 @@
   "aggregateProxyGroups": "Groupes et priorités",
   "aggregateProxyCopyPriorities": "Copier les priorités du profil de base",
   "portProxyPageHint": "Utilisez cette adresse comme proxy dans votre application. Le mode dédié démarre tous les ports activés et ferme le port mixte normal.",
-  "priorityLegacy": "Anciennes priorités du port mixte normal"
+  "priorityLegacy": "Anciennes priorités du port mixte normal",
+  "portRoutingDefaultOutbound": "Sortie par défaut",
+  "portRoutingSetDefaultOutbound": "Définir comme sortie par défaut",
+  "portRoutingPrimaryTag": "Principal",
+  "portRoutingIsolatedMode": "Mode isolé (sans prise en charge système)",
+  "portRoutingIsolatedTip": "Le proxy système et TUN sont désactivés car aucune sortie par défaut n'est active.",
+  "portRoutingNoDefaultOutbound": "Aucune sortie par défaut",
+  "portRoutingRuleModeOnlyTip": "Le mode multi-port nécessite le mode Règles",
+  "portRoutingDefaultSwitched": "Sortie par défaut basculée vers {name}",
+  "@portRoutingDefaultSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "portRoutingEnteredIsolatedTip": "Aucune liaison activée restante. Passage en mode isolé.",
+  "portRoutingSwitcherTooltip": "Changer de port",
+  "portRoutingReorderTooltip": "Glisser pour réorganiser"
 }

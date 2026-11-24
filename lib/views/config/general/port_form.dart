@@ -77,6 +77,7 @@ class _PortFormState extends ConsumerState<_PortForm> {
   }
 
   Future<void> _handleReset() async {
+    final conflictTip = context.appLocalizations.portConflictTip;
     final res = await dialogs.showMessage(
       message: TextSpan(text: context.appLocalizations.resetTip),
       destructive: true,
@@ -84,6 +85,18 @@ class _PortFormState extends ConsumerState<_PortForm> {
     );
     if (res != true) {
       return;
+    }
+    if (ref.read(portRoutingActiveProvider) &&
+        !ref.read(portRoutingIsolatedProvider)) {
+      final boundPorts = ref
+          .read(portRoutingSettingProvider)
+          .bindings
+          .where((binding) => binding.enabled)
+          .map((binding) => binding.port);
+      if (boundPorts.contains(defaultMixedPort)) {
+        dialogs.showBanner(conflictTip, level: BannerLevel.error);
+        return;
+      }
     }
     ref
         .read(patchClashConfigProvider.notifier)
@@ -111,6 +124,21 @@ class _PortFormState extends ConsumerState<_PortForm> {
   void _handleUpdate() {
     if (_issues(context.appLocalizations).isNotEmpty) {
       return;
+    }
+    if (ref.read(portRoutingActiveProvider) &&
+        !ref.read(portRoutingIsolatedProvider)) {
+      final boundPorts = ref
+          .read(portRoutingSettingProvider)
+          .bindings
+          .where((binding) => binding.enabled)
+          .map((binding) => binding.port);
+      if (boundPorts.contains(defaultMixedPort)) {
+        dialogs.showBanner(
+          context.appLocalizations.portConflictTip,
+          level: BannerLevel.error,
+        );
+        return;
+      }
     }
     ref
         .read(patchClashConfigProvider.notifier)
@@ -151,6 +179,17 @@ class _PortFormState extends ConsumerState<_PortForm> {
         .map((item) => int.tryParse(item.controller.text.trim()));
     if (others.contains(port)) {
       return appLocalizations.portConflictTip;
+    }
+    if (ref.read(portRoutingActiveProvider) &&
+        !ref.read(portRoutingIsolatedProvider)) {
+      final boundPorts = ref
+          .read(portRoutingSettingProvider)
+          .bindings
+          .where((binding) => binding.enabled)
+          .map((binding) => binding.port);
+      if (boundPorts.contains(port)) {
+        return appLocalizations.portConflictTip;
+      }
     }
     return null;
   }

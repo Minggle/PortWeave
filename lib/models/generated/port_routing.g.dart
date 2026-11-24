@@ -83,6 +83,8 @@ _PortRoutingConfig _$PortRoutingConfigFromJson(Map<String, dynamic> json) =>
               )
               .toList() ??
           const [],
+      takeoverSystem: json['takeoverSystem'] as bool? ?? true,
+      defaultBindingId: (json['defaultBindingId'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$PortRoutingConfigToJson(_PortRoutingConfig instance) =>
@@ -91,4 +93,6 @@ Map<String, dynamic> _$PortRoutingConfigToJson(_PortRoutingConfig instance) =>
       'previousProfileId': instance.previousProfileId,
       'bindings': instance.bindings,
       'subscriptions': instance.subscriptions,
+      'takeoverSystem': instance.takeoverSystem,
+      'defaultBindingId': instance.defaultBindingId,
     };

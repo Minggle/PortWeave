@@ -417,6 +417,9 @@ class SetupAction extends _$SetupAction {
   }
 
   void changeMode(Mode mode) {
+    if (ref.read(portRoutingActiveProvider) && mode != Mode.rule) {
+      return;
+    }
     ref
         .read(patchClashConfigProvider.notifier)
         .update((state) => state.copyWith(mode: mode));
@@ -594,7 +597,10 @@ class SetupAction extends _$SetupAction {
       portProviders = enhanced.providers;
     }
     if (portWorkspace) {
-      patchConfig = portRoutingPatch(patchConfig);
+      patchConfig = portRoutingPatch(
+        patchConfig,
+        hasDefaultRoute: setupState.portRouting.resolveDefaultBinding() != null,
+      );
       final fragment = await ref
           .read(portRoutingActionProvider.notifier)
           .prepare(setupState.portRouting);
@@ -729,7 +735,10 @@ class SetupAction extends _$SetupAction {
 
   PatchClashConfig _effectivePatchConfig(PatchClashConfig patchConfig) {
     if (ref.read(portRoutingActiveProvider)) {
-      patchConfig = portRoutingPatch(patchConfig);
+      patchConfig = portRoutingPatch(
+        patchConfig,
+        hasDefaultRoute: ref.read(portRoutingDefaultBindingProvider) != null,
+      );
     }
     if (ref.read(safeModeProvider)) {
       return patchConfig.copyWith(
@@ -759,7 +768,7 @@ class SetupAction extends _$SetupAction {
   Future<bool> requestAdmin(bool enableTun) async {
     if (!enableTun ||
         ref.read(safeModeProvider) ||
-        ref.read(portRoutingActiveProvider)) {
+        ref.read(portRoutingIsolatedProvider)) {
       return true;
     }
     final authorizationState = ref.read(authorizedTunEnableProvider);

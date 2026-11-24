@@ -134,6 +134,8 @@ class AppTray implements TrayPort {
     final commonAction = read(commonActionProvider.notifier);
     final systemAction = read(systemActionProvider.notifier);
     final setupAction = read(setupActionProvider.notifier);
+    final portRoutingActive = read(portRoutingActiveProvider);
+    final portRoutingIsolated = read(portRoutingIsolatedProvider);
     final appLocalizations = currentAppLocalizations;
     String? shortcut(HotAction action) => _shortcut(trayState, action);
     final showItem = TrayMenuAction(
@@ -177,7 +179,10 @@ class AppTray implements TrayPort {
       for (final mode in Mode.values)
         TrayMenuCheckbox(
           label: mode.label,
-          checked: mode == trayState.mode,
+          checked: portRoutingActive
+              ? mode == Mode.rule
+              : mode == trayState.mode,
+          enabled: !portRoutingActive || mode == Mode.rule,
           detail: shortcut(switch (mode) {
             Mode.rule => HotAction.ruleMode,
             Mode.global => HotAction.globalMode,
@@ -193,12 +198,14 @@ class AppTray implements TrayPort {
         TrayMenuCheckbox(
           label: appLocalizations.tun,
           checked: trayState.tunEnable,
+          enabled: !portRoutingIsolated,
           detail: shortcut(HotAction.tun),
           onSelected: systemAction.updateTun,
         ),
         TrayMenuCheckbox(
           label: appLocalizations.systemProxy,
           checked: trayState.systemProxy,
+          enabled: !portRoutingIsolated,
           detail: shortcut(HotAction.proxy),
           onSelected: systemAction.updateSystemProxy,
         ),

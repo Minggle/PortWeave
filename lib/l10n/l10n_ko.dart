@@ -4072,4 +4072,40 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get priorityLegacy => '일반 혼합 포트의 기존 우선순위';
+
+  @override
+  String get portRoutingDefaultOutbound => '기본 아웃바운드';
+
+  @override
+  String get portRoutingSetDefaultOutbound => '기본 아웃바운드로 설정';
+
+  @override
+  String get portRoutingPrimaryTag => '기본';
+
+  @override
+  String get portRoutingIsolatedMode => '격리 모드(시스템 트래픽 미점유)';
+
+  @override
+  String get portRoutingIsolatedTip =>
+      '활성 기본 아웃바운드가 없어 시스템 프록시와 TUN이 비활성화되었습니다.';
+
+  @override
+  String get portRoutingNoDefaultOutbound => '기본 아웃바운드 없음';
+
+  @override
+  String get portRoutingRuleModeOnlyTip => '다중 포트 모드는 규칙 모드가 필요합니다';
+
+  @override
+  String portRoutingDefaultSwitched(String name) {
+    return '기본 아웃바운드가 $name(으)로 전환되었습니다';
+  }
+
+  @override
+  String get portRoutingEnteredIsolatedTip => '활성화된 바인딩이 없어 격리 모드로 전환되었습니다.';
+
+  @override
+  String get portRoutingSwitcherTooltip => '포트 전환';
+
+  @override
+  String get portRoutingReorderTooltip => '드래그하여 순서 변경';
 }

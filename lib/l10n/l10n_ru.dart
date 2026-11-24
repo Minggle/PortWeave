@@ -4181,4 +4181,43 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get priorityLegacy => 'Прежние приоритеты обычного смешанного порта';
+
+  @override
+  String get portRoutingDefaultOutbound => 'Исходящий по умолчанию';
+
+  @override
+  String get portRoutingSetDefaultOutbound => 'Сделать исходящим по умолчанию';
+
+  @override
+  String get portRoutingPrimaryTag => 'Основной';
+
+  @override
+  String get portRoutingIsolatedMode =>
+      'Изолированный режим (без перехвата системы)';
+
+  @override
+  String get portRoutingIsolatedTip =>
+      'Системный прокси и TUN отключены, так как не выбран исходящий по умолчанию.';
+
+  @override
+  String get portRoutingNoDefaultOutbound => 'Нет исходящего по умолчанию';
+
+  @override
+  String get portRoutingRuleModeOnlyTip =>
+      'Многопортовый режим требует режим Правила';
+
+  @override
+  String portRoutingDefaultSwitched(String name) {
+    return 'Исходящий по умолчанию переключён на $name';
+  }
+
+  @override
+  String get portRoutingEnteredIsolatedTip =>
+      'Не осталось активных привязок. Включён изолированный режим.';
+
+  @override
+  String get portRoutingSwitcherTooltip => 'Переключить порт';
+
+  @override
+  String get portRoutingReorderTooltip => 'Перетащите для сортировки';
 }

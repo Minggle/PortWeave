@@ -7325,6 +7325,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Legacy priorities for the normal mixed port'**
   String get priorityLegacy;
+
+  /// No description provided for @portRoutingDefaultOutbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Default outbound'**
+  String get portRoutingDefaultOutbound;
+
+  /// No description provided for @portRoutingSetDefaultOutbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as default outbound'**
+  String get portRoutingSetDefaultOutbound;
+
+  /// No description provided for @portRoutingPrimaryTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
+  String get portRoutingPrimaryTag;
+
+  /// No description provided for @portRoutingIsolatedMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Isolated mode (no system takeover)'**
+  String get portRoutingIsolatedMode;
+
+  /// No description provided for @portRoutingIsolatedTip.
+  ///
+  /// In en, this message translates to:
+  /// **'System Proxy and TUN are disabled because no default outbound is active.'**
+  String get portRoutingIsolatedTip;
+
+  /// No description provided for @portRoutingNoDefaultOutbound.
+  ///
+  /// In en, this message translates to:
+  /// **'No default outbound'**
+  String get portRoutingNoDefaultOutbound;
+
+  /// No description provided for @portRoutingRuleModeOnlyTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-port mode requires Rule mode'**
+  String get portRoutingRuleModeOnlyTip;
+
+  /// No description provided for @portRoutingDefaultSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'Default outbound switched to {name}'**
+  String portRoutingDefaultSwitched(String name);
+
+  /// No description provided for @portRoutingEnteredIsolatedTip.
+  ///
+  /// In en, this message translates to:
+  /// **'No enabled bindings remain. Entered isolated mode.'**
+  String get portRoutingEnteredIsolatedTip;
+
+  /// No description provided for @portRoutingSwitcherTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch port'**
+  String get portRoutingSwitcherTooltip;
+
+  /// No description provided for @portRoutingReorderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get portRoutingReorderTooltip;
 }
 
 class _AppLocalizationsDelegate

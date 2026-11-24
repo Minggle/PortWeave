@@ -27,9 +27,10 @@ class ServiceStatus extends _$ServiceStatus
     ServiceTarget target,
     RouteState route,
   ) async {
+    final isolated = ref.read(portRoutingIsolatedProvider);
     final checks = await checkServices(
       ref.read(coreHandlerProvider),
-      proxyName: route.proxied ? '' : directOutbound,
+      proxyName: route.proxied && !isolated ? '' : directOutbound,
       targets: [target],
     );
     final check = checks[target];

@@ -8,6 +8,7 @@ import 'package:fl_clash/common/tray.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/action.dart';
+import 'package:fl_clash/providers/config.dart';
 import 'package:fl_clash/providers/state.dart';
 import 'package:fl_clash/state.dart';
 import 'package:flutter/foundation.dart';
@@ -429,4 +430,39 @@ void main() {
       expect(host.titles, isEmpty);
     });
   });
+
+  test(
+    'multi-port mode locks mode to Rule and isolated mode disables TUN/Proxy',
+    () async {
+      container.read(currentProfileIdProvider.notifier).value = 99;
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = const PortRoutingConfig(
+        workspaceProfileId: 99,
+        takeoverSystem: false,
+        bindings: [
+          PortBinding(
+            id: 1,
+            name: 'P1',
+            profileId: 11,
+            port: 18081,
+            node: 'US',
+          ),
+        ],
+      );
+      await update(_trayState(isStart: true, mode: Mode.global));
+      expect(_item(showCall(), Mode.rule.label)['enabled'], isTrue);
+      expect(_item(showCall(), Mode.rule.label)['checked'], isTrue);
+      expect(_item(showCall(), Mode.global.label)['enabled'], isFalse);
+      expect(_item(showCall(), Mode.direct.label)['enabled'], isFalse);
+      expect(
+        _item(showCall(), currentAppLocalizations.tun)['enabled'],
+        isFalse,
+      );
+      expect(
+        _item(showCall(), currentAppLocalizations.systemProxy)['enabled'],
+        isFalse,
+      );
+    },
+  );
 }

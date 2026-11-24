@@ -43,7 +43,7 @@ Keyword matching is case-insensitive and uses node names, with `|` separating al
 
 Each port supports all three TCP proxy protocols. If an app asks for separate host and port fields, use `127.0.0.1` and the port you configured. The app must support an explicit proxy setting; this mode does not capture traffic by process.
 
-Dedicated mode switches to a managed profile and disables the effective system proxy, TUN, external controller and default mixed port while preserving their saved settings. Turning it off restores the previous profile; choosing another ordinary profile also leaves this mode. PortWeave's own downloads use direct connections while dedicated mode is active.
+Multi-port mode switches to a managed profile and locks the outbound mode to **Rule** so per-port `sub-rules` isolation remains intact. When a **Default outbound** is active (system takeover enabled, preferring your chosen default, then the first aggregate or original-policy binding), System Proxy, TUN, external controller, and the default mixed port coexist with all secondary port bindings and route through the default outbound's rules; host and binding ports are validated against each other for conflicts. Turning system takeover off (or disabling all bindings) enters isolated mode, which keeps System Proxy, TUN, external controller, and the default mixed port off while preserving their saved settings, and routes PortWeave's own downloads directly. You can also drag bindings to reorder them without reloading the Core. Turning multi-port mode off restores the previous profile; choosing another ordinary profile also leaves this mode.
 
 Right-click a binding to copy its address, refresh subscriptions or change the update interval. Each subscription defaults to a five-minute interval; the scheduler checks for due work every 30 seconds while PortWeave is running. Fixed-node and keyword sources update locally and retain their last usable cache on failure. Refreshing a source used by an original-policy binding reapplies the managed configuration and can briefly reconnect traffic.
 
@@ -67,11 +67,11 @@ Legacy ordinary-profile priorities remain under **Tools → Aggregate proxy → 
 
 | Route | Address configured in the application | Required state |
 | --- | --- | --- |
-| Ordinary profile | `127.0.0.1:7891`, or your saved mixed port | Dedicated mode off; ordinary profile selected and running |
-| Individual provider | Its binding, for example `127.0.0.1:18082` | Dedicated mode and this binding enabled |
-| Aggregate proxy | Its binding, for example `127.0.0.1:18084` | Dedicated mode and this aggregate binding enabled |
+| Ordinary profile / default outbound | `127.0.0.1:7891`, or your saved mixed port | Multi-port mode off with ordinary profile, OR multi-port mode on with a Default outbound active |
+| Individual provider | Its binding, for example `127.0.0.1:18082` | Multi-port mode and this binding enabled |
+| Aggregate proxy | Its binding, for example `127.0.0.1:18084` | Multi-port mode and this aggregate binding enabled |
 
-Dedicated mode closes the normal mixed port, TUN and system proxy while preserving their saved settings. Disabling dedicated mode restores the previous ordinary profile. `7890` is a common original FlClash default, while a new PortWeave install uses `7891`; explicit ports from imported backups remain unchanged. `9091` is the control API, not an application proxy port.
+When a Default outbound is active, System Proxy, TUN, and the normal mixed port coexist with secondary ports using the default outbound's rules; in isolated mode (no system takeover), they stay off while preserving their saved settings. Disabling multi-port mode restores the previous ordinary profile. `7890` is a common original FlClash default, while a new PortWeave install uses `7891`; explicit ports from imported backups remain unchanged. `9091` is the control API, not an application proxy port.
 
 For example, `curl --proxy http://127.0.0.1:18084 https://example.com` uses the aggregate port. Change the proxy URL to `socks5h://127.0.0.1:18082` to use the provider binding. Replace example ports with the actual values on their pages.
 

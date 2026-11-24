@@ -601,7 +601,7 @@ as int,
 /// @nodoc
 mixin _$PortRoutingConfig {
 
- int? get workspaceProfileId; int? get previousProfileId; List<PortBinding> get bindings; List<PortSubscriptionRefresh> get subscriptions;
+ int? get workspaceProfileId; int? get previousProfileId; List<PortBinding> get bindings; List<PortSubscriptionRefresh> get subscriptions; bool get takeoverSystem; int? get defaultBindingId;
 /// Create a copy of PortRoutingConfig
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -615,20 +615,20 @@ $PortRoutingConfigCopyWith<PortRoutingConfig> get copyWith => _$PortRoutingConfi
 @override
 bool operator ==(Object other) {
   final _this = this as PortRoutingConfig;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PortRoutingConfig&&(identical(other.workspaceProfileId, _this.workspaceProfileId) || other.workspaceProfileId == _this.workspaceProfileId)&&(identical(other.previousProfileId, _this.previousProfileId) || other.previousProfileId == _this.previousProfileId)&&const DeepCollectionEquality().equals(other.bindings, _this.bindings)&&const DeepCollectionEquality().equals(other.subscriptions, _this.subscriptions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PortRoutingConfig&&(identical(other.workspaceProfileId, _this.workspaceProfileId) || other.workspaceProfileId == _this.workspaceProfileId)&&(identical(other.previousProfileId, _this.previousProfileId) || other.previousProfileId == _this.previousProfileId)&&const DeepCollectionEquality().equals(other.bindings, _this.bindings)&&const DeepCollectionEquality().equals(other.subscriptions, _this.subscriptions)&&(identical(other.takeoverSystem, _this.takeoverSystem) || other.takeoverSystem == _this.takeoverSystem)&&(identical(other.defaultBindingId, _this.defaultBindingId) || other.defaultBindingId == _this.defaultBindingId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PortRoutingConfig;
-  return Object.hash(runtimeType,_this.workspaceProfileId,_this.previousProfileId,const DeepCollectionEquality().hash(_this.bindings),const DeepCollectionEquality().hash(_this.subscriptions));
+  return Object.hash(runtimeType,_this.workspaceProfileId,_this.previousProfileId,const DeepCollectionEquality().hash(_this.bindings),const DeepCollectionEquality().hash(_this.subscriptions),_this.takeoverSystem,_this.defaultBindingId);
 }
 
 @override
 String toString() {
   final _this = this as PortRoutingConfig;
-  return 'PortRoutingConfig(workspaceProfileId: ${_this.workspaceProfileId}, previousProfileId: ${_this.previousProfileId}, bindings: ${_this.bindings}, subscriptions: ${_this.subscriptions})';
+  return 'PortRoutingConfig(workspaceProfileId: ${_this.workspaceProfileId}, previousProfileId: ${_this.previousProfileId}, bindings: ${_this.bindings}, subscriptions: ${_this.subscriptions}, takeoverSystem: ${_this.takeoverSystem}, defaultBindingId: ${_this.defaultBindingId})';
 }
 
 
@@ -639,7 +639,7 @@ abstract mixin class $PortRoutingConfigCopyWith<$Res>  {
   factory $PortRoutingConfigCopyWith(PortRoutingConfig value, $Res Function(PortRoutingConfig) _then) = _$PortRoutingConfigCopyWithImpl;
 @useResult
 $Res call({
- int? workspaceProfileId, int? previousProfileId, List<PortBinding> bindings, List<PortSubscriptionRefresh> subscriptions
+ int? workspaceProfileId, int? previousProfileId, List<PortBinding> bindings, List<PortSubscriptionRefresh> subscriptions, bool takeoverSystem, int? defaultBindingId
 });
 
 
@@ -656,13 +656,15 @@ class _$PortRoutingConfigCopyWithImpl<$Res>
 
 /// Create a copy of PortRoutingConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? workspaceProfileId = freezed,Object? previousProfileId = freezed,Object? bindings = null,Object? subscriptions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? workspaceProfileId = freezed,Object? previousProfileId = freezed,Object? bindings = null,Object? subscriptions = null,Object? takeoverSystem = null,Object? defaultBindingId = freezed,}) {
   return _then(PortRoutingConfig(
 workspaceProfileId: freezed == workspaceProfileId ? _self.workspaceProfileId : workspaceProfileId // ignore: cast_nullable_to_non_nullable
 as int?,previousProfileId: freezed == previousProfileId ? _self.previousProfileId : previousProfileId // ignore: cast_nullable_to_non_nullable
 as int?,bindings: null == bindings ? _self.bindings : bindings // ignore: cast_nullable_to_non_nullable
 as List<PortBinding>,subscriptions: null == subscriptions ? _self.subscriptions : subscriptions // ignore: cast_nullable_to_non_nullable
-as List<PortSubscriptionRefresh>,
+as List<PortSubscriptionRefresh>,takeoverSystem: null == takeoverSystem ? _self.takeoverSystem : takeoverSystem // ignore: cast_nullable_to_non_nullable
+as bool,defaultBindingId: freezed == defaultBindingId ? _self.defaultBindingId : defaultBindingId // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -747,10 +749,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int? workspaceProfileId,  int? previousProfileId,  List<PortBinding> bindings,  List<PortSubscriptionRefresh> subscriptions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int? workspaceProfileId,  int? previousProfileId,  List<PortBinding> bindings,  List<PortSubscriptionRefresh> subscriptions,  bool takeoverSystem,  int? defaultBindingId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PortRoutingConfig() when $default != null:
-return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,_that.subscriptions);case _:
+return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,_that.subscriptions,_that.takeoverSystem,_that.defaultBindingId);case _:
   return orElse();
 
 }
@@ -768,10 +770,10 @@ return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int? workspaceProfileId,  int? previousProfileId,  List<PortBinding> bindings,  List<PortSubscriptionRefresh> subscriptions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int? workspaceProfileId,  int? previousProfileId,  List<PortBinding> bindings,  List<PortSubscriptionRefresh> subscriptions,  bool takeoverSystem,  int? defaultBindingId)  $default,) {final _that = this;
 switch (_that) {
 case _PortRoutingConfig():
-return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,_that.subscriptions);case _:
+return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,_that.subscriptions,_that.takeoverSystem,_that.defaultBindingId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -788,10 +790,10 @@ return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int? workspaceProfileId,  int? previousProfileId,  List<PortBinding> bindings,  List<PortSubscriptionRefresh> subscriptions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int? workspaceProfileId,  int? previousProfileId,  List<PortBinding> bindings,  List<PortSubscriptionRefresh> subscriptions,  bool takeoverSystem,  int? defaultBindingId)?  $default,) {final _that = this;
 switch (_that) {
 case _PortRoutingConfig() when $default != null:
-return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,_that.subscriptions);case _:
+return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,_that.subscriptions,_that.takeoverSystem,_that.defaultBindingId);case _:
   return null;
 
 }
@@ -803,7 +805,7 @@ return $default(_that.workspaceProfileId,_that.previousProfileId,_that.bindings,
 @JsonSerializable()
 
 class _PortRoutingConfig extends PortRoutingConfig {
-  const _PortRoutingConfig({this.workspaceProfileId, this.previousProfileId,  List<PortBinding> bindings = const [],  List<PortSubscriptionRefresh> subscriptions = const []}): _bindings = bindings,_subscriptions = subscriptions,super._();
+  const _PortRoutingConfig({this.workspaceProfileId, this.previousProfileId,  List<PortBinding> bindings = const [],  List<PortSubscriptionRefresh> subscriptions = const [], this.takeoverSystem = true, this.defaultBindingId}): _bindings = bindings,_subscriptions = subscriptions,super._();
   factory _PortRoutingConfig.fromJson(Map<String, dynamic> json) => _$PortRoutingConfigFromJson(json);
 
 @override final  int? workspaceProfileId;
@@ -822,6 +824,8 @@ class _PortRoutingConfig extends PortRoutingConfig {
   return EqualUnmodifiableListView(_subscriptions);
 }
 
+@override@JsonKey() final  bool takeoverSystem;
+@override final  int? defaultBindingId;
 
 /// Create a copy of PortRoutingConfig
 /// with the given fields replaced by the non-null parameter values.
@@ -836,18 +840,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PortRoutingConfig&&(identical(other.workspaceProfileId, workspaceProfileId) || other.workspaceProfileId == workspaceProfileId)&&(identical(other.previousProfileId, previousProfileId) || other.previousProfileId == previousProfileId)&&const DeepCollectionEquality().equals(other.bindings, _bindings)&&const DeepCollectionEquality().equals(other.subscriptions, _subscriptions));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PortRoutingConfig&&(identical(other.workspaceProfileId, workspaceProfileId) || other.workspaceProfileId == workspaceProfileId)&&(identical(other.previousProfileId, previousProfileId) || other.previousProfileId == previousProfileId)&&const DeepCollectionEquality().equals(other.bindings, _bindings)&&const DeepCollectionEquality().equals(other.subscriptions, _subscriptions)&&(identical(other.takeoverSystem, takeoverSystem) || other.takeoverSystem == takeoverSystem)&&(identical(other.defaultBindingId, defaultBindingId) || other.defaultBindingId == defaultBindingId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,workspaceProfileId,previousProfileId,const DeepCollectionEquality().hash(_bindings),const DeepCollectionEquality().hash(_subscriptions));
+    return Object.hash(runtimeType,workspaceProfileId,previousProfileId,const DeepCollectionEquality().hash(_bindings),const DeepCollectionEquality().hash(_subscriptions),takeoverSystem,defaultBindingId);
 }
 
 @override
 String toString() {
-    return 'PortRoutingConfig(workspaceProfileId: $workspaceProfileId, previousProfileId: $previousProfileId, bindings: $bindings, subscriptions: $subscriptions)';
+    return 'PortRoutingConfig(workspaceProfileId: $workspaceProfileId, previousProfileId: $previousProfileId, bindings: $bindings, subscriptions: $subscriptions, takeoverSystem: $takeoverSystem, defaultBindingId: $defaultBindingId)';
 }
 
 
@@ -858,7 +862,7 @@ abstract mixin class _$PortRoutingConfigCopyWith<$Res> implements $PortRoutingCo
   factory _$PortRoutingConfigCopyWith(_PortRoutingConfig value, $Res Function(_PortRoutingConfig) _then) = __$PortRoutingConfigCopyWithImpl;
 @override @useResult
 $Res call({
- int? workspaceProfileId, int? previousProfileId, List<PortBinding> bindings, List<PortSubscriptionRefresh> subscriptions
+ int? workspaceProfileId, int? previousProfileId, List<PortBinding> bindings, List<PortSubscriptionRefresh> subscriptions, bool takeoverSystem, int? defaultBindingId
 });
 
 
@@ -875,13 +879,15 @@ class __$PortRoutingConfigCopyWithImpl<$Res>
 
 /// Create a copy of PortRoutingConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? workspaceProfileId = freezed,Object? previousProfileId = freezed,Object? bindings = null,Object? subscriptions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? workspaceProfileId = freezed,Object? previousProfileId = freezed,Object? bindings = null,Object? subscriptions = null,Object? takeoverSystem = null,Object? defaultBindingId = freezed,}) {
   return _then(_PortRoutingConfig(
 workspaceProfileId: freezed == workspaceProfileId ? _self.workspaceProfileId : workspaceProfileId // ignore: cast_nullable_to_non_nullable
 as int?,previousProfileId: freezed == previousProfileId ? _self.previousProfileId : previousProfileId // ignore: cast_nullable_to_non_nullable
 as int?,bindings: null == bindings ? _self._bindings : bindings // ignore: cast_nullable_to_non_nullable
 as List<PortBinding>,subscriptions: null == subscriptions ? _self._subscriptions : subscriptions // ignore: cast_nullable_to_non_nullable
-as List<PortSubscriptionRefresh>,
+as List<PortSubscriptionRefresh>,takeoverSystem: null == takeoverSystem ? _self.takeoverSystem : takeoverSystem // ignore: cast_nullable_to_non_nullable
+as bool,defaultBindingId: freezed == defaultBindingId ? _self.defaultBindingId : defaultBindingId // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

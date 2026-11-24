@@ -47,7 +47,7 @@ ProxyState proxyState(Ref ref) {
     isStart: suspend ? false : isStart,
     systemProxy:
         systemProxySelector.systemProxy &&
-        !ref.watch(portRoutingActiveProvider),
+        !ref.watch(portRoutingIsolatedProvider),
     bassDomain:
         moduleBypass?.applyTo(systemProxySelector.bypassDomain) ??
         systemProxySelector.bypassDomain,

@@ -64,12 +64,17 @@ class _TakeoverRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appLocalizations = context.appLocalizations;
     final systemProxy = kind == TakeoverSwitch.systemProxy;
+    final isolated = ref.watch(portRoutingIsolatedProvider);
     final title = _titleOf(context, kind);
-    final value = systemProxy
-        ? ref.watch(networkSettingProvider.select((state) => state.systemProxy))
-        : ref.watch(
-            patchClashConfigProvider.select((state) => state.tun.enable),
-          );
+    final value =
+        !isolated &&
+        (systemProxy
+            ? ref.watch(
+                networkSettingProvider.select((state) => state.systemProxy),
+              )
+            : ref.watch(
+                patchClashConfigProvider.select((state) => state.tun.enable),
+              ));
     final on = systemProxy
         ? appLocalizations.portValue(
             ref.watch(
@@ -88,7 +93,9 @@ class _TakeoverRow extends ConsumerWidget {
       glyph: systemProxy ? AppGlyphs.shuffle : AppGlyphs.vpn,
       title: title,
       subtitle: metrics.subtitle
-          ? value
+          ? isolated
+                ? appLocalizations.portRoutingNoDefaultOutbound
+                : value
                 ? on
                 : appLocalizations.disabled
           : null,
@@ -100,8 +107,8 @@ class _TakeoverRow extends ConsumerWidget {
       radius: metrics.radius,
       color: color,
       showIcon: showIcon,
-      onTap: () => change(!value),
-      onChanged: change,
+      onTap: isolated ? null : () => change(!value),
+      onChanged: isolated ? null : change,
     );
   }
 }

@@ -4190,4 +4190,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get priorityLegacy => 'Legacy priorities for the normal mixed port';
+
+  @override
+  String get portRoutingDefaultOutbound => 'Default outbound';
+
+  @override
+  String get portRoutingSetDefaultOutbound => 'Set as default outbound';
+
+  @override
+  String get portRoutingPrimaryTag => 'Primary';
+
+  @override
+  String get portRoutingIsolatedMode => 'Isolated mode (no system takeover)';
+
+  @override
+  String get portRoutingIsolatedTip =>
+      'System Proxy and TUN are disabled because no default outbound is active.';
+
+  @override
+  String get portRoutingNoDefaultOutbound => 'No default outbound';
+
+  @override
+  String get portRoutingRuleModeOnlyTip => 'Multi-port mode requires Rule mode';
+
+  @override
+  String portRoutingDefaultSwitched(String name) {
+    return 'Default outbound switched to $name';
+  }
+
+  @override
+  String get portRoutingEnteredIsolatedTip =>
+      'No enabled bindings remain. Entered isolated mode.';
+
+  @override
+  String get portRoutingSwitcherTooltip => 'Switch port';
+
+  @override
+  String get portRoutingReorderTooltip => 'Drag to reorder';
 }

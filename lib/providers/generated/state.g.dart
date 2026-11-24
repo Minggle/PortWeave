@@ -220,7 +220,7 @@ final class TrayStateProvider
   }
 }
 
-String _$trayStateHash() => r'53f8f7d7585a5527bca3e277908555500ceb0f38';
+String _$trayStateHash() => r'5f4bd941591f79d0c79cde58f1d518df5237a11e';
 
 /// Measured delays of the proxies the tray lists, by group and then proxy
 /// name. Resolved like a proxy card, so a nested group shows its selection.
@@ -1970,7 +1970,7 @@ final class ProxyStateProvider
   }
 }
 
-String _$proxyStateHash() => r'a50406385ea3c94a5a9d2adb9525e6f96e1a8721';
+String _$proxyStateHash() => r'7252c8c105fcef894ae65082581551efe2ce2ef6';
 
 /// Watching the delay map instead would drop nodes one probe at a time, and
 /// reading it on any other rebuild would drop them whenever something

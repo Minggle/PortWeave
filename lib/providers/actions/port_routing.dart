@@ -192,6 +192,8 @@ class PortRoutingAction extends _$PortRoutingAction {
             sourceDocuments: args.$3,
             selectedMaps: args.$4,
             testUrl: args.$5,
+            takeoverSystem: args.$6,
+            defaultBindingId: args.$7,
           ),
           (
             config.bindings,
@@ -199,6 +201,8 @@ class PortRoutingAction extends _$PortRoutingAction {
             documents,
             {for (final id in config.sourceIds) id: _source(id).selectedMap},
             ref.read(patchClashConfigProvider).testUrl,
+            config.takeoverSystem,
+            config.defaultBindingId,
           ),
         );
       });
@@ -209,6 +213,7 @@ class PortRoutingAction extends _$PortRoutingAction {
     final previous = ref.read(currentProfileIdProvider);
     var config = _config;
     validatePortBindings(config.bindings);
+    _validateHostPortConflicts(config);
     if (config.sourceIds.isEmpty) {
       throw const PortRoutingException(PortRoutingIssue.invalidBinding);
     }
@@ -284,6 +289,9 @@ class PortRoutingAction extends _$PortRoutingAction {
       binding,
     ];
     validatePortBindings(bindings);
+    if (_active) {
+      _validateHostPortConflicts(before.copyWith(bindings: bindings));
+    }
     for (final id in binding.sourceIds) {
       _source(id);
     }
@@ -322,22 +330,106 @@ class PortRoutingAction extends _$PortRoutingAction {
     if (!ref.mounted || revision != _revision) {
       throw const PortRoutingException(PortRoutingIssue.staleUpdate);
     }
-    await _saveBindings(before, bindings);
+    await _saveConfig(
+      before,
+      before.copyWith(bindings: bindings),
+      notifyFallback: true,
+    );
   });
 
-  Future<void> removeBinding(int id) => _operations.run(
-    () => _saveBindings(
-      _config,
-      _config.bindings.where((item) => item.id != id).toList(),
-    ),
+  Future<void> removeBinding(int id) => _operations.run(() {
+    final before = _config;
+    final next = before.copyWith(
+      bindings: before.bindings.where((item) => item.id != id).toList(),
+      defaultBindingId: before.defaultBindingId == id
+          ? null
+          : before.defaultBindingId,
+    );
+    return _saveConfig(before, next, notifyFallback: true);
+  });
+
+  Future<void> setDefaultBinding(int? bindingId) => _operations.run(() async {
+    final before = _config;
+    if (bindingId != null &&
+        !before.bindings.any((b) => b.id == bindingId && b.enabled)) {
+      throw const PortRoutingException(PortRoutingIssue.invalidBinding);
+    }
+    final next = before.copyWith(
+      defaultBindingId: bindingId,
+      takeoverSystem: bindingId != null ? true : before.takeoverSystem,
+    );
+    if (next == before) return;
+    if (_active) _validateHostPortConflicts(next);
+    await _saveConfig(before, next);
+  });
+
+  Future<void> setTakeoverSystem(bool takeover) => _operations.run(() async {
+    final before = _config;
+    final next = before.copyWith(takeoverSystem: takeover);
+    if (next == before) return;
+    if (_active) _validateHostPortConflicts(next);
+    await _saveConfig(before, next);
+  });
+
+  Future<void> reorderBindings(List<int> orderedIds) => _operations.run(
+    () async {
+      final before = _config;
+      final byId = {for (final b in before.bindings) b.id: b};
+      final reorderedSubset = [
+        for (final id in orderedIds)
+          if (byId[id] case final binding?) binding,
+      ];
+      final subsetIds = {for (final b in reorderedSubset) b.id};
+      var cursor = 0;
+      final nextBindings = [
+        for (final binding in before.bindings)
+          if (subsetIds.contains(binding.id) && cursor < reorderedSubset.length)
+            reorderedSubset[cursor++]
+          else
+            binding,
+      ];
+      ref.read(portRoutingSettingProvider.notifier).value = before.copyWith(
+        bindings: nextBindings,
+      );
+    },
   );
 
-  Future<void> _saveBindings(
+  Set<int> _activeHostPorts() {
+    final patch = ref.read(patchClashConfigProvider);
+    final controllerPort =
+        patch.externalController == ExternalControllerStatus.open &&
+            patch.secret.isNotEmpty
+        ? int.tryParse(patch.externalController.value.split(':').last)
+        : null;
+    return {
+      for (final port in [
+        patch.mixedPort,
+        patch.port,
+        patch.socksPort,
+        patch.redirPort,
+        patch.tproxyPort,
+        ?controllerPort,
+      ])
+        if (port > 0) port,
+    };
+  }
+
+  void _validateHostPortConflicts(PortRoutingConfig config) {
+    if (config.resolveDefaultBinding() == null) return;
+    final hostPorts = _activeHostPorts();
+    for (final binding in config.bindings) {
+      if (binding.enabled && hostPorts.contains(binding.port)) {
+        throw const PortRoutingException(PortRoutingIssue.portOccupied);
+      }
+    }
+  }
+
+  Future<void> _saveConfig(
     PortRoutingConfig before,
-    List<PortBinding> bindings,
-  ) async {
+    PortRoutingConfig next, {
+    bool notifyFallback = false,
+  }) async {
     final revision = _revision;
-    final next = before.copyWith(bindings: bindings);
     if (_active) await prepare(next);
     if (!ref.mounted || revision != _revision) {
       throw const PortRoutingException(PortRoutingIssue.staleUpdate);
@@ -356,6 +448,18 @@ class PortRoutingAction extends _$PortRoutingAction {
         await ref.read(setupActionProvider.notifier).applyProfile(force: true);
       }
       rethrow;
+    }
+    if (notifyFallback) {
+      final beforeDefault = before.resolveDefaultBinding();
+      final afterDefault = next.resolveDefaultBinding();
+      if (beforeDefault != null && beforeDefault.id != afterDefault?.id) {
+        final message = afterDefault == null
+            ? currentAppLocalizations.portRoutingEnteredIsolatedTip
+            : currentAppLocalizations.portRoutingDefaultSwitched(
+                afterDefault.name,
+              );
+        dialogs.showBanner(message, level: BannerLevel.info);
+      }
     }
     await checkAll();
   }

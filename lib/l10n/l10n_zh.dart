@@ -3943,4 +3943,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get priorityLegacy => '普通混合端口的原有优先级设置';
+
+  @override
+  String get portRoutingDefaultOutbound => '默认出站';
+
+  @override
+  String get portRoutingSetDefaultOutbound => '设为默认出站';
+
+  @override
+  String get portRoutingPrimaryTag => '主出站';
+
+  @override
+  String get portRoutingIsolatedMode => '隔离模式（不接管系统流量）';
+
+  @override
+  String get portRoutingIsolatedTip => '当前未设置默认出站，系统代理和 TUN 已禁用。';
+
+  @override
+  String get portRoutingNoDefaultOutbound => '无默认出站';
+
+  @override
+  String get portRoutingRuleModeOnlyTip => '多端口模式仅支持规则模式';
+
+  @override
+  String portRoutingDefaultSwitched(String name) {
+    return '默认出站已切换为 $name';
+  }
+
+  @override
+  String get portRoutingEnteredIsolatedTip => '没有已启用的端口绑定，已进入隔离模式。';
+
+  @override
+  String get portRoutingSwitcherTooltip => '切换端口';
+
+  @override
+  String get portRoutingReorderTooltip => '拖动排序';
 }

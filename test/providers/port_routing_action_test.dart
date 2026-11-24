@@ -520,7 +520,7 @@ void main() {
   });
 
   test(
-    'dedicated mode disables effective TUN without changing saved TUN',
+    'isolated mode disables effective TUN while coexistence preserves it',
     () async {
       when(() => core.updateConfig(any())).thenAnswer((_) async {});
       container.listen(patchClashConfigProvider, (_, _) {});
@@ -532,6 +532,10 @@ void main() {
       container.read(authorizedTunEnableProvider.notifier).value =
           TunAuthorizationState.authorized;
       startChecks();
+      expect(container.read(trayStateProvider).tunEnable, isTrue);
+      container.read(portRoutingSettingProvider.notifier).value = container
+          .read(portRoutingSettingProvider)
+          .copyWith(takeoverSystem: false);
       expect(container.read(trayStateProvider).tunEnable, isFalse);
       expect(container.read(patchClashConfigProvider).tun.enable, isTrue);
       container.read(currentProfileIdProvider.notifier).value = 11;
@@ -548,6 +552,7 @@ void main() {
               portRouting: PortRoutingConfig(
                 workspaceProfileId: 9,
                 previousProfileId: 11,
+                takeoverSystem: false,
                 bindings: [
                   PortBinding(
                     id: 1,
@@ -569,7 +574,9 @@ void main() {
           TunAuthorizationState.authorized;
 
       await scoped.read(setupActionProvider.notifier).updateConfig();
-      scoped.read(currentProfileIdProvider.notifier).value = 11;
+      scoped.read(portRoutingSettingProvider.notifier).value = scoped
+          .read(portRoutingSettingProvider)
+          .copyWith(takeoverSystem: true);
       await scoped.read(setupActionProvider.notifier).updateConfig();
 
       final params = verify(
@@ -720,24 +727,31 @@ void main() {
     },
   );
 
-  test('system settings remain saved while effective system proxy is off', () {
-    container
-        .read(networkSettingProvider.notifier)
-        .update((value) => value.copyWith(systemProxy: true));
-    container.read(runTimeProvider.notifier).value =
-        DateTime.now().millisecondsSinceEpoch;
-    expect(container.read(proxyStateProvider).systemProxy, isFalse);
-    expect(container.read(networkSettingProvider).systemProxy, isTrue);
-    expect(
-      FlClashHttpOverrides.findProxyFor(
-        container,
-        Uri.parse('https://example.test'),
-      ),
-      'DIRECT',
-    );
-    container.read(currentProfileIdProvider.notifier).value = 11;
-    expect(container.read(proxyStateProvider).systemProxy, isTrue);
-  });
+  test(
+    'system settings remain saved while isolated mode turns system proxy off',
+    () {
+      container
+          .read(networkSettingProvider.notifier)
+          .update((value) => value.copyWith(systemProxy: true));
+      container.read(runTimeProvider.notifier).value =
+          DateTime.now().millisecondsSinceEpoch;
+      expect(container.read(proxyStateProvider).systemProxy, isTrue);
+      container.read(portRoutingSettingProvider.notifier).value = container
+          .read(portRoutingSettingProvider)
+          .copyWith(takeoverSystem: false);
+      expect(container.read(proxyStateProvider).systemProxy, isFalse);
+      expect(container.read(networkSettingProvider).systemProxy, isTrue);
+      expect(
+        FlClashHttpOverrides.findProxyFor(
+          container,
+          Uri.parse('https://example.test'),
+        ),
+        'DIRECT',
+      );
+      container.read(currentProfileIdProvider.notifier).value = 11;
+      expect(container.read(proxyStateProvider).systemProxy, isTrue);
+    },
+  );
 
   test('activation and deactivation preserve the previous profile', () async {
     final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
@@ -840,6 +854,78 @@ void main() {
             .bindings
             .any((binding) => binding.id == cyclic.id),
         isFalse,
+      );
+    },
+  );
+
+  test(
+    'setDefaultBinding, setTakeoverSystem, reorderBindings, and host port conflict',
+    () async {
+      const b1 = PortBinding(
+        id: 1,
+        name: 'First',
+        profileId: 11,
+        port: 18081,
+        node: 'US One',
+      );
+      const b2 = PortBinding(
+        id: 2,
+        name: 'Second',
+        profileId: 11,
+        port: 18082,
+        node: 'US One',
+      );
+      await action.saveBinding(b1);
+      await action.saveBinding(b2);
+      container.read(coreStatusProvider.notifier).value = CoreStatus.connected;
+      await action.activate();
+      final appliesBeforeReorder = setup.applies;
+
+      await action.reorderBindings([2, 1]);
+      expect(
+        container
+            .read(portRoutingSettingProvider)
+            .bindings
+            .map((b) => b.id)
+            .toList(),
+        [2, 1],
+      );
+      expect(setup.applies, appliesBeforeReorder);
+
+      await action.setDefaultBinding(2);
+      expect(container.read(portRoutingDefaultBindingProvider)?.id, 2);
+      expect(container.read(portRoutingIsolatedProvider), isFalse);
+
+      await action.setTakeoverSystem(false);
+      expect(container.read(portRoutingDefaultBindingProvider), isNull);
+      expect(container.read(portRoutingIsolatedProvider), isTrue);
+
+      container.listen(patchClashConfigProvider, (_, _) {});
+      container
+          .read(patchClashConfigProvider.notifier)
+          .update((state) => state.copyWith(mixedPort: 18083));
+      await expectLater(
+        action.saveBinding(
+          const PortBinding(
+            id: 3,
+            name: 'Conflict',
+            profileId: 11,
+            port: 18083,
+            node: 'US One',
+          ),
+        ),
+        completes,
+      );
+
+      await expectLater(
+        action.setTakeoverSystem(true),
+        throwsA(
+          isA<PortRoutingException>().having(
+            (e) => e.issue,
+            'issue',
+            PortRoutingIssue.portOccupied,
+          ),
+        ),
       );
     },
   );

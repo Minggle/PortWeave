@@ -70,6 +70,7 @@ Map<String, dynamic> _compilePortPolicies({
       groups.add({
         'name': globalName,
         'type': 'select',
+        'hidden': true,
         'proxies': [
           'DIRECT',
           ...sourceGroups.map((g) => target(g['name'] as String)),

@@ -1322,5 +1322,23 @@
   "aggregateProxyGroups": "Strategy groups and priorities",
   "aggregateProxyCopyPriorities": "Copy priorities from base profile",
   "portProxyPageHint": "Point an application at this address to use this port’s configuration. Enabling dedicated mode starts all enabled ports and closes the normal mixed port.",
-  "priorityLegacy": "Legacy priorities for the normal mixed port"
+  "priorityLegacy": "Legacy priorities for the normal mixed port",
+  "portRoutingDefaultOutbound": "Default outbound",
+  "portRoutingSetDefaultOutbound": "Set as default outbound",
+  "portRoutingPrimaryTag": "Primary",
+  "portRoutingIsolatedMode": "Isolated mode (no system takeover)",
+  "portRoutingIsolatedTip": "System Proxy and TUN are disabled because no default outbound is active.",
+  "portRoutingNoDefaultOutbound": "No default outbound",
+  "portRoutingRuleModeOnlyTip": "Multi-port mode requires Rule mode",
+  "portRoutingDefaultSwitched": "Default outbound switched to {name}",
+  "@portRoutingDefaultSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "portRoutingEnteredIsolatedTip": "No enabled bindings remain. Entered isolated mode.",
+  "portRoutingSwitcherTooltip": "Switch port",
+  "portRoutingReorderTooltip": "Drag to reorder"
 }

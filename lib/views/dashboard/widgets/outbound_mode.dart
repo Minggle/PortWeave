@@ -28,11 +28,13 @@ class OutboundModeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(
-      patchClashConfigProvider.select((state) => state.mode),
-    );
+    final portRoutingActive = ref.watch(portRoutingActiveProvider);
+    final mode = portRoutingActive
+        ? Mode.rule
+        : ref.watch(patchClashConfigProvider.select((state) => state.mode));
     final tone = DashboardColors.of(context).tone;
     final style = AppTextStyle.footnote.of(context, emphasized: true);
+    final ruleOnlyTip = context.appLocalizations.portRoutingRuleModeOnlyTip;
     return DashboardCard(
       semanticLabel: context.appLocalizations.outboundMode,
       child: Column(
@@ -46,33 +48,39 @@ class OutboundModeCard extends ConsumerWidget {
             children: [
               for (final (index, item) in Mode.values.indexed)
                 Expanded(
-                  child: DashboardConnectedButton(
-                    selected: item == mode,
-                    first: index == 0,
-                    last: index == Mode.values.length - 1,
-                    outer: _outer,
-                    inner: 12,
-                    background: tone,
-                    semanticLabel: item.label,
-                    onTap: () => _changeMode(ref, item),
-                    builder: (foreground) => SizedBox(
-                      height: 52,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        spacing: 2,
-                        children: [
-                          GlyphIcon(
-                            _glyphOf(item),
-                            size: 18,
-                            color: foreground,
-                          ),
-                          Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: style.copyWith(color: foreground),
-                          ),
-                        ],
+                  child: Tooltip(
+                    message: portRoutingActive && item != Mode.rule
+                        ? ruleOnlyTip
+                        : '',
+                    child: DashboardConnectedButton(
+                      selected: item == mode,
+                      enabled: !portRoutingActive || item == Mode.rule,
+                      first: index == 0,
+                      last: index == Mode.values.length - 1,
+                      outer: _outer,
+                      inner: 12,
+                      background: tone,
+                      semanticLabel: item.label,
+                      onTap: () => _changeMode(ref, item),
+                      builder: (foreground) => SizedBox(
+                        height: 52,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          spacing: 2,
+                          children: [
+                            GlyphIcon(
+                              _glyphOf(item),
+                              size: 18,
+                              color: foreground,
+                            ),
+                            Text(
+                              item.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: style.copyWith(color: foreground),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -95,9 +103,10 @@ class OutboundModeBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final density = DashboardDensityScope.of(context);
-    final mode = ref.watch(
-      patchClashConfigProvider.select((state) => state.mode),
-    );
+    final portRoutingActive = ref.watch(portRoutingActiveProvider);
+    final mode = portRoutingActive
+        ? Mode.rule
+        : ref.watch(patchClashConfigProvider.select((state) => state.mode));
     final appLocalizations = context.appLocalizations;
     final outer = dashboardCardRadius(density) - _inset;
     final style = AppTextStyle.subheadline.of(context, emphasized: true);
@@ -133,33 +142,39 @@ class OutboundModeBar extends ConsumerWidget {
                 children: [
                   for (final (index, item) in Mode.values.indexed)
                     Expanded(
-                      child: DashboardConnectedButton(
-                        selected: item == mode,
-                        first: index == 0,
-                        last: index == Mode.values.length - 1,
-                        outer: outer,
-                        inner: 10,
-                        background: DashboardColors.of(context).tone,
-                        semanticLabel: item.label,
-                        onTap: () => _changeMode(ref, item),
-                        builder: (foreground) => Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          spacing: 6,
-                          children: [
-                            GlyphIcon(
-                              _glyphOf(item),
-                              size: 18,
-                              color: foreground,
-                            ),
-                            Flexible(
-                              child: Text(
-                                item.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: style.copyWith(color: foreground),
+                      child: Tooltip(
+                        message: portRoutingActive && item != Mode.rule
+                            ? appLocalizations.portRoutingRuleModeOnlyTip
+                            : '',
+                        child: DashboardConnectedButton(
+                          selected: item == mode,
+                          enabled: !portRoutingActive || item == Mode.rule,
+                          first: index == 0,
+                          last: index == Mode.values.length - 1,
+                          outer: outer,
+                          inner: 10,
+                          background: DashboardColors.of(context).tone,
+                          semanticLabel: item.label,
+                          onTap: () => _changeMode(ref, item),
+                          builder: (foreground) => Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            spacing: 6,
+                            children: [
+                              GlyphIcon(
+                                _glyphOf(item),
+                                size: 18,
+                                color: foreground,
                               ),
-                            ),
-                          ],
+                              Flexible(
+                                child: Text(
+                                  item.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: style.copyWith(color: foreground),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

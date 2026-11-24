@@ -156,6 +156,90 @@ final class PortRoutingActiveProvider
 
 String _$portRoutingActiveHash() => r'ef1a9e170f15980dbaa8864c7200caf0487511f4';
 
+@ProviderFor(portRoutingDefaultBinding)
+final portRoutingDefaultBindingProvider = PortRoutingDefaultBindingProvider._();
+
+final class PortRoutingDefaultBindingProvider
+    extends $FunctionalProvider<PortBinding?, PortBinding?, PortBinding?>
+    with $Provider<PortBinding?> {
+  PortRoutingDefaultBindingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'portRoutingDefaultBindingProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$portRoutingDefaultBindingHash();
+
+  @$internal
+  @override
+  $ProviderElement<PortBinding?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  PortBinding? create(Ref ref) {
+    return portRoutingDefaultBinding(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PortBinding? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PortBinding?>(value),
+    );
+  }
+}
+
+String _$portRoutingDefaultBindingHash() =>
+    r'fd780ec50fe884db5632371828e3d040bb76bc15';
+
+@ProviderFor(portRoutingIsolated)
+final portRoutingIsolatedProvider = PortRoutingIsolatedProvider._();
+
+final class PortRoutingIsolatedProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  PortRoutingIsolatedProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'portRoutingIsolatedProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$portRoutingIsolatedHash();
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    return portRoutingIsolated(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$portRoutingIsolatedHash() =>
+    r'a43ac5cd318ddf8fe63b97c2d1bd343c56305587';
+
 @ProviderFor(AppSetting)
 final appSettingProvider = AppSettingProvider._();
 

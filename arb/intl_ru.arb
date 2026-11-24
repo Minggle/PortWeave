@@ -1201,5 +1201,23 @@
   "aggregateProxyGroups": "Группы и приоритеты",
   "aggregateProxyCopyPriorities": "Скопировать приоритеты базового профиля",
   "portProxyPageHint": "Укажите этот адрес в настройках прокси приложения. Выделенный режим запускает все включённые порты и закрывает обычный смешанный порт.",
-  "priorityLegacy": "Прежние приоритеты обычного смешанного порта"
+  "priorityLegacy": "Прежние приоритеты обычного смешанного порта",
+  "portRoutingDefaultOutbound": "Исходящий по умолчанию",
+  "portRoutingSetDefaultOutbound": "Сделать исходящим по умолчанию",
+  "portRoutingPrimaryTag": "Основной",
+  "portRoutingIsolatedMode": "Изолированный режим (без перехвата системы)",
+  "portRoutingIsolatedTip": "Системный прокси и TUN отключены, так как не выбран исходящий по умолчанию.",
+  "portRoutingNoDefaultOutbound": "Нет исходящего по умолчанию",
+  "portRoutingRuleModeOnlyTip": "Многопортовый режим требует режим Правила",
+  "portRoutingDefaultSwitched": "Исходящий по умолчанию переключён на {name}",
+  "@portRoutingDefaultSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "portRoutingEnteredIsolatedTip": "Не осталось активных привязок. Включён изолированный режим.",
+  "portRoutingSwitcherTooltip": "Переключить порт",
+  "portRoutingReorderTooltip": "Перетащите для сортировки"
 }

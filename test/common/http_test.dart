@@ -161,4 +161,51 @@ void main() {
       isTrue,
     );
   });
+
+  test(
+    'bypasses proxy in isolated port-routing mode or when mixedPort is 0',
+    () {
+      final container = buildContainer(mixedPort: 7891);
+      container.read(currentProfileIdProvider.notifier).value = 99;
+      container
+          .read(portRoutingSettingProvider.notifier)
+          .value = const PortRoutingConfig(
+        workspaceProfileId: 99,
+        takeoverSystem: false,
+        bindings: [
+          PortBinding(
+            id: 1,
+            name: 'P1',
+            profileId: 11,
+            port: 18081,
+            node: 'US',
+          ),
+        ],
+      );
+      expect(FlClashHttpOverrides.findProxyFor(container, remote), 'DIRECT');
+
+      container.read(portRoutingSettingProvider.notifier).value = container
+          .read(portRoutingSettingProvider)
+          .copyWith(takeoverSystem: true);
+      expect(
+        FlClashHttpOverrides.findProxyFor(container, remote),
+        'PROXY localhost:7891',
+      );
+
+      final zeroPortContainer = ProviderContainer(
+        overrides: [
+          excludeSSIDsProvider.overrideWithValue(const []),
+          patchClashConfigProvider.overrideWithBuild(
+            (_, _) => const PatchClashConfig().copyWith(mixedPort: 0),
+          ),
+        ],
+      );
+      addTearDown(zeroPortContainer.dispose);
+      zeroPortContainer.read(runTimeProvider.notifier).value = 1;
+      expect(
+        FlClashHttpOverrides.findProxyFor(zeroPortContainer, remote),
+        'DIRECT',
+      );
+    },
+  );
 }

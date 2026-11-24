@@ -7,6 +7,25 @@ part 'generated/port_routing.g.dart';
 
 enum PortSelection { original, fixed, region, aggregate }
 
+PortBinding? resolveDefaultPortBinding(
+  Iterable<PortBinding> bindings, {
+  bool takeoverSystem = true,
+  int? defaultBindingId,
+}) {
+  if (!takeoverSystem) return null;
+  final active = bindings.where((b) => b.enabled).toList();
+  if (active.isEmpty) return null;
+  if (defaultBindingId != null) {
+    final explicit = active.where((b) => b.id == defaultBindingId).firstOrNull;
+    if (explicit != null) return explicit;
+  }
+  return active
+          .where((b) => b.selection == PortSelection.aggregate)
+          .firstOrNull ??
+      active.where((b) => b.selection == PortSelection.original).firstOrNull ??
+      active.first;
+}
+
 @freezed
 abstract class PortBinding with _$PortBinding {
   const PortBinding._();
@@ -65,6 +84,8 @@ abstract class PortRoutingConfig with _$PortRoutingConfig {
     int? previousProfileId,
     @Default([]) List<PortBinding> bindings,
     @Default([]) List<PortSubscriptionRefresh> subscriptions,
+    @Default(true) bool takeoverSystem,
+    int? defaultBindingId,
   }) = _PortRoutingConfig;
 
   factory PortRoutingConfig.fromJson(Map<String, dynamic> json) =>
@@ -72,6 +93,12 @@ abstract class PortRoutingConfig with _$PortRoutingConfig {
 
   bool isActive(int? profileId) =>
       workspaceProfileId != null && workspaceProfileId == profileId;
+
+  PortBinding? resolveDefaultBinding() => resolveDefaultPortBinding(
+    bindings,
+    takeoverSystem: takeoverSystem,
+    defaultBindingId: defaultBindingId,
+  );
 
   Set<int> get sourceIds => {
     for (final binding in bindings)

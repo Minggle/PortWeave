@@ -270,4 +270,67 @@ rules: ['MATCH,REJECT']
 	if body, err := request(client(ports[5], false)); err == nil {
 		t.Fatalf("aggregate without matching nodes did not reject: %q", body)
 	}
+
+	mixedListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedPort := mixedListener.Addr().(*net.TCPAddr).Port
+	_ = mixedListener.Close()
+	coexistConfig := fmt.Sprintf(`mixed-port: %d
+mode: rule
+log-level: silent
+dns: {enable: false}
+tun: {enable: false}
+proxy-providers:
+  flclash_ports_source_11:
+    type: file
+    path: %q
+    override: {additional-prefix: '[ports:11] '}
+  flclash_ports_source_22:
+    type: file
+    path: %q
+    override: {additional-prefix: '[ports:22] '}
+proxy-groups:
+  - {name: flclash_ports_group_1, type: select, use: [flclash_ports_source_11], filter: '^\[ports:11\] JP New$', empty-fallback: REJECT}
+  - {name: flclash_ports_group_2, type: select, use: [flclash_ports_source_22], filter: '^\[ports:22\] JP Only$', empty-fallback: REJECT}
+sub-rules:
+  policy_22: ['MATCH,flclash_ports_group_2']
+listeners:
+  - {name: original_22, type: mixed, listen: 127.0.0.1, port: %d, rule: policy_22, udp: false, users: []}
+rules:
+  - DOMAIN,policy-b.test,flclash_ports_group_2
+  - MATCH,flclash_ports_group_1
+`, mixedPort, paths[0], paths[1], ports[4])
+	if err := os.WriteFile(runningConfigPath(), []byte(coexistConfig), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := handleSetupConfig(&SetupParams{}); err != nil {
+		t.Fatal(err)
+	}
+	handleStartListener()
+	deadline = time.Now().Add(5 * time.Second)
+	for {
+		providers := tunnel.ProvidersSnapshot()
+		if providers["flclash_ports_source_11"].Count() > 0 && providers["flclash_ports_source_22"].Count() > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("coexistence providers did not initialize")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	assertExit(mixedPort, "C")
+	assertExit(ports[4], "B")
+	for _, socks := range []bool{false, true} {
+		response, err := client(mixedPort, socks).Get("http://policy-b.test/policy")
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		if err != nil || string(body) != "B" {
+			t.Fatalf("coexistence top-level rules were not followed: %q %v", body, err)
+		}
+	}
 }

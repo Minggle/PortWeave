@@ -161,15 +161,24 @@ rules: ['MATCH,Auto']
       tun: Tun(enable: true),
       externalController: ExternalControllerStatus.open,
     );
-    final effective = portRoutingPatch(saved);
-    expect(effective.mixedPort, 0);
-    expect(effective.port, 0);
-    expect(effective.socksPort, 0);
-    expect(effective.tun.enable, isFalse);
-    expect(effective.externalController, ExternalControllerStatus.close);
-    expect(effective.mode, Mode.rule);
+    final isolated = portRoutingPatch(saved);
+    expect(isolated.mixedPort, 0);
+    expect(isolated.port, 0);
+    expect(isolated.socksPort, 0);
+    expect(isolated.tun.enable, isFalse);
+    expect(isolated.externalController, ExternalControllerStatus.close);
+    expect(isolated.mode, Mode.rule);
     expect(saved.tun.enable, isTrue);
     expect(saved.mixedPort, 7897);
+
+    final coexist = portRoutingPatch(saved, hasDefaultRoute: true);
+    expect(coexist.mixedPort, 7897);
+    expect(coexist.port, 8080);
+    expect(coexist.socksPort, 1080);
+    expect(coexist.allowLan, isTrue);
+    expect(coexist.tun.enable, isTrue);
+    expect(coexist.externalController, ExternalControllerStatus.open);
+    expect(coexist.mode, Mode.rule);
   });
   test('ports isolate sources, nodes and routing, with explicit rejection', () {
     final result = compilePortRouting(
@@ -180,6 +189,7 @@ rules: ['MATCH,Auto']
       ],
       sourcePaths: {11: '/source/11.yaml', 22: '/source/22.yaml'},
       testUrl: 'https://example.test',
+      takeoverSystem: false,
     );
     final groups = result.config['proxy-groups'] as List;
     final listeners = result.config['listeners'] as List;
@@ -197,6 +207,14 @@ rules: ['MATCH,Auto']
     expect(listeners[1]['proxy'], regional.groupName);
     expect(listeners[0]['users'], isEmpty);
     expect(result.config['rules'], ['MATCH,REJECT']);
+
+    final coexist = compilePortRouting(
+      bindings: [fixed, regional],
+      sourcePaths: {11: '/source/11.yaml', 22: '/source/22.yaml'},
+      testUrl: 'https://example.test',
+      defaultBindingId: regional.id,
+    );
+    expect(coexist.config['rules'], ['MATCH,${regional.groupName}']);
   });
 
   test('fixed names escape provider separator and regex metacharacters', () {

@@ -4237,4 +4237,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get priorityLegacy => 'Anciennes priorités du port mixte normal';
+
+  @override
+  String get portRoutingDefaultOutbound => 'Sortie par défaut';
+
+  @override
+  String get portRoutingSetDefaultOutbound => 'Définir comme sortie par défaut';
+
+  @override
+  String get portRoutingPrimaryTag => 'Principal';
+
+  @override
+  String get portRoutingIsolatedMode =>
+      'Mode isolé (sans prise en charge système)';
+
+  @override
+  String get portRoutingIsolatedTip =>
+      'Le proxy système et TUN sont désactivés car aucune sortie par défaut n\'est active.';
+
+  @override
+  String get portRoutingNoDefaultOutbound => 'Aucune sortie par défaut';
+
+  @override
+  String get portRoutingRuleModeOnlyTip =>
+      'Le mode multi-port nécessite le mode Règles';
+
+  @override
+  String portRoutingDefaultSwitched(String name) {
+    return 'Sortie par défaut basculée vers $name';
+  }
+
+  @override
+  String get portRoutingEnteredIsolatedTip =>
+      'Aucune liaison activée restante. Passage en mode isolé.';
+
+  @override
+  String get portRoutingSwitcherTooltip => 'Changer de port';
+
+  @override
+  String get portRoutingReorderTooltip => 'Glisser pour réorganiser';
 }

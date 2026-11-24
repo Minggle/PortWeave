@@ -3997,4 +3997,39 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get priorityLegacy => '通常の混合ポートの既存の優先順位';
+
+  @override
+  String get portRoutingDefaultOutbound => 'デフォルト送信先';
+
+  @override
+  String get portRoutingSetDefaultOutbound => 'デフォルト送信先に設定';
+
+  @override
+  String get portRoutingPrimaryTag => 'メイン';
+
+  @override
+  String get portRoutingIsolatedMode => '分離モード（システム通信を引き継がない）';
+
+  @override
+  String get portRoutingIsolatedTip => 'デフォルト送信先が有効でないため、システムプロキシと TUN は無効です。';
+
+  @override
+  String get portRoutingNoDefaultOutbound => 'デフォルト送信先なし';
+
+  @override
+  String get portRoutingRuleModeOnlyTip => 'マルチポートモードではルールモードが必要です';
+
+  @override
+  String portRoutingDefaultSwitched(String name) {
+    return 'デフォルト送信先を $name に切り替えました';
+  }
+
+  @override
+  String get portRoutingEnteredIsolatedTip => '有効なバインディングがないため、分離モードに入りました。';
+
+  @override
+  String get portRoutingSwitcherTooltip => 'ポートを切り替え';
+
+  @override
+  String get portRoutingReorderTooltip => 'ドラッグして並び替え';
 }

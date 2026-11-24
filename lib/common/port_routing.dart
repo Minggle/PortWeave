@@ -38,17 +38,22 @@ String portProviderName(int profileId) => 'flclash_ports_source_$profileId';
 
 String portNodePrefix(int profileId) => '[ports:$profileId] ';
 
-PatchClashConfig portRoutingPatch(PatchClashConfig saved) => saved.copyWith(
-  mixedPort: 0,
-  port: 0,
-  socksPort: 0,
-  redirPort: 0,
-  tproxyPort: 0,
-  allowLan: false,
-  tun: saved.tun.copyWith(enable: false),
-  externalController: ExternalControllerStatus.close,
-  mode: Mode.rule,
-);
+PatchClashConfig portRoutingPatch(
+  PatchClashConfig saved, {
+  bool hasDefaultRoute = false,
+}) => hasDefaultRoute
+    ? saved.copyWith(mode: Mode.rule)
+    : saved.copyWith(
+        mixedPort: 0,
+        port: 0,
+        socksPort: 0,
+        redirPort: 0,
+        tproxyPort: 0,
+        allowLan: false,
+        tun: saved.tun.copyWith(enable: false),
+        externalController: ExternalControllerStatus.close,
+        mode: Mode.rule,
+      );
 
 List<Map<String, dynamic>> portSubscriptionNodes(String source) {
   return (portSubscriptionDocument(source)['proxies'] as List)
@@ -201,6 +206,8 @@ PortRoutingFragment compilePortRouting({
   required String testUrl,
   Map<int, Map<String, dynamic>> sourceDocuments = const {},
   Map<int, Map<String, String>> selectedMaps = const {},
+  bool takeoverSystem = true,
+  int? defaultBindingId,
 }) {
   validatePortBindings(bindings);
   final active = bindings.where((binding) => binding.enabled).toList();
@@ -215,6 +222,19 @@ PortRoutingFragment compilePortRouting({
     selectedMaps: selectedMaps,
     testUrl: testUrl,
   );
+  final defaultBinding = resolveDefaultPortBinding(
+    active,
+    takeoverSystem: takeoverSystem,
+    defaultBindingId: defaultBindingId,
+  );
+  final originalSubRules = original['sub-rules'] as Map<String, List<String>>?;
+  final topLevelRules = switch (defaultBinding) {
+    null => ['MATCH,REJECT'],
+    final binding when binding.usesRules => [
+      ...?originalSubRules?[binding.ruleName],
+    ],
+    final binding => ['MATCH,${binding.groupName}'],
+  };
   return (
     providers: {
       for (final id
@@ -235,7 +255,7 @@ PortRoutingFragment compilePortRouting({
         },
     },
     config: {
-      'rules': ['MATCH,REJECT'],
+      'rules': topLevelRules,
       ...original,
       'proxy-groups': [
         ...?original['proxy-groups'] as List?,
